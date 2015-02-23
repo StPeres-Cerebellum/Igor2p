@@ -253,7 +253,7 @@ function makeProjections(imageStack)
 	wave m_xprojection
 	wave m_yprojection
 	
-//	imagetransform fliprows m_xprojection 
+	imagetransform flipcols m_xprojection 
 	matrixop/o/free xProj = m_xprojection ^ t
 	duplicate/o xProj m_xprojection
 	imagetransform flipcols m_yprojection

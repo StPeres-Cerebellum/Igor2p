@@ -273,3 +273,50 @@ function BS_GENERATESimpleRasterScan(ScaledX,ScaledY,pixelSize,DwellTime,ScanBac
 	runx /= ScaleFactor
 	runy /= ScaleFactor
 end
+
+function makeRasters(lineTime, lines,frames)//, pixelShift)
+	variable lineTime, lines, frames//, pixelShift		//seconds
+	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
+//	variable xStepsPerLine = 256	//Not sure what is best
+//	print lineTime / xstepsperline
+	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(pixelsPerLine))*(lines))
+	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(pixelsPerLine)*pi)-0.5)*(-2)+1
+//	make/o/n=0 root:Packages:BS2P:CurrentScanVariables:runy
+
+	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
+	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
+	runy[numpnts(runy)-(pixelsPerLine),] =  runy[numpnts(runy)-(pixelsPerLine+1)] -  ((runy[numpnts(runy)-(pixelsPerLine+1)] / pixelsPerLine) * (p - (numpnts(runy)-(pixelsPerLine)))	
+	runx[numpnts(runx)-(pixelsPerLine),] = runx[numpnts(runx)-1] > 0.5 ? 0 : runx
+	
+	wave runy_temp = root:Packages:BS2P:CurrentScanVariables:runy_temp
+	variable i
+//	for(i = 0; i < frames; i += 1)
+//		concatenate/np {runy_temp}, runy
+//		print i
+//	endfor
+	
+	//X Scaling
+	SetScale/I x 0,(lines*lineTime),"s", runx, runy
+//	variable yshift = pixelShift/dimdelta(runy,0)
+//	insertpoints 0, yshift, runy
+//	deletepoints numpnts(runy)-yshift, yshift, runy
+	
+	//Y Scaling
+	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor
+	NVAR X_offset = root:Packages:BS2P:CurrentScanVariables:X_offset
+	NVAR Y_offset = root:Packages:BS2P:CurrentScanVariables:Y_offset
+	NVAR scaledX = root:Packages:BS2P:CurrentScanVariables:scaledX
+	NVAR scaledY = root:Packages:BS2P:CurrentScanVariables:scaledY
+	NVAR lineSpacing = root:Packages:BS2P:CurrentScanVariables:lineSpacing
+	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit
+	/////////////////////Scale it to Microns 
+//	runx *= ScaledX; runx += (x_offset-(scanLimit * scaleFactor))
+//	runy *= lineSpacing; runy += (y_offset-(scanLimit * scaleFactor))
+	runx *= ScaledX; runx += x_offset
+	runy *= lineSpacing; runy += y_offset
+	
+	/////////////////////Scale it to Volts
+	runx /= ScaleFactor
+	runy /= ScaleFactor
+	
+end
