@@ -285,7 +285,7 @@ function makeRasters(lineTime, lines,frames)//, pixelShift)
 
 	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
 	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
-	runy[numpnts(runy)-(pixelsPerLine),] =  runy[numpnts(runy)-(pixelsPerLine+1)] -  ((runy[numpnts(runy)-(pixelsPerLine+1)] / pixelsPerLine) * (p - (numpnts(runy)-(pixelsPerLine)))	
+	runy[numpnts(runy)-(pixelsPerLine),] =  runy[numpnts(runy)-(pixelsPerLine+1)] -  ((runy[numpnts(runy)-(pixelsPerLine+1)] / pixelsPerLine) * (p - (numpnts(runy)-(pixelsPerLine))))
 	runx[numpnts(runx)-(pixelsPerLine),] = runx[numpnts(runx)-1] > 0.5 ? 0 : runx
 	
 	wave runy_temp = root:Packages:BS2P:CurrentScanVariables:runy_temp

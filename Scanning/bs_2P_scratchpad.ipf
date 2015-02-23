@@ -208,19 +208,19 @@ function BS_2P_Pockels(openOrClose)
 	endif
 end
 
-function BS_2P_PMTShutter(openOrClose)
-	string openOrClose
-	NVAR shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
-	
-	if(stringmatch(openOrCLose, "open"))
-		fdaqmx_dio_write("dev2", shutterIOtaskNumber, 0)
-//		fDAQmx_WriteChan("DEV2", 1, 5, -5, 5 )	//open external shutter before PMT
-	elseif(stringmatch(openOrCLose, "close"))
-		fdaqmx_dio_write("dev2", shutterIOtaskNumber, 5)
-//		fDAQmx_WriteChan("DEV2", 1, 0, -5, 5 )	//close external shutter before PMT
-	endif
-	
-end
+//function BS_2P_PMTShutter(openOrClose)
+//	string openOrClose
+//	NVAR shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
+//	
+//	if(stringmatch(openOrCLose, "open"))
+//		fdaqmx_dio_write("dev2", shutterIOtaskNumber, 0)
+////		fDAQmx_WriteChan("DEV2", 1, 5, -5, 5 )	//open external shutter before PMT
+//	elseif(stringmatch(openOrCLose, "close"))
+//		fdaqmx_dio_write("dev2", shutterIOtaskNumber, 5)
+////		fDAQmx_WriteChan("DEV2", 1, 0, -5, 5 )	//close external shutter before PMT
+//	endif
+//	
+//end
 
 
 function/wave anotherDrawMethod(buffer,pixelsPerLine,linesPerFrame)
@@ -524,20 +524,20 @@ Function BS_2P_VideoButton(ba) : ButtonControl
 	return 0
 End
 
-function bs_2p_initShutter(devNum, pfiLine)
-	string devNum // e.g. "dev1"
-	string pfiLine // e.g. "pfi2"
-	
-	string pfiString = "/"+devNum+"/"+pfiLine
-	NVAR/z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
-	if(NVAR_exists(shutterIOtaskNumber))
-		 fdaqmx_dio_finished(devNum,shutterIOtaskNumber)
-	endif
-	daqmx_dio_config/dir=1/dev=devNum pfiString
-	variable/g root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber = V_DAQmx_DIO_TaskNumber
-	fdaqmx_dio_write(devNum, shutterIOtaskNumber, 0)	//close shutter if open
-	return shutterIOtaskNumber
-end
+//function bs_2p_initShutter(devNum, pfiLine)
+//	string devNum // e.g. "dev1"
+//	string pfiLine // e.g. "pfi2"
+//	
+//	string pfiString = "/"+devNum+"/"+pfiLine
+//	NVAR/z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
+//	if(NVAR_exists(shutterIOtaskNumber))
+//		 fdaqmx_dio_finished(devNum,shutterIOtaskNumber)
+//	endif
+//	daqmx_dio_config/dir=1/dev=devNum pfiString
+//	variable/g root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber = V_DAQmx_DIO_TaskNumber
+//	fdaqmx_dio_write(devNum, shutterIOtaskNumber, 0)	//close shutter if open
+//	return shutterIOtaskNumber
+//end
 
 function/wave bs_2P_getConfigs(Device)
 	string device	//xgalvo, ygalvo, PMT, Pockels, PMTshutter, startTrig
