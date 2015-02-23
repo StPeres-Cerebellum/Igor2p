@@ -431,6 +431,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	if(frameCounter == frames)	//shut it down
 		BS_2P_writeScanParamsInWave(kineticSeries)
 		BS_2P_PMTShutter("close")
+		bs_2P_zeroscanners("offset")
 		setdatafolder currentFolder
 	elseif(frameCounter < frames)	//otherwise set up another one
 		BS_2P_Pockels("open")
@@ -449,6 +450,7 @@ function kineticHook2(dum)
 	
 	BS_2P_Pockels("close")
 	BS_2P_PMTShutter("close")
+	bs_2P_zeroscanners("offset")
 	
 	differentiate/meth=2/ep=1/p dum
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
@@ -539,43 +541,43 @@ End
 //	return shutterIOtaskNumber
 //end
 
-function/wave bs_2P_getConfigs(Device)
-	string device	//xgalvo, ygalvo, PMT, Pockels, PMTshutter, startTrig
-	make/free/t/o/n=2 devOut
-	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-	
-	devOut[0] = boardconfig[(findDimLabel(boardConfig,0,Device))][1]
-	devOut[1] = boardconfig[(findDimLabel(boardConfig,0,Device))][3]
-	
-	return devOut
-end
-
-function bs_2P_makeNewDefaultConfig()
-	make/o/t/n=(7,3) root:Packages:BS2P:CalibrationVariables:boardConfig
-	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-	setdimlabel 0,0,xGalvo,boardCOnfig
-	setdimlabel 0,1,yGalvo,boardCOnfig
-	setdimlabel 0,2,PMT,boardCOnfig
-	setdimlabel 0,3,Pockels,boardCOnfig
-	setdimlabel 0,4,PMTshutter,boardCOnfig
-	setdimlabel 0,5,startTrig,boardCOnfig
-	setdimlabel 0,6,laserPhotoDiode,boardCOnfig
-	setdimlabel 1,0,Board,boardCOnfig
-	setdimlabel 1,1,Type,boardCOnfig
-	setdimlabel 1,2,Channel,boardCOnfig
-	
-	boardConfig[][0] = "dev1"
-	boardConfig[][1] = "analog OUT channel ----->"
-	boardConfig[2][1] = "PFI ----->"
-	boardConfig[4][1] = "PFI ----->"
-	boardConfig[5][1] = "PFI ----->"
-	boardConfig[6][1] = "analog IN channel ----->"
-	boardConfig[][2] = "0"
-	boardConfig[1][2] = "1"
-	boardConfig[2][2] = "8"
-	boardConfig[4][2] = "2"
-	boardConfig[5][2] = "1"
-	boardConfig[6][2] = "0"
-	
-	edit boardConfig.l, boardConfig
-end
+//function/wave bs_2P_getConfigs(Device)
+//	string device	//xgalvo, ygalvo, PMT, Pockels, PMTshutter, startTrig
+//	make/free/t/o/n=2 devOut
+//	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+//	
+//	devOut[0] = boardconfig[(findDimLabel(boardConfig,0,Device))][1]
+//	devOut[1] = boardconfig[(findDimLabel(boardConfig,0,Device))][3]
+//	
+//	return devOut
+//end
+//
+//function bs_2P_makeNewDefaultConfig()
+//	make/o/t/n=(7,3) root:Packages:BS2P:CalibrationVariables:boardConfig
+//	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+//	setdimlabel 0,0,xGalvo,boardCOnfig
+//	setdimlabel 0,1,yGalvo,boardCOnfig
+//	setdimlabel 0,2,PMT,boardCOnfig
+//	setdimlabel 0,3,Pockels,boardCOnfig
+//	setdimlabel 0,4,PMTshutter,boardCOnfig
+//	setdimlabel 0,5,startTrig,boardCOnfig
+//	setdimlabel 0,6,laserPhotoDiode,boardCOnfig
+//	setdimlabel 1,0,Board,boardCOnfig
+//	setdimlabel 1,1,Type,boardCOnfig
+//	setdimlabel 1,2,Channel,boardCOnfig
+//	
+//	boardConfig[][0] = "dev1"
+//	boardConfig[][1] = "analog OUT channel ----->"
+//	boardConfig[2][1] = "PFI ----->"
+//	boardConfig[4][1] = "PFI ----->"
+//	boardConfig[5][1] = "PFI ----->"
+//	boardConfig[6][1] = "analog IN channel ----->"
+//	boardConfig[][2] = "0"
+//	boardConfig[1][2] = "1"
+//	boardConfig[2][2] = "8"
+//	boardConfig[4][2] = "2"
+//	boardConfig[5][2] = "1"
+//	boardConfig[6][2] = "0"
+//	
+//	edit boardConfig.l, boardConfig
+//end

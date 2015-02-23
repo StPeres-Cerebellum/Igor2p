@@ -11,7 +11,7 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
 	switch(s.eventCode)
 	case 2:
-       	newpath/o configPath, "C:Users:BS:Documents"
+       	newpath/o configPath, "C:Users:fede:Documents"
        	save/o/p=configPath boardConfig
 //		killpath configPath
 		break
@@ -30,13 +30,13 @@ end
 //end
 
 function bs_2P_getConfig()
-	newpath/o configPath, "C:Users:BS:Documents"
+	newpath/o configPath, "C:Users:fede:Documents"
 	variable refnum
 	open/r/z/p=configPath refnum as "boardConfig.ibw"
 	if(v_flag == 0)
 		print "found a config", refnum, s_filename
 		close refNum
-		LoadWave/H/O "C:Users:BS:Documents:boardConfig.ibw"
+		LoadWave/H/O "C:Users:fede:Documents:boardConfig.ibw"
 		wave/t boardConfig
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
@@ -71,10 +71,10 @@ function bs_2P_getConfig()
 		setdimlabel 0,4,PMTshutter,boardCOnfig
 		boardConfig[4][0] = "dev2"
 		boardConfig[4][1] = "PFI"
-		boardConfig[4][2] = "0"
+		boardConfig[4][2] = "2"
 		
 		setdimlabel 0,5,startTrig,boardCOnfig
-		boardConfig[5][0] = "dev2"
+		boardConfig[5][0] = "dev1"
 		boardConfig[5][1] = "PFI"
 		boardConfig[5][2] = "1"	
 		
@@ -89,7 +89,7 @@ function bs_2P_getConfig()
 		
 		setdimlabel 0,9,metersPerVolt,boardCOnfig		
 		boardConfig[9][1] = "Constant"
-		boardConfig[9][2] = "33.3"
+		boardConfig[9][2] = "33.3E-6"
 					
 		edit/k=1/n=Config boardConfig boardConfig.l
 		setwindow config hook(myhook)=configSaveHook
@@ -98,6 +98,9 @@ end
 
 function bs_2P_editConfig()
 	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	if(!waveexists(boardCOnfig))
+		bs_2P_getConfig()
+	endif
 	edit/k=1/n=Config boardConfig boardConfig.l
 	setwindow config hook(myhook)=configSaveHook
 end
