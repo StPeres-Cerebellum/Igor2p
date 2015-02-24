@@ -182,6 +182,7 @@ function BS_2P_WriteScanParamsInWave(w)
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines; variableNote +=  "totalLines:"+num2str(totalLines)+";"
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine; variableNote +=  "pixelsPerLine:"+num2str(pixelsPerLine)+";"
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue; variableNote +=  "pockelValue:"+num2str(pockelValue)+";" 
+	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower; variableNote +=  "laserPower:"+num2str(laserPower)+";" 
 	note/K w, variableNote
 
 end

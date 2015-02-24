@@ -200,11 +200,17 @@ function BS_2P_Pockels(openOrClose)
 	string openOrClose
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
 	
-	variable pockelVoltage = pockelValue/100*2
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	string pockelDevNum = boardConfig[2][0]
+	variable pockelChannel = str2num(boardConfig[2][2])
+	
+	variable maxPockels = 2	//volts
+	
+	variable pockelVoltage = pockelValue/(100/maxPockels)	// convert percent to volts -- 0.5V is max
 	if(stringmatch(openOrCLose, "open"))
-		fDAQmx_WriteChan("DEV2", 0, pockelVoltage, -1, 3 )
+		fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelVoltage, 0,5 )
 	elseif(stringmatch(openOrCLose, "close"))
-		fDAQmx_WriteChan("DEV2", 0, 0, -1, 3 )
+		fDAQmx_WriteChan(pockelDevNum, pockelChannel, 0, -1, 1 )
 	endif
 end
 
@@ -581,3 +587,6 @@ End
 //	
 //	edit boardConfig.l, boardConfig
 //end
+
+
+// for the stacks BS_2P_Scan("snapshot")

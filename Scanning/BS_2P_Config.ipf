@@ -41,7 +41,7 @@ function bs_2P_getConfig()
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
 	else
-		make/o/t/n=(10,3) root:Packages:BS2P:CalibrationVariables:boardConfig
+		make/o/t/n=(11,3) root:Packages:BS2P:CalibrationVariables:boardConfig
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 
 		setdimlabel 1,0,Board,boardCOnfig
@@ -90,6 +90,10 @@ function bs_2P_getConfig()
 		setdimlabel 0,9,metersPerVolt,boardCOnfig		
 		boardConfig[9][1] = "Constant"
 		boardConfig[9][2] = "33.3E-6"
+		
+		setdimlabel 0,10,mWPerVolt,boardCOnfig		
+		boardConfig[10][1] = "Constant"
+		boardConfig[10][2] = "1"
 					
 		edit/k=1/n=Config boardConfig boardConfig.l
 		setwindow config hook(myhook)=configSaveHook
