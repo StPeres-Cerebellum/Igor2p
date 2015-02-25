@@ -376,6 +376,20 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
 	
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
+
+	string galvoDev = boardConfig[0][0]
+	string pmtDev = boardConfig[3][0]
+	string startTrigDev = boardConfig[5][0]
+	string startTrigChannel = "/"+startTrigDev+"/"+"pfi"+boardConfig[5][2]
+	string xGalvoChannel = boardConfig[0][2]
+	string yGalvoChannel = boardConfig[1][2]
+	
+	string pmtSource = "/"+pmtDev+"/pfi8"
+	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
+	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
+	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
+	
 	variable/g frameCounter = 0
 //	string S_kineticHook = "kineticHook("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 	string S_kineticHook2 = "kineticHook2("+nameofWave(dum)+")"
@@ -388,12 +402,10 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	BS_2P_Pockels("open")
 	
 	if(stringmatch(imageMode, "video"))
-		DAQmx_CTR_CountEdges/DEV="dev2"/EDGE=1/SRC="/dev2/pfi8"/INIT=0/DIR=1/clk="/Dev2/Ctr2InternalOutput"/wave=dum/EOSH=S_videoHook 0
-		//DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
-		//DAQmx_WaveformGen/DEV="dev1"/NPRD=(1) "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
-		DAQmx_WaveformGen/clk="/Dev2/Ctr3InternalOutput"/DEV="dev1"/NPRD=(1) "runx, 0; runy, 1"
-		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2"/TRIG={"/Dev2/Ctr3InternalOutput"}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
-		DAQmx_CTR_OutputPulse/DEV="dev2"/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelClock/wave=dum/EOSH=S_videoHook 0
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(stringmatch(imageMode, "snapshot"))
 		DAQmx_CTR_CountEdges/DEV="dev2"/EDGE=1/SRC="/dev2/pfi8"/INIT=0/DIR=1/clk="/Dev2/Ctr2InternalOutput"/wave=dum/EOSH=S_kineticHook2 0
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	

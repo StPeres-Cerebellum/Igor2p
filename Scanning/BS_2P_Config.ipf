@@ -9,10 +9,16 @@ end
 function configSaveHook(s)    //This is a hook for the mousewheel movement in MatrixExplorer
 	STRUCT WMWinHookStruct &s
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
+	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit	// limit of voltage sent to the scanners	
+	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor //  (m in focal plane / Volt). Same for X and Y
+	NVAR mWperVolt = root:Packages:BS2P:CalibrationVariables:mWperVolt
 	switch(s.eventCode)
 	case 2:
        	newpath/o configPath, "C:Users:fede:Documents"
        	save/o/p=configPath boardConfig
+       	scanLimit = str2num(boardConfig[8][2])
+       	scaleFactor = str2num(boardConfig[9][2])
+       	mWperVolt = str2num(boardConfig[10][2])
 //		killpath configPath
 		break
 	endswitch
