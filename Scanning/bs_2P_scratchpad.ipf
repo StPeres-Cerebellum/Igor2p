@@ -204,13 +204,14 @@ function BS_2P_Pockels(openOrClose)
 	string pockelDevNum = boardConfig[2][0]
 	variable pockelChannel = str2num(boardConfig[2][2])
 	
-	variable maxPockels = 2	//volts
+	variable maxPockels = 0.5	//volts
+	variable minPockels = 0.19
 	
-	variable pockelVoltage = pockelValue/(100/maxPockels)	// convert percent to volts -- 0.5V is max
+	variable pockelVoltage = (pockelValue/(100/maxPockels)+minPockels)	// convert percent to volts -- 0.5V is max
 	if(stringmatch(openOrCLose, "open"))
-		fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelVoltage, 0,5 )
+		fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelVoltage, 0,2 )
 	elseif(stringmatch(openOrCLose, "close"))
-		fDAQmx_WriteChan(pockelDevNum, pockelChannel, 0, -1, 1 )
+		fDAQmx_WriteChan(pockelDevNum, pockelChannel, minPockels, -1, 1 )
 	endif
 end
 
@@ -388,6 +389,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string pmtSource = "/"+pmtDev+"/pfi8"
 	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
 	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
+	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
 	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
 	
 	variable/g frameCounter = 0
@@ -407,15 +409,15 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(stringmatch(imageMode, "snapshot"))
-		DAQmx_CTR_CountEdges/DEV="dev2"/EDGE=1/SRC="/dev2/pfi8"/INIT=0/DIR=1/clk="/Dev2/Ctr2InternalOutput"/wave=dum/EOSH=S_kineticHook2 0
-		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
-		DAQmx_WaveformGen/DEV="dev1"/NPRD=(frames) "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_kineticHook2 0
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={scanOutTrigger} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
+		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
-		DAQmx_CTR_CountEdges/DEV="dev2"/EDGE=1/SRC="/dev2/pfi8"/INIT=0/DIR=1/clk="/Dev2/Ctr2InternalOutput"/wave=dum/eosh = s_kineticHook2 0//;frameCounter += 1;concatenate/np=1 {dum}, kineticDum;" 0//+s_kinetictest 0
-		DAQmx_WaveformGen/clk="/Dev1/Ctr3InternalOutput"/DEV="dev2"/NPRD=(frames) "runx, 0; runy, 1"
-		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2"/TRIG={"/Dev2/Ctr3InternalOutput"}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
-		DAQmx_CTR_OutputPulse/trig={"/dev1/PFi1", trigger}/DEV="dev2"/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_kineticHook2 0//;frameCounter += 1;concatenate/np=1 {dum}, kineticDum;" 0//+s_kinetictest 0
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frames) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/trig={startTrigChannel, trigger}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	endif
 	
 
@@ -446,6 +448,21 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	scaleKineticSeries()
 
 	
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
+
+	string galvoDev = boardConfig[0][0]
+	string pmtDev = boardConfig[3][0]
+	string startTrigDev = boardConfig[5][0]
+	string startTrigChannel = "/"+startTrigDev+"/"+"pfi"+boardConfig[5][2]
+	string xGalvoChannel = boardConfig[0][2]
+	string yGalvoChannel = boardConfig[1][2]
+	
+	string pmtSource = "/"+pmtDev+"/pfi8"
+	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
+	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
+	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
+	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
+	
 	if(frameCounter == frames)	//shut it down
 		BS_2P_writeScanParamsInWave(kineticSeries)
 		BS_2P_PMTShutter("close")
@@ -453,14 +470,14 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		setdatafolder currentFolder
 	elseif(frameCounter < frames)	//otherwise set up another one
 		BS_2P_Pockels("open")
-		DAQmx_CTR_CountEdges/DEV="dev2"/EDGE=1/SRC="/dev2/pfi8"/INIT=0/DIR=1/clk="/Dev2/Ctr2InternalOutput"/wave=dum 0
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum 0
 //		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
 //		DAQmx_WaveformGen/DEV="dev1"/NPRD=1/EOSH=S_videoHook "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
-		DAQmx_WaveformGen/clk="/Dev2/Ctr3InternalOutput"/DEV="dev1"/NPRD=(1)/EOSH=S_videoHook "runx, 0; runy, 1"
-		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2"/TRIG={"/Dev2/Ctr3InternalOutput"}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
-		DAQmx_CTR_OutputPulse/DEV="dev2"/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
-
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1)/EOSH=S_videoHook galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	endif
+
 end
 
 function kineticHook2(dum)
