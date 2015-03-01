@@ -12,16 +12,23 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit	// limit of voltage sent to the scanners	
 	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor //  (m in focal plane / Volt). Same for X and Y
 	NVAR mWperVolt = root:Packages:BS2P:CalibrationVariables:mWperVolt
+	// add max min pockels
 	switch(s.eventCode)
-	case 2:
-       	newpath/o configPath, "C:Users:fede:Documents"
-       	save/o/p=configPath boardConfig
-       	scanLimit = str2num(boardConfig[8][2])
-       	scaleFactor = str2num(boardConfig[9][2])
-       	mWperVolt = str2num(boardConfig[10][2])
-//		killpath configPath
-		break
-	endswitch
+		case 2:
+			newpath/o configPath, "C:Users:fede:Documents"
+			save/o/p=configPath boardConfig
+			scanLimit = str2num(boardConfig[8][2])
+			scaleFactor = str2num(boardConfig[9][2])
+	 		mWperVolt = str2num(boardConfig[10][2])
+//			add max/min pockels
+			break
+		case 1:
+			scanLimit = str2num(boardConfig[8][2])
+			scaleFactor = str2num(boardConfig[9][2])
+			mWperVolt = str2num(boardConfig[10][2])
+      			// add max/min pockles
+      		break
+      endswitch
 end
 
 //function/wave bs_2P_getConfigs(Device)
@@ -36,13 +43,13 @@ end
 //end
 
 function bs_2P_getConfig()
-	newpath/o configPath, "C:Users:fede:Documents"
+	newpath/o configPath, "C:Users:bs:Documents"
 	variable refnum
 	open/r/z/p=configPath refnum as "boardConfig.ibw"
 	if(v_flag == 0)
 		print "found a config", refnum, s_filename
 		close refNum
-		LoadWave/H/O "C:Users:fede:Documents:boardConfig.ibw"
+		LoadWave/H/O "C:Users:bs:Documents:boardConfig.ibw"
 		wave/t boardConfig
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig

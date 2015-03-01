@@ -1,8 +1,6 @@
 #pragma rtGlobals=1		// Use modern global access method.
 #include  <FITS Loader>					//
 #include <all ip procedures>
-//#include "BS_BatchAnalyze_B1"
-//#include "InsertSkippedImages"
 #include "BS_Utilities"
 
 
@@ -30,8 +28,8 @@ Menu "GraphMarquee"
 	
 	"-"
 		Submenu "ROIs"
-			"Freehand Signal", /q, CalcROI()
-			"Freehand Background", /q, CalcROI()
+			"Freehand Signal", /q, CalcROI("Freehand Signal")
+			"Freehand Background", /q, CalcROI("Freehand Background")
 //				SubMenu "old square rois"
 //					"SIGNAL", /q, CalcROI()
 //					"BACKGROUND", /q, CalcROI()
@@ -65,9 +63,9 @@ Menu "GraphMarquee"
 	
 End
 
-Function CalcROI()
-	GetLastUserMenuInfo
-	String ROItype = s_value
+Function CalcROI(ROItype)
+//	GetLastUserMenuInfo
+	String ROItype// = s_value
 	
 	//------------Housekeeping for names-----------	
 	getmarquee/K
@@ -169,7 +167,7 @@ function ClearROIsFromHere()
 	Imagename = Replacestring(";", Imagename,"") 
 	wave Image = ImageNameToWaveRef(S_MarqueeWin,ImageName)
 
-	removeall(S_marqueeWin, Image)
+	removeall(s_marqueeWin, Image)
 end
 function ImageDFF()
 	
