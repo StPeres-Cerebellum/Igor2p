@@ -100,6 +100,14 @@ function bs_2P_getConfig()
 		setdimlabel 0,10,mWPerVolt,boardCOnfig		
 		boardConfig[10][1] = "Constant"
 		boardConfig[10][2] = "1"
+
+		setdimlabel 0,11,minPockels,boardCOnfig		
+		boardConfig[11][1] = "Constant"
+		boardConfig[11][2] = "0"
+
+		setdimlabel 0,12,maxPockels,boardCOnfig		
+		boardConfig[12][1] = "Constant"
+		boardConfig[12][2] = "2"
 					
 		edit/k=1/n=Config boardConfig boardConfig.l
 		setwindow config hook(myhook)=configSaveHook

@@ -204,15 +204,18 @@ function BS_2P_Pockels(openOrClose)
 	string pockelDevNum = boardConfig[2][0]
 	variable pockelChannel = str2num(boardConfig[2][2])
 	
-	variable maxPockels = 0.5	//volts
-	variable minPockels = 0.19
+
+	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
+	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
 	
-	variable pockelVoltage = (pockelValue/(100/maxPockels)+minPockels)	// convert percent to volts -- 0.5V is max
+	
+	variable pockelVoltage = pockelValue/(100/(maxPockels-minPockels))+minPockels	// convert percent to volts -- 0.5V is max
 	if(stringmatch(openOrCLose, "open"))
 		fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelVoltage, 0,2 )
 	elseif(stringmatch(openOrCLose, "close"))
 		fDAQmx_WriteChan(pockelDevNum, pockelChannel, minPockels, -1, 1 )
 	endif
+	return pockelVoltage
 end
 
 //function BS_2P_PMTShutter(openOrClose)
