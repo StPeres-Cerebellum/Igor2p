@@ -28,7 +28,10 @@ Menu "2P"
 			"Close", /q, BS_2P_Pockels("close")
 			"-----"
 			"Set Max Power", /q, calibratePockels()
+<<<<<<< HEAD
 			"Calibrate With Power Meter", /q, calibratePower()
+=======
+>>>>>>> origin/master
 		end
 		subMenu "Galvos"
 			"Center", /q, bs_2P_zeroscanners("center")
@@ -552,8 +555,11 @@ function BS_2P_makeKineticWindow()
 	
 	PauseUpdate; Silent 1		// building window...
 	Display /W=(9,133.25,582.75,463.25)/K=1  as "Kinetic Window"
+<<<<<<< HEAD
 	DoWindow/C kineticWindow
 	setWindow kineticWindow hook(myHook)=kineticWIndowHook
+=======
+>>>>>>> origin/master
 	appendimage root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	DoWindow/C kineticWindow
 	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
@@ -660,6 +666,7 @@ function BS_2P_makeKineticWindow()
 
 end
 
+<<<<<<< HEAD
 function kineticWindowHook(s)    //This is a hook for the mousewheel movement in MatrixExplorer
 	STRUCT WMWinHookStruct &s
 	
@@ -695,6 +702,8 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 	endswitch
 end
 
+=======
+>>>>>>> origin/master
 Function BS_2P_constrainAxes(cba) : CheckBoxControl
 	STRUCT WMCheckboxAction &cba
 
@@ -1385,6 +1394,7 @@ function calibratePower()
 	mWPerVolt = w_coef[1]
 end
 
+<<<<<<< HEAD
 
 function moveGalvos(offsetx, offsety)
 	variable offsetx, offsety
@@ -1396,3 +1406,5 @@ function moveGalvos(offsetx, offsety)
 	fDAQmx_WriteChan(galvoDev, yGalvoChannel, offsety, -10, 10 )
 end
 
+=======
+>>>>>>> origin/master

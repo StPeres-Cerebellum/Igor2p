@@ -271,17 +271,23 @@ function ROICOLOR()
 end
 
 Function SETKCT()
-	variable tempkct
-	prompt tempKCT, "Time between frames (s)."  
-	DoPrompt "KCT", TempKCT
-	if (V_Flag)
-		return -1								// User canceled
-	endif
+	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	NVAR KCT = root:currentROIs:KCT
 	if(NVAR_exists(KCT) == 0 )
 		variable/g root:currentrois:KCT
 	endif
-	KCT = TempKCT
+	if(waveexists(kineticSeries))
+		string scanParameters = note(kineticSeries)
+		KCT = numberbykey("KCT", scanParameters)
+	else	
+		variable tempkct
+		prompt tempKCT, "Time between frames (s)."  
+		DoPrompt "KCT", TempKCT
+		if (V_Flag)
+			return -1								// User canceled
+		endif
+		KCT = TempKCT
+	endif
 //	update()
 end
 
