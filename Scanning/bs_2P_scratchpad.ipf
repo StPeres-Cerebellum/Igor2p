@@ -209,12 +209,13 @@ function BS_2P_Pockels(openOrClose)
 	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
 	
 	
-	variable pockelVoltage = pockelValue/(100/(maxPockels-minPockels))+minPockels	// convert percent to volts -- 0.5V is max
+	variable pockelVoltage	// convert percent to volts -- 0.5V is max
 	if(stringmatch(openOrCLose, "open"))
-		fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelVoltage, 0,2 )
+		pockelVoltage = pockelValue/(100/(maxPockels-minPockels))+minPockels
 	elseif(stringmatch(openOrCLose, "close"))
-		fDAQmx_WriteChan(pockelDevNum, pockelChannel, minPockels, -1, 1 )
+		pockelVoltage = minPockels
 	endif
+	fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelVoltage, 0,2 )
 	return pockelVoltage
 end
 

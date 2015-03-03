@@ -43,13 +43,13 @@ end
 //end
 
 function bs_2P_getConfig()
-	newpath/o configPath, "C:Users:bs:Documents"
+	newpath/o configPath, "C:Users:fede:Documents"
 	variable refnum
 	open/r/z/p=configPath refnum as "boardConfig.ibw"
 	if(v_flag == 0)
 		print "found a config", refnum, s_filename
 		close refNum
-		LoadWave/H/O "C:Users:bs:Documents:boardConfig.ibw"
+		LoadWave/H/O "C:Users:fede:Documents:boardConfig.ibw"
 		wave/t boardConfig
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
