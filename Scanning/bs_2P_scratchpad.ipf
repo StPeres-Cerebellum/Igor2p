@@ -76,15 +76,18 @@ end
 
 function bs_2P_reset2P()
 
-	// fix these devs
-	fDAQmx_CTR_Finished("dev1", 0)
-	fDAQmx_CTR_Finished("dev1", 1)
-	fDAQmx_CTR_Finished("dev1", 2)
-	fDAQmx_CTR_Finished("dev1", 3)
-	fDAQmx_CTR_Finished("dev1", 0)
-	fDAQmx_CTR_Finished("dev1", 1)
-	fDAQmx_WaveformStop("dev1")
-	fDAQmx_ScanStop("dev1")
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
+	string pmtDev = boardConfig[3][0]
+	string galvoDev = boardConfig[0][0]
+
+	fDAQmx_CTR_Finished(pmtDev, 0)
+	fDAQmx_CTR_Finished(pmtDev, 1)
+	fDAQmx_CTR_Finished(pmtDev, 2)
+	fDAQmx_CTR_Finished(pmtDev, 3)
+	fDAQmx_CTR_Finished(pmtDev, 0)
+	fDAQmx_CTR_Finished(pmtDev, 1)
+	fDAQmx_WaveformStop(galvoDev)
+	fDAQmx_ScanStop(galvoDev)
 end
 
 function DoneCounting(buffer)//, runx, runy, frames, trigger)

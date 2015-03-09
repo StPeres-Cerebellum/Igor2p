@@ -164,7 +164,8 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 //		BS_rasterByDwellTime(ScaledX,ScaledY,X_VoltageOffset,Y_VoltageOffset, scanOutFreq,dwellTime, lineSpacing,frames)
 		wave runx = root:Packages:BS2P:CurrentScanVariables:runx
 		wave runy = root:Packages:BS2P:CurrentScanVariables:runy
-		
+		limitVoltage(runX)
+		limitVoltage(runY)
 		BS_2P_saneScanCheck2()
 		
 		scanFrameTime = totalLines*lineTime
@@ -320,3 +321,32 @@ function makeRasters(lineTime, lines,frames)//, pixelShift)
 	runy /= ScaleFactor
 	
 end
+
+function limitVoltage(inputWave)
+	wave inputWave
+	
+	variable maxX = wavemax(inputWave), minX = wavemin(inputWave)
+	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit
+	
+	variable limited
+	if(maxX > scanLimit)
+		inputWave -= minX
+		variable newMax = waveMax(inputWave)
+		inputWave /= newMax
+		inputWave *= (scanLimit -minX)
+		inputWave += minX
+		maxX = wavemax(inputWave)
+		limited = 1
+	endif
+	
+	if(minX < -scanLimit)
+		inputWave -= minX
+		newMax = waveMax(inputWave)
+		inputWave /= newMax
+		inputWave *= (maxX + scanLimit)
+		inputWave -= scanLimit
+		limited = 1
+	endif	
+	
+	return limited
+end	
