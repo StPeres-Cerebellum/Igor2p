@@ -75,10 +75,12 @@ function testCounting()
 end
 
 function bs_2P_reset2P()
-	fDAQmx_CTR_Finished("dev2", 0)
-	fDAQmx_CTR_Finished("dev2", 1)
-	fDAQmx_CTR_Finished("dev2", 2)
-	fDAQmx_CTR_Finished("dev2", 3)
+
+	// fix these devs
+	fDAQmx_CTR_Finished("dev1", 0)
+	fDAQmx_CTR_Finished("dev1", 1)
+	fDAQmx_CTR_Finished("dev1", 2)
+	fDAQmx_CTR_Finished("dev1", 3)
 	fDAQmx_CTR_Finished("dev1", 0)
 	fDAQmx_CTR_Finished("dev1", 1)
 	fDAQmx_WaveformStop("dev1")

@@ -28,10 +28,8 @@ Menu "2P"
 			"Close", /q, BS_2P_Pockels("close")
 			"-----"
 			"Set Max Power", /q, calibratePockels()
-<<<<<<< HEAD
 			"Calibrate With Power Meter", /q, calibratePower()
-=======
->>>>>>> origin/master
+
 		end
 		subMenu "Galvos"
 			"Center", /q, bs_2P_zeroscanners("center")
@@ -555,11 +553,11 @@ function BS_2P_makeKineticWindow()
 	
 	PauseUpdate; Silent 1		// building window...
 	Display /W=(9,133.25,582.75,463.25)/K=1  as "Kinetic Window"
-<<<<<<< HEAD
+//<<<<<<< HEAD
 	DoWindow/C kineticWindow
 	setWindow kineticWindow hook(myHook)=kineticWIndowHook
-=======
->>>>>>> origin/master
+//=======
+//>>>>>>> origin/master
 	appendimage root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	DoWindow/C kineticWindow
 	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
