@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 #include "Luigs"
 #include "PI"
@@ -70,7 +69,7 @@ Window Control2P() : Panel
 	ModifyPanel cbRGB=(65534,65534,65534)
 	SetDrawLayer UserBack
 	SetDrawEnv linefgc= (48896,49152,65280),fillfgc= (60928,60928,60928),fillbgc= (48896,49152,65280)
-	DrawRect 7,2,761,72
+	DrawRect 5,1,759,71
 	DrawText 414,21,"Pockels"
 	SetDrawEnv fsize= 14,fstyle= 1,textrgb= (0,0,65280)
 	DrawText 12,23,"Current field of view: "
@@ -105,6 +104,7 @@ Window Control2P() : Panel
 	SetVariable DisplayPockelsPercent,fSize=22,format="%.0f%",frame=0,fStyle=1
 	SetVariable DisplayPockelsPercent,valueBackColor=(60928,60928,60928)
 	SetVariable DisplayPockelsPercent,value= root:Packages:BS2P:CurrentScanVariables:pockelValue
+	SetVariable DisplayPockelsPercent limits={0,200,1}
 	ValDisplay FrameTime,pos={579,12},size={108,14},title="1 Frame:",fSize=10
 	ValDisplay FrameTime,format="%.1W1Ps",frame=0,fColor=(65280,0,0)
 	ValDisplay FrameTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
@@ -131,6 +131,11 @@ Window Control2P() : Panel
 	SetVariable lineDisplay,valueColor=(0,0,52224)
 	SetVariable lineDisplay,valueBackColor=(60928,60928,60928)
 	SetVariable lineDisplay,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:totalLines
+	ValDisplay powerGuess,pos={378,52},size={128,14},title="estimated mW:"
+	ValDisplay powerGuess,format="%.1W1PmW",frame=0,valueColor=(65280,0,0)
+	ValDisplay powerGuess,valueBackColor=(60928,60928,60928)
+	ValDisplay powerGuess,limits={0,0,10},barmisc={0,1000}
+	ValDisplay powerGuess,value= #"poly(root:packages:bs2P:calibrationVariables:pockelsPolynomial, root:Packages:BS2P:CurrentScanVariables:pockelValue/ (100/( root:Packages:BS2P:calibrationVariables:maxPockels-root:Packages:BS2P:calibrationVariables:minPockels))+root:Packages:BS2P:calibrationVariables:minPockels)"
 EndMacro
 
 
@@ -143,6 +148,7 @@ Function Init2PVariables()
 		newdatafolder root:Packages:BS2P:CurrentScanVariables
 		newdatafolder root:Packages:BS2P:ImageDisplayVariables
 		
+		make/n=3/o pockelsPolynomial = {101.289,-662.435,1209.22}
 		bs_2P_getConfig()
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 		
@@ -1302,7 +1308,7 @@ function calibratePockels()
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
 	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
 	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
-	bs_2P_zeroscanners("center")
+	bs_2P_zeroScanners("center")
 	minPockels = 0
 	maxPockels = 2
 	make/n=101/o w_diodeReadings
@@ -1334,6 +1340,9 @@ function calibratePockels()
 	findLevel/edge=1/q  w_diodeReadings, targetPower
 	maxPockels = v_levelx
 	boardConfig[12][2] = num2str(maxPockels)
+	CurveFit/X=1/NTHR=0/q poly 3,  w_diodeReadings(minPockels, maxPockels) /D
+	wave w_coef
+	duplicate/o w_coef root:Packages:BS2P:CalibrationVariables:pockelsPolynomial
 	
 	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2,fillpat= 0
 	DrawRect minPockels, (wavemin(w_diodeReadings)),maxPockels,targetPower
