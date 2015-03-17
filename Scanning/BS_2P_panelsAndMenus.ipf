@@ -148,7 +148,7 @@ Function Init2PVariables()
 		newdatafolder root:Packages:BS2P:CurrentScanVariables
 		newdatafolder root:Packages:BS2P:ImageDisplayVariables
 		
-		make/n=3/o pockelsPolynomial = {101.289,-662.435,1209.22}
+		make/n=3/o root:Packages:BS2P:CurrentScanVariables:pockelsPolynomial = {101.289,-662.435,1209.22}
 		bs_2P_getConfig()
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 		
