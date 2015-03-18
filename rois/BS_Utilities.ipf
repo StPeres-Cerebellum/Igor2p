@@ -883,3 +883,20 @@ function loadStack()
 	makeProjections(m_stack)
 
 end
+
+
+Window findKeyboardCodes() : Panel
+	NewPanel /W=(519,137,819,337)
+	SetWindow Panel0, hook(key)=keyboardHook, hookevents=0
+EndMacro
+ 
+Function keyboardHook(s)
+	STRUCT WMWinHookStruct &s
+	Variable hookResult = 0
+	switch(s.eventCode)
+		case 11:				// Keyboard
+			print s.keycode
+			break
+	endswitch
+	return hookResult		// 0 if nothing done, else 1
+End

@@ -151,6 +151,7 @@ Function Init2PVariables()
 		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {101.289,-662.435,1209.22}
 		bs_2P_getConfig()
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+		PI_Initialize()
 		
 ////////////////	Stored Calibration Variables	////////////////////	
 		variable/g root:Packages:BS2P:CalibrationVariables:scanLimit = str2num(boardConfig[8][2])	// limit of voltage sent to the scanners	
@@ -216,334 +217,6 @@ Function Init2PVariables()
 //	LN_initialize("COM5")
 End
 
-
-
-
-//Function SetScanSpeed(pa) : PopupMenuControl		//rename this to add BS_2P_ prefix
-	STRUCT WMPopupAction &pa
-
-	switch( pa.eventCode )
-		case 2: // mouse up
-			Variable popNum = pa.popNum
-			NVAR dwellTime =root:Packages:BS2P:CurrentScanVariables:dwellTime
-			NVAR displaySpeed = root:Packages:BS2P:CurrentScanVariables:displaySpeed
-			
-			String popStr = pa.popStr
-			displaySpeed = popStr
-			strswitch(popStr)
-				case "Very Slow":	
-					dwellTime = 0.015
-					break
-				case "Slow":	
-					dwellTime = 0.01
-					break
-				case "Medium":	
-					dwellTime = 0.005		// ms (These need to be tuned)
-					break
-				case "Fast":	
-					dwellTime = 0.0025
-					break
-				case "Very Fast":	
-					dwellTime = 0.001
-					break
-			endswitch
-			break
-		case -1: // control being killed
-			break
-
-	endswitch
-	BS_2P_UpdateVariablesCreateScan()
-	return 0
-//End
-
-Function ButtonProc(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function ButtonProc_1(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-
-Function ButtonProc_KineticSeries(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-
-
-Function CheckProcTriggerKCT(cba) : CheckBoxControl
-	STRUCT WMCheckboxAction &cba
-
-	switch( cba.eventCode )
-		case 2: // mouse up
-			Variable checked = cba.checked
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function CheckProcSaveAll(cba) : CheckBoxControl
-	STRUCT WMCheckboxAction &cba
-
-	switch( cba.eventCode )
-		case 2: // mouse up
-			Variable checked = cba.checked
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function SetVarProcSetSavePrefix(sva) : SetVariableControl
-	STRUCT WMSetVariableAction &sva
-
-	switch( sva.eventCode )
-		case 1: // mouse up
-		case 2: // Enter key
-		case 3: // Live update
-			Variable dval = sva.dval
-			String sval = sva.sval
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function PopMenuProcPathSelection(pa) : PopupMenuControl
-	STRUCT WMPopupAction &pa
-
-	switch( pa.eventCode )
-		case 2: // mouse up
-			Variable popNum = pa.popNum
-			String popStr = pa.popStr
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function CheckProcPowerPercent(cba) : CheckBoxControl
-	STRUCT WMCheckboxAction &cba
-
-	NVAR powerPercent = root:Packages:BS2P:CurrentScanVariables:powerPercent
-	NVAR powermW = root:Packages:BS2P:CurrentScanVariables:powermW
-	NVAR laserDisplay = root:Packages:BS2P:CurrentScanVariables:laserDisplay
-	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
-	NVAR Correction4percent =  root:Packages:BS2P:CalibrationVariables:Correction4percent
-	switch( cba.eventCode )
-		case 2: // mouse up
-			powerPercent= cba.checked
-			powermW = (powerPercent-1)^2
-			laserDisplay = (pockelValue) 	//this equation needs calibration
-			// make sure to uncheck mW
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function CheckProcpowermW(cba) : CheckBoxControl
-	STRUCT WMCheckboxAction &cba
-	
-	NVAR powerPercent = root:Packages:BS2P:CurrentScanVariables:powerPercent
-	NVAR powermW = root:Packages:BS2P:CurrentScanVariables:powermW
-	NVAR laserDisplay = root:Packages:BS2P:CurrentScanVariables:laserDisplay
-	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
-	NVAR Correction4mW =  root:Packages:BS2P:CalibrationVariables:Correction4mW
-	switch( cba.eventCode )
-		case 2: // mouse up
-			powermW= cba.checked
-			powerPercent = (powerPercent-1)^2
-			laserDisplay = (pockelValue * Correction4mW) 	//this equation needs calibration
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function PowerSliderProc(sa) : SliderControl
-	STRUCT WMSliderAction &sa
-	
-	NVAR powerPercent = root:Packages:BS2P:CurrentScanVariables:powerPercent
-	NVAR powermW = root:Packages:BS2P:CurrentScanVariables:powermW
-	NVAR laserDisplay = root:Packages:BS2P:CurrentScanVariables:laserDisplay
-	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
-	NVAR Correction4mW =  root:Packages:BS2P:CalibrationVariables:Correction4mW
-	NVAR Correction4percent =  root:Packages:BS2P:CalibrationVariables:Correction4percent
-	switch( sa.eventCode )
-		case -1: // control being killed
-			break
-		default:
-			if( sa.eventCode & 1 ) // value set
-				pockelValue = sa.curval
-				if(powermW == 1)
-					laserDisplay = (pockelValue * Correction4mW) 	//this equation needs calibration
-				elseif(powerPercent == 1)
-					laserDisplay = (pockelValue) 	//this equation needs calibration
-				endif
-			endif
-			break
-	endswitch
-
-	return 0
-End
-
-
-Function SetFramesProc(sva) : SetVariableControl
-	STRUCT WMSetVariableAction &sva
-
-	switch( sva.eventCode )
-		case 1: // mouse up
-		case 2: // Enter key
-		BS_2P_UpdateVariablesCreateScan()
-		case 3: // Live update
-			Variable dval = sva.dval
-			String sval = sva.sval
-			break
-		case -1: // control being killed
-			break
-	endswitch
-	
-	return 0
-End
-
-
-Function SetKCTProc(sva) : SetVariableControl
-	STRUCT WMSetVariableAction &sva
-	NVAR KCT = root:Packages:BS2P:CurrentScanVariables:KCT
-	switch( sva.eventCode )
-		case 1: // mouse up
-		case 2: // Enter key
-			BS_2P_UpdateVariablesCreateScan()
-		case 3: // Live update
-			Variable dval = sva.dval
-			String sval = sva.sval
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function BS_2P_SetScanVarProc(sva) : SetVariableControl
-	STRUCT WMSetVariableAction &sva
-
-	switch( sva.eventCode )
-		case 1: // mouse up
-		case 2: // Enter key
-		case 3: // Live update
-			Variable dval = sva.dval
-			String sval = sva.sval
-			BS_2P_UpdateVariablesCreateScan()
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-
-Function BS_2P_powerSliderProc(sa) : SliderControl
-	STRUCT WMSliderAction &sa
-
-	switch( sa.eventCode )
-		case -1: // control being killed
-			break
-		default:
-			if( sa.eventCode & 1 ) // value set
-				Variable curval = sa.curval
-				BS_2P_UpdateVariablesCreateScan()
-			endif
-			break
-	endswitch
-
-	return 0
-End
-
-
-
-Function BS_2P_set_pixelShiftProc(sva) : SetVariableControl
-	STRUCT WMSetVariableAction &sva
-
-	switch( sva.eventCode )
-		case 1: // mouse up
-		case 2: // Enter key
-		case 3: // Live update
-			Variable dval = sva.dval
-			String sval = sva.sval
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function BS_2P_setPixelSizeProc(sva) : SetVariableControl
-	STRUCT WMSetVariableAction &sva
-
-	switch( sva.eventCode )
-		case 1: // mouse up
-		case 2: // Enter key
-		case 3: // Live update
-			Variable dval = sva.dval
-			String sval = sva.sval
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-
-
-
 function BS_2P_makeKineticWindow()
 	NVAR frames =  root:Packages:BS2P:CurrentScanVariables:frames
 	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit 		//volts
@@ -558,25 +231,22 @@ function BS_2P_makeKineticWindow()
 	
 	PauseUpdate; Silent 1		// building window...
 	Display /W=(9,133.25,582.75,463.25)/K=1  as "Kinetic Window"
-//<<<<<<< HEAD
 	DoWindow/C kineticWindow
 	setWindow kineticWindow hook(myHook)=kineticWIndowHook
-//=======
-//>>>>>>> origin/master
+
 	appendimage root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	DoWindow/C kineticWindow
 	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
-//	DrawLine/W=kineticWindow  (scanLimit * scaleFactor), ((scanLimit * scaleFactor)-10),  (scanLimit * scaleFactor),  ((scanLimit * scaleFactor) +10)
+
 	DrawLine/W=kineticWindow  (-10e-6), (0),  (10e-6),  (0)
 
 	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
-//	DrawLine/W=kineticWindow   ((scanLimit * scaleFactor)-10),  (scanLimit * scaleFactor),  ((scanLimit * scaleFactor) +10), (scanLimit * scaleFactor)
+
 	DrawLine/W=kineticWindow  (0), (-10e-6),  (0),  (10e-6)
 	ModifyGraph width=0,height={Plan,1,left,bottom}
 	ModifyGraph mirror=2
 	ModifyGraph minor=1
-//	Label left "µm"
-//	Label bottom "µm"
+
 	ControlBar 80
 	SetVariable BS_2P_pixelShifter,pos={5,47},size={103,16},proc=BS_2P_set_pixelShiftProc,title="Pixel Shift"
 	SetVariable BS_2P_pixelShifter,frame=0,valueBackColor=(60928,60928,60928)
@@ -669,10 +339,11 @@ function BS_2P_makeKineticWindow()
 
 end
 
-<<<<<<< HEAD
+
 function kineticWindowHook(s)    //This is a hook for the mousewheel movement in MatrixExplorer
 	STRUCT WMWinHookStruct &s
 	
+	NVAR moveStep =  root:Packages:BS2P:CurrentScanVariables:moveStep
 	wave kineicSeries =  root:Packages:BS2P:CurrentScanVariables:kinteicSeries
 	switch(s.eventCode)
 		case 11:
@@ -681,7 +352,7 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 					calcroi("SIGNAL")
 				break
 				
-				case 8: //delete
+				case 8: //backspace
 					ClearROIsFromHere()
 				break
 				
@@ -694,19 +365,32 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				break
 				
 				 case 29:	// right arrow
-//				 	ModifyImage kineticSeries ctab= {,,$S_Value}
+				 	PI_moveMicrons("y", -moveStep)
 				 break
 				 
 				 case 28:	// left arrow
+					PI_moveMicrons("y", moveStep)
 				 break
+				 	
+				 case 30:	// up arrow
+				 	PI_moveMicrons("x", -moveStep)
+				 break
+				 
+				 case 31:	// down arrow
+				 	PI_moveMicrons("x", moveStep)
+				 break
+				 
+				 case 115:	// s
+				 	arbitraryScan()
+				 break
+				 
 				 				
 			endswitch
 		break
 	endswitch
 end
 
-=======
->>>>>>> origin/master
+
 Function BS_2P_constrainAxes(cba) : CheckBoxControl
 	STRUCT WMCheckboxAction &cba
 
@@ -838,22 +522,6 @@ Function BS_2P_SetFramesProc(sva) : SetVariableControl
 	return 0
 End
 
-Function BS_2P_SetFocusStepProc(sva) : SetVariableControl
-	STRUCT WMSetVariableAction &sva
-	switch( sva.eventCode )
-		case 1: // mouse up
-		case 2: // Enter key
-		case 3: // Live update
-			Variable dval = sva.dval
-			String sval = sva.sval
-			
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
 
 Function BS_2P_ChangeSavePrefix(sva) : SetVariableControl
 	STRUCT WMSetVariableAction &sva
@@ -963,22 +631,6 @@ Function saveStackProc_2(ba) : ButtonControl
 	return 0
 End
 
-Function BS_2P_galvoSliderProc(sa) : SliderControl
-	STRUCT WMSliderAction &sa
-
-	switch( sa.eventCode )
-		case -1: // control being killed
-			break
-		default:
-			if( sa.eventCode & 1 ) // value set
-				Variable curval = sa.curval
-				BS_2P_UpdateVariablesCreateScan()
-			endif
-			break
-	endswitch
-
-	return 0
-End
 
 Function SetfocusStepProc(sva) : SetVariableControl
 	STRUCT WMSetVariableAction &sva
@@ -1027,44 +679,6 @@ Function SetobjectiveMagProc(sva) : SetVariableControl
 	return 0
 End
 
-Function BS2P_setFreqPopMenuProc(pa) : PopupMenuControl
-	STRUCT WMPopupAction &pa
-	NVAR lineTime =  root:Packages:BS2P:CurrentScanVariables:lineTime
-	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
-	switch( pa.eventCode )
-		case 2: // mouse up
-			Variable popNum = pa.popNum
-			String popStr = pa.popStr
-
-			
-			variable digFreq = (1/((str2num(popstr))*1000*2))/(pixelsPerLine)
-//
-//			tune line time so acquisition is multiple of 5e-8
-			digFreq = 5e-8 * (round(digFreq/5e-8))
-
-			lineTime = (pixelsPerLine)*digFreq 	//seconds
-			BS_2P_UpdateVariablesCreateScan()
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
-
-Function zoomButtonProc_2(ba) : ButtonControl
-	STRUCT WMButtonAction &ba
-
-	switch( ba.eventCode )
-		case 2: // mouse up
-			// click code here
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
 
 Function BS_2P_abortButtonProc_2(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
@@ -1136,22 +750,6 @@ Function ZoomInProc_2(ba) : ButtonControl
 End
 
 
-Function SetMoveProc(sva) : SetVariableControl
-	STRUCT WMSetVariableAction &sva
-
-	switch( sva.eventCode )
-		case 1: // mouse up
-		case 2: // Enter key
-		case 3: // Live update
-			Variable dval = sva.dval
-			String sval = sva.sval
-			break
-		case -1: // control being killed
-			break
-	endswitch
-
-	return 0
-End
 
 Function MoveLProc(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
