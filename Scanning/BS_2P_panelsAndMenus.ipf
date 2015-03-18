@@ -148,7 +148,7 @@ Function Init2PVariables()
 		newdatafolder root:Packages:BS2P:CurrentScanVariables
 		newdatafolder root:Packages:BS2P:ImageDisplayVariables
 		
-		make/n=3/o root:Packages:BS2P:CurrentScanVariables:pockelsPolynomial = {101.289,-662.435,1209.22}
+		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {101.289,-662.435,1209.22}
 		bs_2P_getConfig()
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 		
@@ -200,7 +200,6 @@ Function Init2PVariables()
 		variable/g  root:Packages:BS2P:CurrentScanVariables:focusStep = 10e-6		// µm
 		variable/g root:Packages:BS2P:CurrentScanVariables:fullField = 250e-6	//m to scan for a full field
 		variable/g root:Packages:BS2P:CurrentScanVariables:objectiveMag = 60
-		variable/g root:Packages:BS2P:CurrentScanVariables:zoomFactor = 2	//Zoom in (+) out (-)
 		variable/g root:Packages:BS2P:CurrentScanVariables:samplesPerPixel = 1
 		variable/g root:Packages:BS2P:CurrentScanVariables:moveStep = 20 //microns
 		variable/g root:Packages:BS2P:CurrentScanVariables:laserPower
@@ -1401,7 +1400,6 @@ function calibratePower()
 	mWPerVolt = w_coef[1]
 end
 
-<<<<<<< HEAD
 
 function moveGalvos(offsetx, offsety)
 	variable offsetx, offsety
@@ -1413,5 +1411,26 @@ function moveGalvos(offsetx, offsety)
 	fDAQmx_WriteChan(galvoDev, yGalvoChannel, offsety, -10, 10 )
 end
 
-=======
->>>>>>> origin/master
+function showLaserPower()
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	string diodeDevNum = boardConfig[6][0]
+	variable diodeChannel = str2num(boardConfig[6][2])
+	variable mWPerVolt = str2num(boardConfig[10][2])
+	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
+	make/n=1000/o  root:Packages:BS2P:CalibrationVariables:sampleDiode
+	wave sampleDiode = root:Packages:BS2P:CalibrationVariables:sampleDiode
+	setscale/p x, 0, 0.0001, sampleDiode	
+	
+	string diodeHook = "calcLaserHook(mWPerVolt)"
+	
+	DAQmx_Scan/rpt=1/bkg/DEV=diodeDevNum/rpth=diodeHook waves=diodeWaves
+	
+end
+
+function calcLaserHook(mWPerVolt)
+	variable mWPerVolt
+	wave sampleDiode = root:Packages:BS2P:CalibrationVariables:sampleDiode
+	
+	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
+	laserPower = mean(sampleDiode) * mWPerVolt
+end
