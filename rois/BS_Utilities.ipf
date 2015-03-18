@@ -865,3 +865,21 @@ Function MoveThroughPrefixes(s)	//This is a hook for the mousewheel movement in 
 
 		return hookResult	// If non-zero, we handled event and Igor will ignore it.
 end
+function loadStack()
+	
+	variable i
+	for(i=0; i < 122; i +=1)
+		string target = "F:Desktop:stack:purk"+num2str(i)+".ibw"
+		LoadWave/Q/H/O target
+		string newName = "purk_"+num2str(i)
+		wave kineticSeries
+		redimension/n=(-1,-1) kineticSeries
+		duplicate/o kineticSeries $newName
+	endfor
+	wave purk_0	// comes from newName
+	imageTransform stackImages purk_0
+
+	wave m_stack
+	makeProjections(m_stack)
+
+end

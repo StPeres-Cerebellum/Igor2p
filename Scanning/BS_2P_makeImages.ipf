@@ -253,13 +253,13 @@ function makeProjections(imageStack)
 	wave m_xprojection
 	wave m_yprojection
 	
-	imagetransform flipcols m_xprojection 
+//	imagetransform flipcols m_xprojection 
 	matrixop/o/free xProj = m_xprojection ^ t
 	duplicate/o xProj m_xprojection
-	imagetransform flipcols m_yprojection
+//	imagetransform flipcols m_yprojection
 	
-	SetScale/P x 0,(-1 * zScale),"m", m_xprojection;SetScale/P y 0,(xScale),"m", m_xprojection
-	SetScale/P x 0,(yscale),"m", m_yprojection;SetScale/P y 0,(-1 * zScale),"m", m_yProjection
+	SetScale/P x 0,(-zScale),"m", m_xprojection;SetScale/P y 0,(xScale),"m", m_xprojection
+	SetScale/P x 0,(yscale),"m", m_yprojection;SetScale/P y 0,(-zScale),"m", m_yProjection
 	SetScale/P x 0,(xScale),"m", m_zprojection;SetScale/P y 0,(yScale),"m", m_zProjection
 	
 	
@@ -275,4 +275,25 @@ function makeProjections(imageStack)
 	DrawLine 0,((dimdelta(m_xProjection,0) * dimsize(m_xProjection,0))),0,(dimdelta(m_yProjection,0) * dimsize(m_yProjection,0))
 
 	
+end
+
+function importStack(zStep, images)
+	variable images, zStep //meters
+	variable i
+	string target, newName
+	for(i=0; i < images; i += 1)
+		target = "F:Desktop:stack:bs150318:granule1:stack_"+num2str(i)+".ibw"
+		newName = "stack_"+num2str(i)
+		LoadWave/H/O/q target
+		wave kineticSeries
+		redimension/n=(-1,-1) kineticSeries
+		duplicate/o kineticSeries $newName
+	endfor
+	wave stack_0
+	variable pixelSize = dimdelta(stack_0,0)
+	
+	imageTransform/k stackImages stack_0
+	wave m_stack
+	setScale/p x, 0, pixelSize, m_stack; setScale/p y, 0, pixelSize, m_stack; setScale/p z, 0, (zStep), m_stack
+	makeProjections(m_stack)
 end
