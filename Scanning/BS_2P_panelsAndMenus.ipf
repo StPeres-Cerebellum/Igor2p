@@ -1037,3 +1037,35 @@ function calcLaserHook(mWPerVolt)
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
 	laserPower = mean(sampleDiode) * mWPerVolt
 end
+
+Function BS_2P_saveAll_Proc(cba) : CheckBoxControl
+	STRUCT WMCheckboxAction &cba
+	
+	SVAR pathDetailsListing =  root:Packages:BS2P:CurrentScanVariables:pathDetailsListing
+	SVAR pathsListing =  root:Packages:BS2P:CurrentScanVariables:pathsListing
+	SVAR currentPath =  root:Packages:BS2P:CurrentScanVariables:currentPath
+	SVAR currentPathDetails = root:Packages:BS2P:CurrentScanVariables:currentPathDetails
+	SVAR fileName2bWritten = root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
+	SVAR SaveAsPrefix = root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
+	NVAR prefixIncrement = root:Packages:BS2P:CurrentScanVariables:prefixIncrement
+	
+	switch( cba.eventCode )
+		case 2: // mouse up
+			Variable checked = cba.checked
+			if(checked)
+				string newPathName = "BS_2P_SavePath_"+num2str(itemsinlist(pathDetailsListing))
+				newpath/Q $newPathName
+				pathsListing += ";"+newPathName
+				pathInfo $newPathName
+				pathDetailsListing += ";"+s_path
+				currentPathDetails = s_path
+				currentPath = newPathName
+				fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
+			endif
+			break
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
