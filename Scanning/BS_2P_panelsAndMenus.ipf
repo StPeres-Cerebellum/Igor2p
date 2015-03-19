@@ -171,7 +171,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:lineTime = 0.5e-3	//ms / line
 		variable/g root:Packages:BS2P:CurrentScanVariables:scanOutFreq = 100e3	//kHz resolution to send to galcos
 		variable/g root:Packages:BS2P:CurrentScanVariables:KCT = 100e-3	//Time between frames of a kinetic series
-		variable/g root:Packages:BS2P:CurrentScanVariables:frames = 10	//Number of frames in a kinetic series
+		variable/g root:Packages:BS2P:CurrentScanVariables:frames = 1	//Number of frames in a kinetic series
 		variable/g root:Packages:BS2P:CurrentScanVariables:externalTrigger =  0	//Trigger externally?
 		variable/g root:Packages:BS2P:CurrentScanVariables:pockelTest = 0	//Keep pockel's cell open for testing
 		variable/g root:Packages:BS2P:CurrentScanVariables:AcquisitionFrequency = 2e6	//Digitization of PMT in kHz
@@ -313,8 +313,12 @@ function BS_2P_makeKineticWindow()
 	SetVariable BS_2P_SavePrefix,value= root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
 	SetVariable Increment,pos={710,7},size={46,16},bodyWidth=24,proc=SetPrefixIncrementProc,title="Inc:"
 	SetVariable Increment,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:prefixIncrement
-	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=CheckProcSaveAll,title="Save All"
-	CheckBox BS_2P_SaveEverything,value= 0,side= 1
+//	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=CheckProcSaveAll,title="Save All"
+//	CheckBox BS_2P_SaveEverything,value= 0,side= 1
+	
+	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},title="Save All"
+	CheckBox BS_2P_SaveEverything,variable= root:Packages:BS2P:CurrentScanVariables:saveEmAll
+
 	
 	SetVariable setZoom,pos={568,38},size={82,16},proc=BS_2P_SetFramesProc,title="Zoom (µm)"
 	SetVariable setZoom,frame=0,valueBackColor=(65535,65535,65535)
@@ -326,7 +330,7 @@ function BS_2P_makeKineticWindow()
 	Button zoomout,fSize=8
 	Button zoomIn,pos={612,53},size={34,20},proc=ZoomInProc_2,title="in",fSize=8
 
-	SetVariable setMoveStep,pos={497,44},size={22,16},proc=SetMoveProc,title=" "
+	SetVariable setMoveStep,pos={497,44},size={22,16},noProc,title=" "
 	SetVariable setMoveStep,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setMoveStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:moveStep
 
