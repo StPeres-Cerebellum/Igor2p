@@ -943,7 +943,7 @@ function calibratePockels()
 	
 	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2,fillpat= 0
 	DrawRect minPockels, (wavemin(w_diodeReadings)),maxPockels,targetPower
-	
+	bs_2P_getConfig()
 	print "Min Power = ", wavemin(w_diodeReadings), "mW"
 	print "Max power set to", targetPower, "mW"
 //	wave w_coef
@@ -996,6 +996,7 @@ function calibratePower()
 	boardConfig[10][2] = num2str(w_coef[1])
 	NVAR mWPerVolt = root:Packages:BS2P:CurrentScanVariables:mWPerVolt
 	mWPerVolt = w_coef[1]
+	bs_2P_getConfig()
 end
 
 

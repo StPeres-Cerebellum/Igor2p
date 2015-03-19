@@ -500,6 +500,7 @@ function kineticHook2(dum)
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
 	NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
+	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
 	variable pixelsPerFrame = pixelsPerLine * Totallines
 	
 	redimension/n=(pixelsPerline, totalLines, frames) dum
@@ -515,6 +516,11 @@ function kineticHook2(dum)
 	if(datafolderexists ("root:currentrois") == 1)
 		NewUpdate(kineticSeries)
 	endif
+	
+	if(saveEmAll)
+		BS_2P_saveDum()
+	endif
+	
 	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
 	setdatafolder currentFolder
 end
