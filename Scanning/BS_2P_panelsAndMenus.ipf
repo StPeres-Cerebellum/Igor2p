@@ -7,7 +7,9 @@
 #include "BS_2P_scanProcs"
 #include "bs_2p_scratchpad"
 #include "bs_freehandrois_2p"
+#include "BS_ROI_Analysis_2p"
 #include "bs_2P_config"
+#include "BS_Utilities"
 #include <all ip procedures>
 
 Menu "2P"
@@ -117,14 +119,14 @@ Window Control2P() : Panel
 	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:lineTime"
 	SetVariable objective,pos={621,55},size={136,16},bodyWidth=21,proc=SetobjectiveMagProc,title="Objective Magnification"
 	SetVariable objective,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:objectiveMag
-	PopupMenu galvoFreq,pos={9,49},size={133,21},proc=BS2P_setFreqPopMenuProc,title="Line Speed (KHz):"
+	PopupMenu galvoFreq,pos={9,49},size={133,21},noProc,title="Line Speed (KHz):"
 	PopupMenu galvoFreq,mode=3,popvalue="1.0",value= #"\"0.25;0.5;1.0;1.5;2.0;2.5;3.0\""
 	SetVariable lineSpacing,pos={85,22},size={65,16},proc=BS_2P_SetScanVarProc,title=" "
 	SetVariable lineSpacing,labelBack=(60928,60928,60928),fSize=10,format="%.1W1Pm"
 	SetVariable lineSpacing,frame=0,fStyle=1,valueColor=(0,0,52224)
 	SetVariable lineSpacing,valueBackColor=(60928,60928,60928)
 	SetVariable lineSpacing,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:lineSpacing
-	PopupMenu pixelsPerLine,pos={150,49},size={102,21},proc=PixPerLinePopMenuProc,title="Pixels/Line"
+	PopupMenu pixelsPerLine,pos={150,49},size={102,21},noProc,title="Pixels/Line"
 	PopupMenu pixelsPerLine,mode=1,popvalue="128",value= #"\"8;16;32;64;128;256;512;1024\""
 	SetVariable lineDisplay,pos={182,22},size={31,16},proc=BS_2P_SetScanVarProc,title=" "
 	SetVariable lineDisplay,labelBack=(60928,60928,60928),fSize=10,frame=0,fStyle=1
@@ -248,7 +250,7 @@ function BS_2P_makeKineticWindow()
 	ModifyGraph minor=1
 
 	ControlBar 80
-	SetVariable BS_2P_pixelShifter,pos={5,47},size={103,16},proc=BS_2P_set_pixelShiftProc,title="Pixel Shift"
+	SetVariable BS_2P_pixelShifter,pos={5,47},size={103,16},noproc,title="Pixel Shift"
 	SetVariable BS_2P_pixelShifter,frame=0,valueBackColor=(60928,60928,60928)
 	SetVariable BS_2P_pixelShifter,limits={0,0.0002,5e-07},value= root:Packages:BS2P:CalibrationVariables:pixelShift
 	SetVariable SetPixelSize,pos={4,31},size={90,16},proc=BS_2P_setPixelSizeProc,title="Binning (µm):"
@@ -881,10 +883,12 @@ function sampleDiodeVoltage()
 	
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
 	
+	fDAQmx_ScanStop(diodeDevNum)
 	DAQmx_Scan/DEV=diodeDevNum waves=diodeWaves
 	laserPower = mean(sampleDiode)
-	
 	laserPower *= mWPerVolt
+	
+	showLaserPower()
 	return laserPower / mWPerVolt	//comes out in volts
 end
 
@@ -995,6 +999,7 @@ function calibratePower()
 	BS_2P_Pockels("close")
 	bs_2P_zeroscanners("offset")
 	
+	display/k=1 mW vs PowerReadings
 	CurveFit/X=1/NTHR=0 line  mW /X=powerReadings /D
 	wave w_coef
 	boardConfig[10][2] = num2str(w_coef[1])

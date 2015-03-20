@@ -1,28 +1,22 @@
 #pragma rtGlobals=1		// Use modern global access method.
-#include  <FITS Loader>					//
-#include <all ip procedures>
-#include "BS_Utilities"
+				//
+
+
 
 
 Menu "ROIs"
-//	"Update/6",  /q, update()
-//	"Import a FITS", Show1FITS()
+
 	"Set the Frame Rate" , /q, SETKCT()
 	"Set DFF Baseline for data in this folder" , /q, ManualSetDFFs()
 	"-"
-//	"Batch Analzye ALL Folders with Current ROIs/9", /q, BatchAnalyzeAllStacks(0)
-//	"Batch Analzye ONE Folder with Current ROIs", /q, BatchAnalyzeAllStacks(1)
+
 	"-"
 	"Display the areas used for ROIs",/q,CheckROIs()
 	"Display the Images Analyzed in current Folder", /q, displayMaxImages()
 	
 End
 
-//Menu "Image"
-//		"-"
-//	"Load a single .FITs File/2",  WMLoadFITS_JUSTONE()
-//	"Load a Folder of .FITs/3", BatchImportFITS()
-//end
+
 
 Menu "GraphMarquee"
 	
@@ -30,10 +24,6 @@ Menu "GraphMarquee"
 		Submenu "ROIs"
 			"Freehand Signal", /q, CalcROI("Freehand Signal")
 			"Freehand Background", /q, CalcROI("Freehand Background")
-//				SubMenu "old square rois"
-//					"SIGNAL", /q, CalcROI()
-//					"BACKGROUND", /q, CalcROI()
-//				end
 			"-"
 			Submenu "Remove ROI"
 				wave3list("Root:CurrentROIs:All_ROI_list"), /q, RemovetheROI()
@@ -64,7 +54,7 @@ Menu "GraphMarquee"
 End
 
 Function CalcROI(ROItype)
-//	GetLastUserMenuInfo
+
 	String ROItype// = s_value
 	
 	//------------Housekeeping for names-----------	
@@ -836,202 +826,6 @@ function DrawBROIs()
 end
 
 
-
-
-Function WMLoadFITS_JUSTONE()
-
-	if(datafolderexists ("root:ImageImport:SingleImport") == 0)
-		newdatafolder/s/o root:ImageImport
-		newdatafolder/s/o root:ImageImport:SingleImport
-	endif
-	setdatafolder root:ImageImport:SingleImport:
-	
-	Variable doHeader= NumVarOrDefault("root:Packages:FITS:wantHeader",1)			// set true to put header(s) in a notebook
-	Variable doHistory= NumVarOrDefault("root:Packages:FITS:wantHistory",0)			// set true to put HISTORY in the notebook
-	Variable doComment= NumVarOrDefault("root:Packages:FITS:wantComments",0)		// ditto for COMMENT
-	Variable doAutoDisp= NumVarOrDefault("root:Packages:FITS:wantAutoDisplay",0)	// true to display data
-	Variable doInt2Float= NumVarOrDefault("root:Packages:FITS:promoteInts",1)		// true convert ints to floats
-	Variable bigBytes= NumVarOrDefault("root:Packages:FITS:askifSize",10e7)				// if data exceeds this size, ask permission to load  
-	
-	Variable refnum
-	String path= StrVarOrDefault("root:Packages:FITS:thePath","")
-	if( CmpStr(path,"_current_")==0 )
-		Open/R/T="????" refnum
-	else
-		Open/R/P=$path/T="????" refnum
-	endif
-	if( refnum==0 )
-		return 0
-	endif
-	
-	setdatafolder root:ImageImport:SingleImport:
-	
-	FStatus refnum
-	print "FITS Load from",S_fileName
-	LoadOneFITS(refnum,S_fileName,doHeader,doHistory,doComment,doAutoDisp,doInt2Float,bigBytes)
-	string newimagepath = "root:ImageImport:SingleImport:'"+s_filename+"':primary:data"
-	//string KCTpath = "root:ImageImport:SingleImport:'"+s_filename+"':primary:KCT"
-	//string Exposurepath = "root:ImageImport:SingleImport:'"+s_filename+"':primary:EXPOSURE"
-	//NVAR KCTloc = $KCTpath
-	//NVAR ExposLoc = $ExposurePath
-	//variable/g root:currentrois:KCT = KCTLoc
-	//variable/g root:currentrois:EXPOSURE = ExposLoc
-	//duplicate/o $newimagepath root:currentrois:current
-	
-	Close refnum
-end
-
-Function BatchImportFITS()
-	variable do_groups = 1, imagenumber = 0 //, do_analyze = 0, do_Dffs = 0, 
-	string img_prefix = "stim_"
-	Prompt do_groups,"Import all images from all subfolders? yes=1"
-	//Prompt do_Dffs, "Calculate Delta F over F? yes=1"
-	//Prompt do_analyze, "Also analyze ROIs for each image? yes=1"
-	Prompt imagenumber, "The images increment by 1 starting with?"
-	Prompt img_prefix, "What is the image prefix?"
-	
-	Doprompt "BMS 2008", do_groups, imagenumber, img_prefix //, do_analyze, do_Dffs
-		if (V_Flag)
-			return -1								// User canceled
-		endif
-//Gets the folder prefix, father folder, and the first folder increment 
-//prefix = imgfldr_prefix
-//first increment = imgfldr_starting_increment,
-//father_folder = father_folder_path
-	newpath/q/o/m="Which folder contains the first image to import?" grouppath
-		if (V_Flag)
-				return -1								// User canceled
-		endif
-	pathinfo grouppath
-	setdatafolder root:
-	variable imagenumber_reset = imagenumber
-	variable pathposition = ItemsInList(s_path, ":")
-	string imgfldr_name = StringFromList(pathposition-1, s_path, ":"); print imgfldr_name
-	string imgfldr_fathersname = StringFromList(pathposition-2, s_path, ":")
-	variable father_end = strsearch(s_path, imgfldr_name, 0)
-	string father_folder_path = s_path[0,father_end-1] 				//path to folder containing groups
-	
-	variable imgfldr_namelength = strlen (imgfldr_name)-1
-	variable imgfldr_prefixend, imgfldr_end_digits  = 0 
-	variable check = str2num(imgfldr_name[imgfldr_namelength])
-		do
-			imgfldr_prefixend = str2num(imgfldr_name[imgfldr_namelength-imgfldr_end_digits])
-				if(imgfldr_prefixend  == NaN)
-					break
-				endif
-			imgfldr_end_digits += 1
-		while(imgfldr_prefixend<= 1000)
-		
-	imgfldr_end_digits -= 1 //not sure why this is necessary
-	variable imgfldr_starting_increment = str2num(imgfldr_name[imgfldr_namelength-(imgfldr_end_digits-1),imgfldr_namelength]) //number of starting group folder
-	variable imgfldr_inc_reset = imgfldr_starting_increment
-	string real_imgfldr_prefix = imgfldr_name[0,imgfldr_namelength-imgfldr_end_digits]; 
-	string imgfldr_prefix = ReplaceString(" ", real_imgfldr_prefix, "_")		//prefix for groups
-	string grouppath_target = father_folder_path + real_imgfldr_prefix + num2str(imgfldr_starting_increment) + ":"
-	string notebookname =img_prefix+num2str(imagenumber)+"_fits"
-	variable GroupNumberReset = imgfldr_starting_increment
-	
-	string file = img_prefix+num2str(imagenumber)+".fits"
-	Variable refnum, no_file, no_folder
-	variable donotebook = 1
-	String ImageFolder = imgfldr_prefix+num2str(imgfldr_starting_increment)
-	
-
-if(do_groups != 1)
-		do
-			open/r/P=grouppath/z=1 refnum as file
-			//print file, v_flag
-			if(V_flag == 0)
-				Batchloadfits(file,donotebook,0, ImageFolder)
-				dowindow/hide=1 $notebookname
-			endif
-			imagenumber += 1
-			notebookname =img_prefix+num2str(imagenumber)+"_fits"
-			file = img_prefix+num2str(imagenumber)+".fits"
-			donotebook = 0
-			open/r/P=grouppath/z=1 refnum as file			
-		while(imagenumber <= 1000)
-		print "imported from", ImageFolder
-	endif
-	
-	if(do_groups == 1)
-		do	
-				do
-					Batchloadfits(file,donotebook,0, ImageFolder)
-					dowindow/hide=1 $notebookname
-					imagenumber += 1
-					notebookname =img_prefix+num2str(imagenumber)+"_fits"
-					file = img_prefix+num2str(imagenumber)+".fits"
-					donotebook = 0
-					open/r/P=grouppath/z=1 refnum as file; no_file = v_flag
-				while(V_flag == 0)
-			print "imported", ImageFolder
-			imagenumber = imagenumber_reset
-			file = img_prefix+num2str(imagenumber)+".fits"
-			imgfldr_starting_increment += 1
-			ImageFolder = imgfldr_prefix+num2str(imgfldr_starting_increment)
-			grouppath_target = father_folder_path + real_imgfldr_prefix + num2str(imgfldr_starting_increment) + ":"
-			donotebook = 1
-			newpath/z/q/o grouppath, grouppath_target; no_folder = v_flag
-			open/r/P=grouppath/z=1 refnum as file; no_file = v_flag
-		while(no_folder == 0 && no_file == 0)
-	endif
-
-	
-	string/g root:ImageImport:FolderPrefix = imgfldr_prefix
-	string/g root:ImageImport:ImagePrefix = img_prefix
-	variable/g root:ImageImport:FirstFolderNumber = imgfldr_inc_reset
-	variable/g root:ImageImport:ImagesStart = imagenumber_reset
-	setdatafolder Root:
-	execute "createbrowser showWaves=1, showVars=0, showStrs=0"
-end
-
-
-Static Function BatchLoadFITS(file, header,show_graph, ImageFolder)
-	variable header, show_graph
-	string file, ImageFolder
-	
-	string ImageImportNDF = "root:ImageImport:"+ImageFolder
-	string  ImageImportName = ImageImportNDF+":"
-	
-	variable folderping = datafolderexists("root:ImageImport")
-		if(folderping == 0)
-			//print ImageImportNDF, ImageImportName
-			newdatafolder/s/o root:ImageImport 
-		endif
-	
-	folderping = datafolderexists(ImageImportName)
-		if(folderping == 0)
-			//print ImageImportNDF, ImageImportName
-			newdatafolder/s/o $ImageImportNDF
-		endif
-	setdatafolder $ImageImportNDF
-	
-	Variable doHeader= NumVarOrDefault("root:Packages:FITS:wantHeader",header)			// set true to put header(s) in a notebook
-	Variable doHistory= NumVarOrDefault("root:Packages:FITS:wantHistory",0)			// set true to put HISTORY in the notebook
-	Variable doComment= NumVarOrDefault("root:Packages:FITS:wantComments",0)		// ditto for COMMENT
-	Variable doAutoDisp= NumVarOrDefault("root:Packages:FITS:wantAutoDisplay",show_graph)	// true to display data
-	Variable doInt2Float= NumVarOrDefault("root:Packages:FITS:promoteInts",1)		// true convert ints to floats
-	Variable bigBytes= NumVarOrDefault("root:Packages:FITS:askifSize",1e10)				// if data exceeds this size, ask permission to load  
-	
-	Variable refnum
-	String path= StrVarOrDefault("root:Packages:FITS:thePath",file)
-	if( CmpStr(path,"_current_")==0 )
-		Open/R/P=grouppath refnum as file
-	else
-		Open/R/P=grouppath refnum as file
-	endif
-	if( refnum==0 )
-		return 0
-	endif
-	
-	setdatafolder $ImageImportNDF
-	
-	FStatus refnum
-	//print "FITS Load from",S_fileName
-	LoadOneFITS(refnum,S_fileName,doHeader,doHistory,doComment,doAutoDisp,doInt2Float,bigBytes)
-	Close refnum
-end
 
 //////////////////////////////////////////////////////////////////////--utilities
 Function AddASlider()

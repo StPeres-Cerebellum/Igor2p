@@ -1,6 +1,6 @@
 #pragma rtGlobals=1		// Use modern global access method.
-//#include "BS_Utilities"
-#include "BS_ROI_Analysis_2p"
+
+
 
 Menu "GraphMarquee"
 	"-"
