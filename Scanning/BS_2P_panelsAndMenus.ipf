@@ -455,6 +455,40 @@ Function BS_2P_constrainAxes(cba) : CheckBoxControl
 	return 0
 End
 
+Function PixPerLinePopMenuProc(pa) : PopupMenuControl
+	STRUCT WMPopupAction &pa
+	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
+
+	switch( pa.eventCode )
+		case 2: // mouse up
+			Variable popNum = pa.popNum
+				String popStr = pa.popStr
+				pixelsPerLine = str2num(popStr)
+				BS_2P_UpdateVariablesCreateScan()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
+
+function bs_2P_reset2P()
+
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
+	string pmtDev = boardConfig[3][0]
+	string galvoDev = boardConfig[0][0]
+
+	fDAQmx_CTR_Finished(pmtDev, 0)
+	fDAQmx_CTR_Finished(pmtDev, 1)
+	fDAQmx_CTR_Finished(pmtDev, 2)
+	fDAQmx_CTR_Finished(pmtDev, 3)
+	fDAQmx_CTR_Finished(pmtDev, 0)
+	fDAQmx_CTR_Finished(pmtDev, 1)
+	fDAQmx_WaveformStop(galvoDev)
+	fDAQmx_ScanStop(galvoDev)
+end
+
 Function BS_2P_KineticSeriesButton(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
 	NVAR  prefixIncrement = root:Packages:BS2P:CurrentScanVariables:prefixIncrement
@@ -1148,6 +1182,21 @@ Function doStack(ba) : ButtonControl
 			BS_2P_updateVariablesCreateScan()
 			BS_2P_Scan("stack")
 			break
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
+
+Function BS_2P_VideoButton(ba) : ButtonControl
+	STRUCT WMButtonAction &ba
+
+	switch( ba.eventCode )
+		case 2: // mouse up
+			BS_2P_updateVariablesCreateScan()
+			BS_2P_Scan("video")
+
 		case -1: // control being killed
 			break
 	endswitch
