@@ -303,17 +303,22 @@ function stacks(depth, resolution, averages)
 	
 	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	BS_2P_Scan("snapshot")
+	LN_moveMicrons(3, "z", resolution)
+	sleep/s 0.1
 	
-	redimension/n=(-1,-1,0) kineticSeries
-	duplicate/o/free kineticSeries newStack
+	redimension/n=(-1,-1,1) kineticSeries
+	duplicate/o kineticSeries newStack
+	wave newStack
 	
 	variable slices = ceil(depth / resolution)
 	variable i
 	for(i = 1; i < slices; i += 1)
 		BS_2P_Scan("snapshot")
-		redimension/n=(-1,-1,0) kineticSeries
-		imagetransform /p=(i)/insw=kineticSeries insertImage newStack
+		LN_moveMicrons(3, "z", resolution)
+		sleep/s 0.1
+		redimension/n=(-1,-1) kineticSeries
+		imagetransform /p=(i)/insi=kineticSeries/o insertZPlane newStack
 	endfor
-	
+
 	duplicate/o newStack kineticSeries
 end

@@ -209,6 +209,8 @@ function BS_2P_Scan(imageMode, [frameSize, setscan])
 		BS_2P_NiDAQ_2(runx, runy,  dum, frames, externaltrigger, imageMode)
 	elseif(stringmatch(imageMode, "video"))
 		BS_2P_NiDAQ_2(runx, runy,  dum, 10000, 0, imageMode)
+	elseif(stringmatch(imageMode, "stack"))
+		BS_2P_NiDAQ_2(runx, runy,  dum, 1, 0, imageMode)
 	endif
 
 	

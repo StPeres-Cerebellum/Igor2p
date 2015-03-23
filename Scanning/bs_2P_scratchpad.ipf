@@ -385,6 +385,10 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	setdatafolder root:Packages:BS2P:CurrentScanVariables
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+
+	NVAR stackDepth = root:Packages:BS2P:CurrentScanVariables:stackDepth
+	NVAR stackResolution = root:Packages:BS2P:CurrentScanVariables:stackResolution
+	variable stackSlices = ceil(stackDepth / stackResolution)
 	
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
 
@@ -405,6 +409,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 //	string S_kineticHook = "kineticHook("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 	string S_kineticHook2 = "kineticHook2("+nameofWave(dum)+")"
 	string S_videoHook = "videoHook("+num2str(frameCounter)+","+num2str(10000)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
+	string S_stackHook = "stackHook("+num2str(frameCounter)+","+num2str(stackSlices)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 //	string S_kineticTest = "kineticTest("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+")"//","+nameofWave(dum)+")"
 	string S_scanString = nameofwave(runx)+", 0; "+nameofwave(runy)+", 1"
 //	print S_kineticHook2
@@ -427,8 +432,99 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frames) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/trig={startTrigChannel, trigger}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+	elseif(stringmatch(imageMode, "stack"))
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelClock/wave=dum/EOSH=S_stackHook 0
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	endif
 	
+
+end
+function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, imageMode)
+	variable frame, frames, lines, pixelsPerLine
+	wave runx, runy, dum
+	
+	NVAR stackDepth = root:Packages:BS2P:CurrentScanVariables:stackDepth
+	NVAR stackResolution = root:Packages:BS2P:CurrentScanVariables:stackResolution
+	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
+	variable stackSlices = ceil(stackDepth / stackResolution)
+	BS_2P_Pockels("close")
+	NVAR frameCounter
+	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
+	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
+	frameCounter += 1
+	variable pixelsPerFrame = pixelsPerLine * lines
+	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:KineticSeries
+	
+	string S_stackHook = "stackHook("+num2str(frameCounter)+","+num2str(stackSlices)+","+num2str(Lines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
+
+	duplicate/o/free dum lastFrame
+	dum = nan
+	
+	differentiate/meth=2/ep=1/p lastFrame
+	redimension/n=(pixelsPerline, lines) lastFrame
+	duplicate/free lastFrame flipped
+	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
+	duplicate/o lastFrame root:Packages:BS2P:CurrentScanVariables:kineticSeries
+	scaleKineticSeries()
+	
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
+
+	string galvoDev = boardConfig[0][0]
+	string pmtDev = boardConfig[3][0]
+	string startTrigDev = boardConfig[5][0]
+	string startTrigChannel = "/"+startTrigDev+"/"+"pfi"+boardConfig[5][2]
+	string xGalvoChannel = boardConfig[0][2]
+	string yGalvoChannel = boardConfig[1][2]
+	
+	string pmtSource = "/"+pmtDev+"/pfi8"
+	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
+	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
+	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
+	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
+	LN_moveMicrons(3, "z", -stackResolution)
+
+	if(frameCounter == 1)
+		redimension/n=(-1,-1,1) kineticSeries
+		duplicate/o kineticSeries root:Packages:BS2P:CurrentScanVariables:newStack
+		BS_2P_Pockels("open")
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_stackHook 0
+//		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
+//		DAQmx_WaveformGen/DEV="dev1"/NPRD=1/EOSH=S_videoHook "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+	elseif(frameCounter < frames)	//otherwise set up another one
+		wave newStack = root:Packages:BS2P:CurrentScanVariables:newStack
+		redimension/n=(-1,-1) kineticSeries
+		imagetransform /p=(frameCounter)/insi=kineticSeries/o insertZPlane newStack
+		
+		BS_2P_Pockels("open")
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_stackHook 0
+//		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
+//		DAQmx_WaveformGen/DEV="dev1"/NPRD=1/EOSH=S_videoHook "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+	elseif(frameCounter == frames)	//shut it down
+		wave newStack = root:Packages:BS2P:CurrentScanVariables:newStack
+		redimension/n=(-1,-1) kineticSeries
+		imagetransform /p=(frameCounter)/insi=kineticSeries/o insertZPlane newStack
+		BS_2P_PMTShutter("close")
+		bs_2P_zeroscanners("offset")
+		
+		setScale/p z, 0, stackResolution, newStack
+		duplicate/o newStack kineticSeries
+		BS_2P_writeScanParamsInWave(kineticSeries)
+		BS_2P_Append3DImageSlider()
+		
+		if(saveEmAll)
+			BS_2P_saveDum()
+		endif
+		
+		setdatafolder currentFolder
+	endif
 
 end
 
@@ -472,6 +568,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
 	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
 	
+	
 	if(frameCounter == frames)	//shut it down
 		BS_2P_writeScanParamsInWave(kineticSeries)
 		BS_2P_PMTShutter("close")
@@ -479,10 +576,10 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		setdatafolder currentFolder
 	elseif(frameCounter < frames)	//otherwise set up another one
 		BS_2P_Pockels("open")
-		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum 0
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_videoHook 0
 //		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
 //		DAQmx_WaveformGen/DEV="dev1"/NPRD=1/EOSH=S_videoHook "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
-		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1)/EOSH=S_videoHook galvoChannels
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	endif
@@ -515,10 +612,6 @@ function kineticHook2(dum)
 	BS_2P_writeScanParamsInWave(dum)
 	if(datafolderexists ("root:currentrois") == 1)
 		NewUpdate(kineticSeries)
-	endif
-	
-	if(saveEmAll)
-		BS_2P_saveDum()
 	endif
 	
 	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder

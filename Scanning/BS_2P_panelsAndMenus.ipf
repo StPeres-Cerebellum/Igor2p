@@ -105,8 +105,7 @@ Window Control2P() : Panel
 	SetVariable DisplayPockelsPercent,labelBack=(60928,60928,60928),font="Arial"
 	SetVariable DisplayPockelsPercent,fSize=22,format="%.0f%",frame=0,fStyle=1
 	SetVariable DisplayPockelsPercent,valueBackColor=(60928,60928,60928)
-	SetVariable DisplayPockelsPercent,value= root:Packages:BS2P:CurrentScanVariables:pockelValue
-	SetVariable DisplayPockelsPercent limits={0,200,1}
+	SetVariable DisplayPockelsPercent,limits={0,200,1},value= root:Packages:BS2P:CurrentScanVariables:pockelValue
 	ValDisplay FrameTime,pos={579,12},size={108,14},title="1 Frame:",fSize=10
 	ValDisplay FrameTime,format="%.1W1Ps",frame=0,fColor=(65280,0,0)
 	ValDisplay FrameTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
@@ -119,15 +118,15 @@ Window Control2P() : Panel
 	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:lineTime"
 	SetVariable objective,pos={621,55},size={136,16},bodyWidth=21,proc=SetobjectiveMagProc,title="Objective Magnification"
 	SetVariable objective,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:objectiveMag
-	PopupMenu galvoFreq,pos={9,49},size={133,21},noProc,title="Line Speed (KHz):"
+	PopupMenu galvoFreq,pos={9,49},size={133,21},proc=BS2P_setFreqPopMenuProc,title="Line Speed (KHz):"
 	PopupMenu galvoFreq,mode=3,popvalue="1.0",value= #"\"0.25;0.5;1.0;1.5;2.0;2.5;3.0\""
 	SetVariable lineSpacing,pos={85,22},size={65,16},proc=BS_2P_SetScanVarProc,title=" "
 	SetVariable lineSpacing,labelBack=(60928,60928,60928),fSize=10,format="%.1W1Pm"
 	SetVariable lineSpacing,frame=0,fStyle=1,valueColor=(0,0,52224)
 	SetVariable lineSpacing,valueBackColor=(60928,60928,60928)
 	SetVariable lineSpacing,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:lineSpacing
-	PopupMenu pixelsPerLine,pos={150,49},size={102,21},noProc,title="Pixels/Line"
-	PopupMenu pixelsPerLine,mode=1,popvalue="128",value= #"\"8;16;32;64;128;256;512;1024\""
+	PopupMenu pixelsPerLine,pos={150,49},size={102,21},proc=PixPerLinePopMenuProc,title="Pixels/Line"
+	PopupMenu pixelsPerLine,mode=6,popvalue="256",value= #"\"8;16;32;64;128;256;512;1024\""
 	SetVariable lineDisplay,pos={182,22},size={31,16},proc=BS_2P_SetScanVarProc,title=" "
 	SetVariable lineDisplay,labelBack=(60928,60928,60928),fSize=10,frame=0,fStyle=1
 	SetVariable lineDisplay,valueColor=(0,0,52224)
@@ -181,6 +180,8 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:pixelsPerLine = 256
 		variable/g root:Packages:BS2P:CurrentScanVariables:totalLines = 256
 		variable/g root:Packages:BS2P:CurrentScanVariables:zoomFactor = 20	// in microns
+		variable/g root:Packages:BS2P:CurrentScanVariables:stackDepth = 100 //microns
+		variable/g root:Packages:BS2P:CurrentScanVariables:stackResolution = 1 //microns
 		
 		string/g root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix = "prefix"	//Prefix to add to saved data
 		string/g root:Packages:BS2P:CurrentScanVariables:currentPathDetails = "no path set"
@@ -199,8 +200,8 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:lineSpacing = 0.6e-6	// (meters)
 		variable/g root:Packages:BS2P:CurrentScanVariables:scanFrameTime = 0	//ms
 		variable/g  root:Packages:BS2P:CalibrationVariables:spotSize = 0.6e-6	//smallest theoretical spot from Bruno (m)
-		variable/g  root:Packages:BS2P:CalibrationVariables:pixelShift = 100e-6	// s  ---measure this by giving voltages to scanners
-		variable/g  root:Packages:BS2P:CurrentScanVariables:focusStep = 10e-6		// µm
+		variable/g  root:Packages:BS2P:CalibrationVariables:pixelShift = 85e-6	// s  ---measure this by giving voltages to scanners
+		variable/g  root:Packages:BS2P:CurrentScanVariables:focusStep = 20		// µm
 		variable/g root:Packages:BS2P:CurrentScanVariables:fullField = 250e-6	//m to scan for a full field
 		variable/g root:Packages:BS2P:CurrentScanVariables:objectiveMag = 60
 		variable/g root:Packages:BS2P:CurrentScanVariables:samplesPerPixel = 1
@@ -275,14 +276,21 @@ function BS_2P_makeKineticWindow()
 
 	CheckBox AxesConstrain,pos={8,3},size={88,14},proc=BS_2P_constrainAxes,title="Constrain Axes"
 	CheckBox AxesConstrain,value= 1
+	
+	Button FocusUP,pos={313,21},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
+	Button FocusUP,fSize=8
+	
 	Button FocusDown,pos={381,2},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
 	Button FocusDown,fSize=8
-	Button FocusDown1,pos={382,38},size={33,18},proc=BS_2P_focusDownButtonProc,title="down"
-	Button FocusDown1,fSize=8
+
+	Button FocusDown,pos={314,57},size={33,18},proc=BS_2P_focusDownButtonProc,title="down"
+	Button FocusDown,fSize=8
+
 	
-	SetVariable focusStep,pos={382,22},size={50,16},title="µm",frame=0
+	SetVariable focusStep,pos={310,41},size={50,16},title="µm",frame=0
 	SetVariable focusStep,valueBackColor=(60928,60928,60928)
 	SetVariable focusStep,limits={0,500,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
+
 
 	SetVariable setFrames,pos={197,3},size={66,16},proc=BS_2P_SetFramesProc,title="Frames"
 	SetVariable setFrames,frame=0,valueBackColor=(65535,65535,65535)
@@ -290,22 +298,26 @@ function BS_2P_makeKineticWindow()
 	CheckBox BS_2P_ExternalTrigger,pos={269,4},size={92,14},title="External Trigger"
 	CheckBox BS_2P_ExternalTrigger,variable= root:Packages:BS2P:CurrentScanVariables:externalTrigger
 	
-	ValDisplay FrameTime,pos={197,21},size={141,14},title="1 Frame (s):",fSize=10
-	ValDisplay FrameTime,frame=0,fColor=(65280,0,0),valueColor=(65280,0,0)
-	ValDisplay FrameTime,valueBackColor=(60928,60928,60928)
+	ValDisplay FrameTime,pos={197,21},size={117,14},title="1 Frame:",fSize=10
+	ValDisplay FrameTime,format="%.2W1Ps",frame=0,fColor=(65280,0,0)
+	ValDisplay FrameTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay FrameTime,limits={0,0,0},barmisc={0,1000}
 	ValDisplay FrameTime,value= #"root:Packages:BS2P:CurrentScanVariables:scanFrameTime"
 
-	ValDisplay FrameTime1,pos={198,35},size={63,14},title="(Hz):",fSize=10
-	ValDisplay FrameTime1,format="%.1f",frame=0,fColor=(65280,0,0)
-	ValDisplay FrameTime1,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
+
+	ValDisplay FrameTime1,pos={198,35},size={70,14},title="freq:",fSize=10
+	ValDisplay FrameTime1,format="%.2W1PHz",frame=0,fColor=(65280,0,0)
+	ValDisplay FrameTime1,valueColor=(65280,0,0)
+	ValDisplay FrameTime1,valueBackColor=(60928,60928,60928)
 	ValDisplay FrameTime1,limits={0,0,0},barmisc={0,1000}
 	ValDisplay FrameTime1,value= #"root:Packages:BS2P:CurrentScanVariables:displayFrameHz"
-	ValDisplay TotalTime,pos={197,48},size={145,14},title="Total scan time (s):"
-	ValDisplay TotalTime,fSize=10,format="%.1f",frame=0,fColor=(65280,0,0)
+
+	ValDisplay TotalTime,pos={197,48},size={106,14},title="Total time:",fSize=10
+	ValDisplay TotalTime,format="%.1W1Ps",frame=0,fColor=(65280,0,0)
 	ValDisplay TotalTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay TotalTime,limits={0,0,0},barmisc={0,1000}
 	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:displayTotalTime"
+
 	SetVariable SaveAs,pos={538,22},size={219,16},title=" ",frame=0
 	SetVariable SaveAs,value= root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
 
@@ -324,26 +336,44 @@ function BS_2P_makeKineticWindow()
 	CheckBox BS_2P_SaveEverything,variable= root:Packages:BS2P:CurrentScanVariables:saveEmAll
 
 	
-	SetVariable setZoom,pos={568,38},size={82,16},proc=BS_2P_SetFramesProc,title="Zoom (µm)"
+	SetVariable setZoom,pos={609,43},size={82,16},proc=BS_2P_SetFramesProc,title="Zoom (µm)"
 	SetVariable setZoom,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setZoom,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:zoomFactor
-	
 
 	
-	Button zoomout,pos={566,53},size={34,20},proc=ZoomOutProc_2,title="out"
+	Button zoomout,pos={607,58},size={34,20},proc=ZoomOutProc_2,title="out"
 	Button zoomout,fSize=8
-	Button zoomIn,pos={612,53},size={34,20},proc=ZoomInProc_2,title="in",fSize=8
 
-	SetVariable setMoveStep,pos={497,44},size={22,16},noProc,title=" "
-	SetVariable setMoveStep,frame=0,valueBackColor=(65535,65535,65535)
+	Button zoomIn,pos={653,58},size={34,20},proc=ZoomInProc_2,title="in",fSize=8
+
+
+	SetVariable setMoveStep,pos={521,46},size={22,16},title=" ",frame=0
+	SetVariable setMoveStep,valueBackColor=(65535,65535,65535)
 	SetVariable setMoveStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:moveStep
 
-	Button moveU,pos={501,29},size={14,16},proc=MoveUProc,title="^",fSize=8
-	Button moveR,pos={520,46},size={14,16},proc=MoveRProc,title=">",fSize=8
-	Button moveD,pos={501,61},size={14,16},proc=MoveDProc,title="v",fSize=8
-	Button moveL,pos={481,46},size={14,16},proc=MoveLProc,title="<",fSize=8
+
+	Button moveU,pos={525,31},size={14,16},proc=MoveUProc,title="^",fSize=8
+	Button moveR,pos={544,48},size={14,16},proc=MoveRProc,title=">",fSize=8
+	Button moveD,pos={525,63},size={14,16},proc=MoveDProc,title="v",fSize=8
+	Button moveL,pos={505,48},size={14,16},proc=MoveLProc,title="<",fSize=8
+
+	GroupBox stackBox,pos={370,24},size={99,53}
 
 	
+	Button doStack,pos={402,27},size={34,20},proc=doStack,title="stack",fSize=8
+	Button doStack,fColor=(61440,61440,61440)
+
+	SetVariable stackDepth,pos={381,46},size={86,16},title="depth (µm)",frame=0
+	SetVariable stackDepth,limits={0,500,0},value= root:Packages:BS2P:CurrentScanVariables:stackDepth
+
+	SetVariable stackResolution,pos={375,61},size={89,16},title="resolution (µm)"
+	SetVariable stackResolution,frame=0
+	SetVariable stackResolution,limits={0,20,0},value= root:Packages:BS2P:CurrentScanVariables:stackResolution
+
+	
+	
+
+
 
 end
 
@@ -440,7 +470,7 @@ Function BS_2P_KineticSeriesButton(ba) : ButtonControl
 			BS_2P_updateVariablesCreateScan()
 			BS_2P_Scan("kinetic")
 			if(saveemall)
-				save/c/o/p=$currentPath dum as filename2Write
+				BS_2P_saveDum()
 				pathInfo $currentPath
 				currentPathDetails = s_path
 				prefixIncrement += 1
@@ -1076,6 +1106,47 @@ Function BS_2P_saveAll_Proc(cba) : CheckBoxControl
 				currentPath = newPathName
 				fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
 			endif
+			break
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
+
+Function BS2P_setFreqPopMenuProc(pa) : PopupMenuControl
+	STRUCT WMPopupAction &pa
+	NVAR lineTime =  root:Packages:BS2P:CurrentScanVariables:lineTime
+	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
+	switch( pa.eventCode )
+		case 2: // mouse up
+			Variable popNum = pa.popNum
+			String popStr = pa.popStr
+
+			
+			variable digFreq = (1/((str2num(popstr))*1000*2))/(pixelsPerLine)
+//
+//			tune line time so acquisition is multiple of 5e-8
+			digFreq = 5e-8 * (round(digFreq/5e-8))
+
+			lineTime = (pixelsPerLine)*digFreq 	//seconds
+			BS_2P_UpdateVariablesCreateScan()
+			break
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
+
+Function doStack(ba) : ButtonControl
+	STRUCT WMButtonAction &ba
+	NVAR stackDepth
+	NVAR stackResolution
+	switch( ba.eventCode )
+		case 2: // mouse up
+			BS_2P_updateVariablesCreateScan()
+			BS_2P_Scan("stack")
 			break
 		case -1: // control being killed
 			break
