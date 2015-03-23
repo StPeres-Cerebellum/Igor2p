@@ -15,7 +15,7 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	// add max min pockels
 	switch(s.eventCode)
 		case 2:
-			newpath/o configPath, "C:Users:fede:Documents"
+			newpath/o configPath, "C:Users:2P:Documents"
 			save/o/p=configPath boardConfig
 			scanLimit = str2num(boardConfig[8][2])
 			scaleFactor = str2num(boardConfig[9][2])
@@ -43,18 +43,18 @@ end
 //end
 
 function bs_2P_getConfig()
-	newpath/o configPath, "C:Users:fede:Documents"
+	newpath/o configPath, "C:Users:2P:Documents"
 	variable refnum
 	open/r/z/p=configPath refnum as "boardConfig.ibw"
 	if(v_flag == 0)
 		print "found a config", refnum, s_filename
 		close refNum
-		LoadWave/H/O "C:Users:fede:Documents:boardConfig.ibw"
+		LoadWave/H/O "C:Users:2P:Documents:boardConfig.ibw"
 		wave/t boardConfig
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
 	else
-		make/o/t/n=(11,3) root:Packages:BS2P:CalibrationVariables:boardConfig
+		make/o/t/n=(15,3) root:Packages:BS2P:CalibrationVariables:boardConfig
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 
 		setdimlabel 1,0,Board,boardCOnfig

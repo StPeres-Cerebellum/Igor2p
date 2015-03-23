@@ -279,9 +279,11 @@ function BS_2P_makeKineticWindow()
 	Button FocusDown,fSize=8
 	Button FocusDown1,pos={382,38},size={33,18},proc=BS_2P_focusDownButtonProc,title="down"
 	Button FocusDown1,fSize=8
-	SetVariable FocusStep,pos={372,21},size={85,18},title="\\F'Symbol'D\\F'MS Sans Serif'Focus (µm)"
-	SetVariable FocusStep,frame=0
-	SetVariable FocusStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
+	
+	SetVariable focusStep,pos={382,22},size={50,16},title="µm",frame=0
+	SetVariable focusStep,valueBackColor=(60928,60928,60928)
+	SetVariable focusStep,limits={0,500,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
+
 	SetVariable setFrames,pos={197,3},size={66,16},proc=BS_2P_SetFramesProc,title="Frames"
 	SetVariable setFrames,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setFrames,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frames
@@ -350,11 +352,12 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 	STRUCT WMWinHookStruct &s
 	
 	NVAR moveStep =  root:Packages:BS2P:CurrentScanVariables:moveStep
+	NVAR focusStep = root:Packages:BS2P:CurrentScanVariables:focusStep
 	wave kineicSeries =  root:Packages:BS2P:CurrentScanVariables:kinteicSeries
 	switch(s.eventCode)
 		case 11:
 			switch(s.keycode)
-				case 13:	//enter
+				case 114:	//r
 					calcroi("SIGNAL")
 				break
 				
@@ -390,6 +393,13 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				 	arbitraryScan()
 				 break
 				 
+				 case 48: // 0
+				 	LN_moveMicrons(3, "z", -focusStep)
+				 break
+				 
+				 case 46: // .
+				 	LN_moveMicrons(3, "z", focusStep) 
+				 break
 				 				
 			endswitch
 		break
@@ -451,8 +461,7 @@ Function BS_2P_focusUpButtonProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			// click code here
-			LN_moveStep(1, "z","FWD")
-			sleep/T 15
+			LN_moveMicrons(3, "z", focusStep)
 			//	scan ONE frame using current settings
 			//	draw image from dum
 			//	copy image over kineticSeries
@@ -475,7 +484,7 @@ Function BS_2P_focusDownButtonProc(ba) : ButtonControl
 			//	scan one frame using current settings
 			//	draw image from dum
 			//	copy image over kineticSeries
-			LN_moveStep(1, "z","BKWD")
+			LN_moveMicrons(3, "z", -focusStep)
 			break
 		case -1: // control being killed
 			break

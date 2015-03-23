@@ -383,7 +383,7 @@ end
 	
 	dowindow/z Summary_Window
 	if(v_flag == 0)
-		edit
+		edit/k=1
 		DoWindow/Z/C/T Summary_Window,"Summary"
 	endif
 	
@@ -530,12 +530,12 @@ function DisplayRaw(CurrentROI)
 	SVAR sigcolor = root:currentrois:sigcolor
 	dowindow/z Raw_WINDOW
 		If(V_Flag == 0)
-			display /W=(853.5,41.75,1053.75,174.5)
+			display/k=1 /W=(853.5,41.75,1053.75,174.5)
 			DoWindow/Z/C/T Raw_Window,"Raw Measurements"
 		endif
 		dowindow/z summary_WINDOW
 		If(V_Flag == 0)
-			edit
+			edit/k=1
 			DoWindow/Z/C/T Summary_WINDOW,"summary"
 		endif
 	//modifygraph/w=raw_window gbRGB = (56576,56576,56576)
@@ -575,7 +575,7 @@ function displaysub(CurrentROI)
 	SVAR sigcolor = root:currentrois:sigcolor
 	Dowindow/z BackgroundSubtracted
 		If(V_Flag == 0)
-			display /W=(854.25,203,1056,356.75)
+			display/k=1 /W=(854.25,203,1056,356.75)
 			DoWindow/Z/C/T BackgroundSubtracted,"Background Subtracted"
 		endif
 	If(waveexists($subName))
@@ -595,7 +595,7 @@ function displayDFF(CurrentROI)
 	SVAR sigColor = root:currentrois:sigcolor
 	Dowindow/z DeltaFOverF
 	If(V_Flag == 0)
-		display /W=(854.25,384.5,1056.75,734.75) 
+		display/k=1 /W=(854.25,384.5,1056.75,734.75) 
 		DoWindow/Z/C/T DeltaFOverF,"DF/F"
 		Legend/F=0/N=text0/J/A=LT/X=0.00/Y=0.00
 	endif
