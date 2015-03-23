@@ -297,3 +297,23 @@ function importStack(zStep, images)
 	setScale/p x, 0, pixelSize, m_stack; setScale/p y, 0, pixelSize, m_stack; setScale/p z, 0, (zStep), m_stack
 	makeProjections(m_stack)
 end
+
+function stacks(depth, resolution, averages)
+	variable depth, resolution, averages
+	
+	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:kineticSeries
+	BS_2P_Scan("snapshot")
+	
+	redimension/n=(-1,-1,0) kineticSeries
+	duplicate/o/free kineticSeries newStack
+	
+	variable slices = ceil(depth / resolution)
+	variable i
+	for(i = 1; i < slices; i += 1)
+		BS_2P_Scan("snapshot")
+		redimension/n=(-1,-1,0) kineticSeries
+		imagetransform /p=(i)/insw=kineticSeries insertImage newStack
+	endfor
+	
+	duplicate/o newStack kineticSeries
+end

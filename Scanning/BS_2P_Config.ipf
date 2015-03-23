@@ -54,7 +54,7 @@ function bs_2P_getConfig()
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
 	else
-		make/o/t/n=(11,3) root:Packages:BS2P:CalibrationVariables:boardConfig
+		make/o/t/n=(13,3) root:Packages:BS2P:CalibrationVariables:boardConfig
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 
 		setdimlabel 1,0,Board,boardCOnfig
