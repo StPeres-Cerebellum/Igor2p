@@ -155,6 +155,7 @@ Function Init2PVariables()
 		PI_Initialize()
 		LN_initialize()
 		
+		
 ////////////////	Stored Calibration Variables	////////////////////	
 		variable/g root:Packages:BS2P:CalibrationVariables:scanLimit = str2num(boardConfig[8][2])	// limit of voltage sent to the scanners	
 		variable/g root:Packages:BS2P:CalibrationVariables:scaleFactor = 	str2num(boardConfig[9][2]) //  (m in focal plane / Volt). Same for X and Y
@@ -163,6 +164,8 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CalibrationVariables:maxPockels = str2num(boardConfig[12][2])
 //		variable/g root:Packages:BS2P:CalibrationVariables:freqLimit = 100e3	// upper bound of scan freq in Hz
 //		variable/g root:Packages:BS2P:CalibrationVariables:Correction4percent = 2 // (volts/percent open) hopefully this is linear!		
+		variable/g root:Packages:BS2P:CalibrationVariables:luigsFocusDevice = str2num(boardConfig[13][2])
+		string/g root:Packages:BS2P:CalibrationVariables:luigsFocusAxis = boardConfig[14][2]
 		
 ////////////////	Stored Current Scan Variables	////////////////////
 		variable/g root:Packages:BS2P:CurrentScanVariables:lineSpacing = 0.6e-6		 //--- determines distance between lines initializes to a minimum
@@ -217,7 +220,9 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayPixelSize
 //		MakeFullFrameVoltages()
 	endif
-	
+	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
+	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
+	LN_setSpeed(luigsFocusDevice, luigsFocusAxis, 16)
 //	LN_initialize("COM5")
 End
 
@@ -522,11 +527,13 @@ End
 Function BS_2P_focusUpButtonProc(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
 	NVAR focusStep = root:packages:BS2P:CurrentScanVariables:focusStep
+	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
+	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
 			// click code here
-			LN_moveMicrons(3, "z", focusStep)
+			LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep)
 			//	scan ONE frame using current settings
 			//	draw image from dum
 			//	copy image over kineticSeries
@@ -541,7 +548,9 @@ End
 
 Function BS_2P_focusDownButtonProc(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
-		NVAR focusStep = root:packages:BS2P:CurrentScanVariables:focusStep
+	NVAR focusStep = root:packages:BS2P:CurrentScanVariables:focusStep
+	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
+	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
@@ -549,7 +558,7 @@ Function BS_2P_focusDownButtonProc(ba) : ButtonControl
 			//	scan one frame using current settings
 			//	draw image from dum
 			//	copy image over kineticSeries
-			LN_moveMicrons(3, "z", -focusStep)
+			LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, -focusStep)
 			break
 		case -1: // control being killed
 			break

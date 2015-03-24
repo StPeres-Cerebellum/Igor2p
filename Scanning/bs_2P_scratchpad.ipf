@@ -180,8 +180,9 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
 	duplicate/o lastFrame root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()
-	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
 
+	// make these into variables in the init and config procedures
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
 	string galvoDev = boardConfig[0][0]
 	string pmtDev = boardConfig[3][0]
 	string startTrigDev = boardConfig[5][0]
@@ -194,13 +195,16 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
 	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
 	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
-	LN_moveMicrons(3, "z", -stackResolution)
-	sleep/s 0.100
+	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
+	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
+
 
 	if(frameCounter < frames)	//otherwise set up another one
 		string sliceName = "slice_"+num2str(frameCounter)
 		redimension/n=(-1,-1) kineticSeries
 		duplicate/o kineticSeries $sliceName
+		LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, -stackResolution)
+		sleep/s 0.100
 		BS_2P_Pockels("open")
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_stackHook 0
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
@@ -253,8 +257,8 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	scaleKineticSeries()
 
 	
+	// make these into variables in the init and config procedures
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
-
 	string galvoDev = boardConfig[0][0]
 	string pmtDev = boardConfig[3][0]
 	string startTrigDev = boardConfig[5][0]

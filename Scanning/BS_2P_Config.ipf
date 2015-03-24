@@ -12,6 +12,8 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit	// limit of voltage sent to the scanners	
 	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor //  (m in focal plane / Volt). Same for X and Y
 	NVAR mWperVolt = root:Packages:BS2P:CalibrationVariables:mWperVolt
+	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
+	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
 	// add max min pockels
 	switch(s.eventCode)
 		case 2:
@@ -20,27 +22,20 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 			scanLimit = str2num(boardConfig[8][2])
 			scaleFactor = str2num(boardConfig[9][2])
 	 		mWperVolt = str2num(boardConfig[10][2])
+	 		luigsFocusDevice = str2num(boardConfig[13][2])
+	 		luigsFocusAxis = boardConfig[14][2]
 //			add max/min pockels
 			break
 		case 1:
 			scanLimit = str2num(boardConfig[8][2])
 			scaleFactor = str2num(boardConfig[9][2])
 			mWperVolt = str2num(boardConfig[10][2])
+			luigsFocusDevice = str2num(boardConfig[13][2])
+			luigsFocusAxis = boardConfig[14][2]
       			// add max/min pockles
       		break
       endswitch
 end
-
-//function/wave bs_2P_getConfigs(Device)
-//	string device	//xgalvo, ygalvo, PMT, Pockels, PMTshutter, startTrig
-//	make/free/t/o/n=2 devOut
-//	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-//	
-//	devOut[0] = boardconfig[(findDimLabel(boardConfig,0,Device))][1]
-//	devOut[1] = boardconfig[(findDimLabel(boardConfig,0,Device))][3]
-//	
-//	return devOut
-//end
 
 function bs_2P_getConfig()
 	newpath/o configPath, "C:Users:2P:Documents"
@@ -54,7 +49,7 @@ function bs_2P_getConfig()
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
 	else
-		make/o/t/n=(15,3) root:Packages:BS2P:CalibrationVariables:boardConfig
+		make/o/t/n=(20,3) root:Packages:BS2P:CalibrationVariables:boardConfig
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 
 		setdimlabel 1,0,Board,boardCOnfig
@@ -115,7 +110,15 @@ function bs_2P_getConfig()
 		setdimlabel 0,12,maxPockels,boardCOnfig		
 		boardConfig[12][1] = "Constant"
 		boardConfig[12][2] = "2"
-					
+		
+		setDimLabel 0, 13, LuigsFocusDevice,boardCOnfig
+		boardConfig[13][1] = "Constant"
+		boardConfig[13][2] = "3"
+		
+		setDimLabel 0, 14, LuigsFocusAxis,boardCOnfig
+		boardConfig[14][1] = "Constant"
+		boardConfig[14][2] = "Z"
+		
 		edit/k=1/n=Config boardConfig boardConfig.l
 		setwindow config hook(myhook)=configSaveHook
 	endif

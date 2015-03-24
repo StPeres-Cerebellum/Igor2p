@@ -22,7 +22,6 @@ function LN_initialize()
 	doPrompt "L & N is connected to which USB port?", newPort
 	portnum = newPort
 	VDTOPenPort2 $portNum
-	LN_setSpeed(3, "z", 16)
 end
 
 
