@@ -160,6 +160,8 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CalibrationVariables:scanLimit = str2num(boardConfig[8][2])	// limit of voltage sent to the scanners	
 		variable/g root:Packages:BS2P:CalibrationVariables:scaleFactor = 	str2num(boardConfig[9][2]) //  (m in focal plane / Volt). Same for X and Y
 		variable/g root:Packages:BS2P:CalibrationVariables:mWperVolt = str2num(boardConfig[10][2])
+		variable/g root:Packages:BS2P:CalibrationVariables:mWperVolt_offset = str2num(boardConfig[10][3])
+		
 		variable/g root:Packages:BS2P:CalibrationVariables:minPockels = str2num(boardConfig[11][2])
 		variable/g root:Packages:BS2P:CalibrationVariables:maxPockels = str2num(boardConfig[12][2])
 //		variable/g root:Packages:BS2P:CalibrationVariables:freqLimit = 100e3	// upper bound of scan freq in Hz
@@ -960,6 +962,7 @@ function sampleDiodeVoltage()
 	string diodeDevNum = boardConfig[6][0]
 	variable diodeChannel = str2num(boardConfig[6][2])
 	variable mWPerVolt = str2num(boardConfig[10][2])
+	variable mWPerVolt_offset = str2num(boardConfig[10][3])
 	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
 	make/n=1000/o sampleDiode
 	setscale/p x, 0, 0.0001, sampleDiode
@@ -970,9 +973,10 @@ function sampleDiodeVoltage()
 	DAQmx_Scan/DEV=diodeDevNum waves=diodeWaves
 	laserPower = mean(sampleDiode)
 	laserPower *= mWPerVolt
+	laserPower += mWPerVolt_offset
 	
 	showLaserPower()
-	return laserPower / mWPerVolt	//comes out in volts
+	return (laserPower -  mWPerVolt_offset) / mWPerVolt	//comes out in volts
 end
 
 function measureLaserPower()
@@ -992,6 +996,7 @@ function calibratePockels()
 	string diodeDevNum = boardConfig[6][0]
 	variable diodeChannel = str2num(boardConfig[6][2])
 	variable mWPerVolt = str2num(boardConfig[10][2])
+	variable mWPerVolt_offset = str2num(boardConfig[10][3])
 	
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
 	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
@@ -1022,6 +1027,7 @@ function calibratePockels()
 	endif
 
 	w_diodeReadings *= mWPerVolt
+	w_diodeReadings += mWPerVolt_offset
 	findLevel/edge=1/q  w_diodeReadings, (wavemin(w_diodeReadings)+0.01)
 	minPockels = v_levelx
 	boardConfig[11][2] = num2str(minPockels)
@@ -1085,8 +1091,11 @@ function calibratePower()
 	display/k=1 mW vs PowerReadings
 	CurveFit/X=1/NTHR=0 line  mW /X=powerReadings /D
 	wave w_coef
+	boardConfig[10][3] = num2str(w_coef[0])
 	boardConfig[10][2] = num2str(w_coef[1])
 	NVAR mWPerVolt = root:Packages:BS2P:CurrentScanVariables:mWPerVolt
+	NVAR mWPerVolt_offset = root:Packages:BS2P:CurrentScanVariables:mWPerVolt_offset
+	mWPerVolt_offset = w_coef[0]
 	mWPerVolt = w_coef[1]
 	bs_2P_getConfig()
 end
@@ -1107,23 +1116,24 @@ function showLaserPower()
 	string diodeDevNum = boardConfig[6][0]
 	variable diodeChannel = str2num(boardConfig[6][2])
 	variable mWPerVolt = str2num(boardConfig[10][2])
+	variable mWPerVolt_offset = str2num(boardConfig[10][3])
 	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
 	make/n=1000/o  root:Packages:BS2P:CalibrationVariables:sampleDiode
 	wave sampleDiode = root:Packages:BS2P:CalibrationVariables:sampleDiode
 	setscale/p x, 0, 0.0001, sampleDiode	
 	
-	string diodeHook = "calcLaserHook(mWPerVolt)"
+	string diodeHook = "calcLaserHook(mWPerVolt,mWPerVolt_offset)"
 	
 	DAQmx_Scan/rpt=1/bkg/DEV=diodeDevNum/rpth=diodeHook waves=diodeWaves
 	
 end
 
-function calcLaserHook(mWPerVolt)
-	variable mWPerVolt
+function calcLaserHook(mWPerVolt, mWPerVolt_offset)
+	variable mWPerVolt, mWPerVolt_offset
 	wave sampleDiode = root:Packages:BS2P:CalibrationVariables:sampleDiode
 	
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
-	laserPower = mean(sampleDiode) * mWPerVolt
+	laserPower = (mean(sampleDiode) * mWPerVolt) + mWPerVolt_offset
 end
 
 Function BS_2P_saveAll_Proc(cba) : CheckBoxControl

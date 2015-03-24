@@ -12,6 +12,7 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit	// limit of voltage sent to the scanners	
 	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor //  (m in focal plane / Volt). Same for X and Y
 	NVAR mWperVolt = root:Packages:BS2P:CalibrationVariables:mWperVolt
+	NVAR mWperVolt_offset = root:Packages:BS2P:CalibrationVariables:mWperVolt_offset
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
 	// add max min pockels
@@ -22,6 +23,7 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 			scanLimit = str2num(boardConfig[8][2])
 			scaleFactor = str2num(boardConfig[9][2])
 	 		mWperVolt = str2num(boardConfig[10][2])
+	 		mWperVolt_offset = str2num(boardConfig[10][3])
 	 		luigsFocusDevice = str2num(boardConfig[13][2])
 	 		luigsFocusAxis = boardConfig[14][2]
 //			add max/min pockels
@@ -30,6 +32,7 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 			scanLimit = str2num(boardConfig[8][2])
 			scaleFactor = str2num(boardConfig[9][2])
 			mWperVolt = str2num(boardConfig[10][2])
+			mWperVolt_offset = str2num(boardConfig[10][3])
 			luigsFocusDevice = str2num(boardConfig[13][2])
 			luigsFocusAxis = boardConfig[14][2]
       			// add max/min pockles
@@ -49,7 +52,7 @@ function bs_2P_getConfig()
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
 	else
-		make/o/t/n=(20,3) root:Packages:BS2P:CalibrationVariables:boardConfig
+		make/o/t/n=(20,4) root:Packages:BS2P:CalibrationVariables:boardConfig
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 
 		setdimlabel 1,0,Board,boardCOnfig
@@ -101,7 +104,8 @@ function bs_2P_getConfig()
 		
 		setdimlabel 0,10,mWPerVolt,boardCOnfig		
 		boardConfig[10][1] = "Constant"
-		boardConfig[10][2] = "1"
+		boardConfig[10][2] = "1"	//slope
+		boardConfig[10][3] = "2"	//offset
 
 		setdimlabel 0,11,minPockels,boardCOnfig		
 		boardConfig[11][1] = "Constant"
