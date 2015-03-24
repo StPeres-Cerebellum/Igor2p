@@ -2,67 +2,7 @@
 
 
 
-function testNewDraw_old(dum, runx, runy)
-	wave dum, runx, runy
-		////////////////// Get variables out of dum  --can use these to recreate the scan if need be  ////////////////////////////
-	string scanParameters = note(dum)
-	variable scaledX = numberbykey("scaledX", scanParameters)
-	variable scaledY = numberbykey("scaledY", scanParameters)
-	variable frames = numberbykey("frames", scanParameters)
-	variable KCT = numberbykey("KCT", scanParameters)
-	variable acquisitionFrequency = numberbykey("AcquisitionFrequency", scanParameters)
-	variable dwellTime = numberbykey("dwellTime", scanParameters)
-	variable lineSpacing = numberbykey("lineSpacing", scanParameters)
-	variable scaleFactor = numberbykey("scaleFactor", scanParameters)	//  µm / Volt
-	variable X_Offset = numberbykey("X_Offset", scanParameters)
-	variable Y_Offset = numberbykey("Y_Offset", scanParameters)
-	variable scanOutFreq = numberbykey("scanOutFreq", scanParameters)
-	variable scanFrameTime = numberbykey("scanFrameTime", scanParameters)	//ms
-	variable lineTime = numberbykey("lineTime", scanParameters)
-	variable pixelShift = numberbykey("pixelShift", scanParameters)
-	variable scanLimit = numberbykey("scanLimit", scanParameters)
-	variable displayPixelSize = numberbykey("displayPixelSize", scanParameters)
 
-	variable imageOffset = scanLimit * scaleFactor
-	variable xPixels = ceil(scaledX/displayPixelSize), yLines = ceil(scaledY/displayPixelSize)
-	
-	make/o/n=(xPixels,yLines,frames) root:Packages:BS2P:CurrentScanVariables:drawnImage = 0
-	wave drawnImage = root:Packages:BS2P:CurrentScanVariables:drawnImage
-	SetScale/P x X_offset,displayPixelSize,"µm", drawnImage
-	SetScale/P y Y_offset,displayPixelSize,"µm", drawnImage
-	
-	
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		///////////////HERE CAN CREATE RUNX AND RUNY FROM VARIABLES STORED IN DUM WAVE IF NEED BE///////////
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-////////This function could be optimized by combining everything below into one (huge) line to avoid creating more waves
-	duplicate/o runx runx_microns;duplicate/o runy runy_microns;;duplicate/o dum frameNums
-	runx_microns *= scaleFactor; runy_microns *= scaleFactor
-	runx_microns -= x_offset; 	runy_microns -= y_offset
-	runx_microns += imageOffset; 	runy_microns += imageOffset
-	
-	frameNums = floor(frames*p/numpnts(dum))
-	variable i, frameNum, dumTime, xMicronsAtDumTime, yMicronsAtDumTime, DumPnt2ScanPnt, scanTime
-	duplicate/o dum dum2GalvoPoint, dum2GalvoTime, dumXMicrons, DumYMicrons
-	dum2GalvoPoint =p-(framenums[p]*frames)	///these are points numbers
-	dum2Galvotime = (pnt2x(dum2GalvoPoint, p) - pixelShift)	//convert points to times
-	dum2galvotime = dum2galvotime < 0 ? 0 : dum2galvotime	//remove negative times
-	dumXMicrons = runx_microns(dum2galvotime[p])
-	dumYMicrons = runy_microns(dum2galvotime[p])
-		
-//	drawnImage[x2pnt(drawnImage, dumXMicrons[p])][x2pnt(drawnImage, dumYMicrons[p])][frameNums[p]] += dum[p]
-	variable pixelX
-	variable pixelY
-	for(i=0; i<numpnts(dum); i+=1)
-		pixelX = x2pnt(drawnImage, dumXMicrons[i]) > (dimsize(drawnImage, 0)-1) ? (dimsize(drawnImage, 0)-1) :  x2pnt(drawnImage, dumXMicrons[i])
-		pixelY = x2pnt(drawnImage, dumyMicrons[i]) > (dimsize(drawnImage, 1)-1) ? (dimsize(drawnImage, 1)-1) :  x2pnt(drawnImage, dumyMicrons[i])
-		drawnImage[pixelX][pixelY][frameNums[i]] += dum[i]
-	endfor
-	
-//	killwaves  dum2GalvoPoint, dum2GalvoTime, dumXMicrons, DumYMicrons, runx_microns, runy_microns
-		
-end
 
 function testCounting()
 
@@ -157,7 +97,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	setdatafolder root:Packages:BS2P:CurrentScanVariables
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
-
+	
 	NVAR stackDepth = root:Packages:BS2P:CurrentScanVariables:stackDepth
 	NVAR stackResolution = root:Packages:BS2P:CurrentScanVariables:stackResolution
 	variable stackSlices = ceil(stackDepth / stackResolution)
@@ -213,6 +153,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	
 
 end
+
 function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, imageMode)
 	variable frame, frames, lines, pixelsPerLine
 	wave runx, runy, dum
@@ -228,7 +169,6 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	frameCounter += 1
 	variable pixelsPerFrame = pixelsPerLine * lines
 	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:KineticSeries
-	
 	string S_stackHook = "stackHook("+num2str(frameCounter)+","+num2str(stackSlices)+","+num2str(Lines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 
 	duplicate/o/free dum lastFrame
@@ -239,7 +179,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	duplicate/free lastFrame flipped
 	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
 	duplicate/o lastFrame root:Packages:BS2P:CurrentScanVariables:kineticSeries
-	
+	scaleKineticSeries()
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
 
 	string galvoDev = boardConfig[0][0]
@@ -255,21 +195,12 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
 	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
 	LN_moveMicrons(3, "z", -stackResolution)
+	sleep/s 0.100
 
-	if(frameCounter == 1)
-		redimension/n=(-1,-1,1) kineticSeries
-		duplicate/o kineticSeries root:Packages:BS2P:CurrentScanVariables:newStack
-		BS_2P_Pockels("open")
-		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_stackHook 0
-		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
-		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
-		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
-	elseif(frameCounter < frames)	//otherwise set up another one
-		wave newStack = root:Packages:BS2P:CurrentScanVariables:newStack
-		//string sliceName = "slice_"+num2str(frameCounter)
+	if(frameCounter < frames)	//otherwise set up another one
+		string sliceName = "slice_"+num2str(frameCounter)
 		redimension/n=(-1,-1) kineticSeries
-		imagetransform /p=(frameCounter)/insi=kineticSeries/o insertZPlane newStack
-		// duplicate/o kineticSeries $sliceName
+		duplicate/o kineticSeries $sliceName
 		BS_2P_Pockels("open")
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_stackHook 0
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
@@ -277,18 +208,20 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(frameCounter == frames)	//shut it down
 		wave newStack = root:Packages:BS2P:CurrentScanVariables:newStack
+		wave slice_1
+		sliceName = "slice_"+num2str(frameCounter)
 		redimension/n=(-1,-1) kineticSeries
-		imagetransform /p=(frameCounter)/insi=kineticSeries/o insertZPlane newStack
+		duplicate/o kineticSeries $sliceName
 		BS_2P_PMTShutter("close")
 		bs_2P_zeroscanners("offset")
-//		imageTransform/k stackImages slice_1; wave m_stack
-//		duplicate m_stack kineticSeries
-		duplicate/o newStack kineticSeries
-		BS_2P_writeScanParamsInWave(kineticSeries)
-		setScale/p z, 0, (stackResolution * 1e-6), kineticSeries
+		imageTransform/k stackImages slice_1; wave m_stack
+		duplicate/o m_stack kineticSeries
+	
 		scaleKineticSeries()
-		
+		setScale/p z, 0, (stackResolution * 1e-6), kineticSeries
 		BS_2P_Append3DImageSlider()
+		BS_2P_writeScanParamsInWave(kineticSeries)
+		makeProjections(kineticSeries)
 		
 		setdatafolder currentFolder
 	endif

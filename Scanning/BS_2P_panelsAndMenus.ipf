@@ -153,6 +153,7 @@ Function Init2PVariables()
 		bs_2P_getConfig()
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 		PI_Initialize()
+		LN_initialize()
 		
 ////////////////	Stored Calibration Variables	////////////////////	
 		variable/g root:Packages:BS2P:CalibrationVariables:scanLimit = str2num(boardConfig[8][2])	// limit of voltage sent to the scanners	
@@ -364,7 +365,7 @@ function BS_2P_makeKineticWindow()
 	Button doStack,fColor=(61440,61440,61440)
 
 	SetVariable stackDepth,pos={381,46},size={86,16},title="depth (µm)",frame=0
-	SetVariable stackDepth,limits={0,500,0},value= root:Packages:BS2P:CurrentScanVariables:stackDepth
+	SetVariable stackDepth,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:stackDepth
 
 	SetVariable stackResolution,pos={375,61},size={89,16},title="resolution (µm)"
 	SetVariable stackResolution,frame=0
@@ -1175,8 +1176,10 @@ End
 
 Function doStack(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
-	NVAR stackDepth
-	NVAR stackResolution
+	NVAR stackDepth =  root:Packages:BS2P:CurrentScanVariables:stackDepth
+	NVAR stackResolution =  root:Packages:BS2P:CurrentScanVariables:stackResolution
+	NVAR frames =  root:Packages:BS2P:CurrentScanVariables:frames
+	frames = ceil(stackDepth / stackResolution)
 	switch( ba.eventCode )
 		case 2: // mouse up
 			BS_2P_updateVariablesCreateScan()
