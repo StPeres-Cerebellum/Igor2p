@@ -295,7 +295,7 @@ function BS_2P_makeKineticWindow()
 	
 	SetVariable focusStep,pos={310,41},size={50,16},title="µm",frame=0
 	SetVariable focusStep,valueBackColor=(60928,60928,60928)
-	SetVariable focusStep,limits={0,500,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
+	SetVariable focusStep,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
 
 
 	SetVariable setFrames,pos={197,3},size={66,16},proc=BS_2P_SetFramesProc,title="Frames"
@@ -389,6 +389,8 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 	
 	NVAR moveStep =  root:Packages:BS2P:CurrentScanVariables:moveStep
 	NVAR focusStep = root:Packages:BS2P:CurrentScanVariables:focusStep
+		NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
+	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
 	wave kineicSeries =  root:Packages:BS2P:CurrentScanVariables:kinteicSeries
 	switch(s.eventCode)
 		case 11:
@@ -429,12 +431,12 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				 	arbitraryScan()
 				 break
 				 
-				 case 48: // 0
-				 	LN_moveMicrons(3, "z", -focusStep)
+				 case 11: // 0
+				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -focusStep)
 				 break
 				 
-				 case 46: // .
-				 	LN_moveMicrons(3, "z", focusStep) 
+				 case 12: // .
+				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep) 
 				 break
 				 				
 			endswitch
@@ -971,7 +973,7 @@ function sampleDiodeVoltage()
 	laserPower = mean(sampleDiode)
 	laserPower *= mWPerVolt
 	
-	showLaserPower()
+//	showLaserPower()
 	return laserPower / mWPerVolt	//comes out in volts
 end
 
@@ -996,7 +998,7 @@ function calibratePockels()
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
 	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
 	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
-	bs_2P_zeroScanners("center")
+//	bs_2P_zeroScanners("center")
 	minPockels = 0
 	maxPockels = 2
 	make/n=101/o w_diodeReadings
@@ -1058,18 +1060,20 @@ function laserPowerCalibrationSample(pockelOpen)
 end
 
 function calibratePower()
-	make/o/n=0 powerReadings, pockelsPercent, mW
+	make/o/n=0 diodeReadings, pockelsPercent, mW
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
+	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
+	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
 	bs_2P_zeroscanners("center")
 	variable i
-	for(i=0; i<10; i+=1)
+	for(i=0; i<11; i+=1)
 		variable meterReading
 		pockelValue = (i*10)
-		redimension/n=(numpnts(powerReadings)+1) powerReadings
+		redimension/n=(numpnts(diodeReadings)+1) diodeReadings
 		BS_2P_Pockels("open")
 		sleep/s 1
-		powerReadings[numpnts(powerReadings)-1] = sampleDiodeVoltage()
+		diodeReadings[numpnts(diodeReadings)-1] = sampleDiodeVoltage()
 	
 		redimension/n=(numpnts(pockelsPercent)+1) pockelsPercent
 		pockelsPercent[numpnts(pockelsPercent)-1] = pockelValue
@@ -1082,13 +1086,14 @@ function calibratePower()
 	BS_2P_Pockels("close")
 	bs_2P_zeroscanners("offset")
 	
-	display/k=1 mW vs PowerReadings
-	CurveFit/X=1/NTHR=0 line  mW /X=powerReadings /D
+	display/k=1 mW vs diodeReadings
+	CurveFit/X=1/NTHR=0 line  mW /X=diodeReadings /D
+	ModifyGraph mode(mW)=3,marker(mW)=19,rgb(mW)=(0,0,0)
 	wave w_coef
 	boardConfig[10][2] = num2str(w_coef[1])
 	NVAR mWPerVolt = root:Packages:BS2P:CurrentScanVariables:mWPerVolt
 	mWPerVolt = w_coef[1]
-	bs_2P_getConfig()
+	bs_2P_editConfig()
 end
 
 
