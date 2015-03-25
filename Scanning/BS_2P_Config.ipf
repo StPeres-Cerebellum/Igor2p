@@ -58,39 +58,40 @@ function bs_2P_getConfig()
 		setdimlabel 1,0,Board,boardCOnfig
 		setdimlabel 1,1,Type,boardCOnfig
 		setdimlabel 1,2,Channel,boardCOnfig
+		setdimlabel 1,3,variable_2,boardCOnfig
 		
 		setdimlabel 0,0,xGalvo,boardConfig
 		boardConfig[0][0] = "dev1"
 		boardConfig[0][1] = "DA"
-		boardConfig[0][2] = "0"
+		boardConfig[0][2] = "2"
 		
 		setdimlabel 0,1,yGalvo,boardCOnfig
 		boardConfig[1][0] = "dev1"
 		boardConfig[1][1] = "DA"
-		boardConfig[1][2] = "1"
+		boardConfig[1][2] = "3"
 
 		setdimlabel 0,2,Pockels,boardCOnfig		
-		boardConfig[2][0] = "dev2"
+		boardConfig[2][0] = "dev1"
 		boardConfig[2][1] = "DA"
 		boardConfig[2][2] = "0"
 
 		setdimlabel 0,3,PMT,boardCOnfig
-		boardConfig[3][0] = "dev2"
+		boardConfig[3][0] = "dev1"
 		boardConfig[3][1] = "PFI"
 		boardConfig[3][2] = "8"		
 		
 		setdimlabel 0,4,PMTshutter,boardCOnfig
-		boardConfig[4][0] = "dev2"
+		boardConfig[4][0] = "dev1"
 		boardConfig[4][1] = "PFI"
 		boardConfig[4][2] = "2"
 		
 		setdimlabel 0,5,startTrig,boardCOnfig
 		boardConfig[5][0] = "dev1"
 		boardConfig[5][1] = "PFI"
-		boardConfig[5][2] = "1"	
+		boardConfig[5][2] = "0"	
 		
 		setdimlabel 0,6,laserPhotoDiode,boardCOnfig	
-		boardConfig[6][0] = "dev2"
+		boardConfig[6][0] = "dev1"
 		boardConfig[6][1] = "AD"
 		boardConfig[6][2] = "0"	
 	
@@ -104,16 +105,16 @@ function bs_2P_getConfig()
 		
 		setdimlabel 0,10,mWPerVolt,boardCOnfig		
 		boardConfig[10][1] = "Constant"
-		boardConfig[10][2] = "1"	//slope
-		boardConfig[10][3] = "2"	//offset
+		boardConfig[10][2] = "38.905"	//slope
+		boardConfig[10][3] = "-7.6025"	//offset
 
 		setdimlabel 0,11,minPockels,boardCOnfig		
 		boardConfig[11][1] = "Constant"
-		boardConfig[11][2] = "0"
+		boardConfig[11][2] = "0.25833"
 
 		setdimlabel 0,12,maxPockels,boardCOnfig		
 		boardConfig[12][1] = "Constant"
-		boardConfig[12][2] = "2"
+		boardConfig[12][2] = "1.105"
 		
 		setDimLabel 0, 13, LuigsFocusDevice,boardCOnfig
 		boardConfig[13][1] = "Constant"

@@ -39,9 +39,13 @@ Menu "2P"
 		subMenu "Configure BNCs"
 			"Edit Configuration", /q, bs_2P_editConfig()
 		end
-		"Measure laser Power", /q, measureLaserPower()
+		
+		
 		
 	End
+	"-"
+	"Measure laser Power", /q, readLaserPower()
+	"-"
 	"Reset", /q, bs_2P_reset2P()
 
 end
@@ -133,7 +137,7 @@ Window Control2P() : Panel
 	SetVariable lineDisplay,valueBackColor=(60928,60928,60928)
 	SetVariable lineDisplay,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:totalLines
 	ValDisplay powerGuess,pos={378,52},size={128,14},title="estimated mW:"
-	ValDisplay powerGuess,format="%.1W1PmW",frame=0,valueColor=(65280,0,0)
+	ValDisplay powerGuess,format="%.2g",frame=0,valueColor=(65280,0,0)
 	ValDisplay powerGuess,valueBackColor=(60928,60928,60928)
 	ValDisplay powerGuess,limits={0,0,10},barmisc={0,1000}
 	ValDisplay powerGuess,value= #"poly(root:packages:bs2P:calibrationVariables:pockelsPolynomial, root:Packages:BS2P:CurrentScanVariables:pockelValue/ (100/( root:Packages:BS2P:calibrationVariables:maxPockels-root:Packages:BS2P:calibrationVariables:minPockels))+root:Packages:BS2P:calibrationVariables:minPockels)"
@@ -149,7 +153,7 @@ Function Init2PVariables()
 		newdatafolder root:Packages:BS2P:CurrentScanVariables
 		newdatafolder root:Packages:BS2P:ImageDisplayVariables
 		
-		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {101.289,-662.435,1209.22}
+		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {8.72516,-107.568,294.209}
 		bs_2P_getConfig()
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 		PI_Initialize()
@@ -206,7 +210,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:lineSpacing = 0.6e-6	// (meters)
 		variable/g root:Packages:BS2P:CurrentScanVariables:scanFrameTime = 0	//ms
 		variable/g  root:Packages:BS2P:CalibrationVariables:spotSize = 0.6e-6	//smallest theoretical spot from Bruno (m)
-		variable/g  root:Packages:BS2P:CalibrationVariables:pixelShift = 85e-6	// s  ---measure this by giving voltages to scanners
+		variable/g  root:Packages:BS2P:CalibrationVariables:pixelShift = 87.5e-6	// s  ---measure this by giving voltages to scanners
 		variable/g  root:Packages:BS2P:CurrentScanVariables:focusStep = 20		// µm
 		variable/g root:Packages:BS2P:CurrentScanVariables:fullField = 250e-6	//m to scan for a full field
 		variable/g root:Packages:BS2P:CurrentScanVariables:objectiveMag = 60
@@ -365,7 +369,7 @@ function BS_2P_makeKineticWindow()
 	Button moveD,pos={525,63},size={14,16},proc=MoveDProc,title="v",fSize=8
 	Button moveL,pos={505,48},size={14,16},proc=MoveLProc,title="<",fSize=8
 
-	GroupBox stackBox,pos={370,24},size={99,53}
+	GroupBox stackBox,pos={370,24},size={103,53}
 
 	
 	Button doStack,pos={402,27},size={34,20},proc=doStack,title="stack",fSize=8
@@ -374,7 +378,7 @@ function BS_2P_makeKineticWindow()
 	SetVariable stackDepth,pos={381,46},size={86,16},title="depth (µm)",frame=0
 	SetVariable stackDepth,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:stackDepth
 
-	SetVariable stackResolution,pos={375,61},size={89,16},title="resolution (µm)"
+	SetVariable stackResolution,pos={375,61},size={95,16},title="resolution (µm)"
 	SetVariable stackResolution,frame=0
 	SetVariable stackResolution,limits={0,20,0},value= root:Packages:BS2P:CurrentScanVariables:stackResolution
 
@@ -958,6 +962,15 @@ function bs_2p_initShutter()
 	return shutterIOtaskNumber
 end
 
+function readLaserPower()
+	sampleDiodeVoltage()
+	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
+	
+	print "."
+	print "."
+	printf "%.2g mW (after objective) currently sent to galvos\r", laserPower
+	print "."
+end
 
 function sampleDiodeVoltage()
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
@@ -966,24 +979,23 @@ function sampleDiodeVoltage()
 	variable mWPerVolt = str2num(boardConfig[10][2])
 	variable mWPerVolt_offset = str2num(boardConfig[10][3])
 	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
-	make/n=1000/o sampleDiode
+	make/n=10000/o sampleDiode
 	setscale/p x, 0, 0.0001, sampleDiode
 	
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
-	
+	variable voltage 
 	fDAQmx_ScanStop(diodeDevNum)
 	DAQmx_Scan/DEV=diodeDevNum waves=diodeWaves
-	laserPower = mean(sampleDiode)
-	laserPower *= mWPerVolt
-	laserPower += mWPerVolt_offset
+	voltage = mean(sampleDiode)
+	laserPower = (voltage * mWPerVolt) + mWPerVolt_offset
 	
-<<<<<<< HEAD
+
 //	showLaserPower()
-	return laserPower / mWPerVolt	//comes out in volts
-=======
-	showLaserPower()
-	return (laserPower -  mWPerVolt_offset) / mWPerVolt	//comes out in volts
->>>>>>> origin/master
+//	return laserPower / mWPerVolt	//comes out in volts
+
+//	showLaserPower()
+	return voltage	//comes out in volts
+
 end
 
 function measureLaserPower()
@@ -1002,36 +1014,41 @@ function calibratePockels()
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	string diodeDevNum = boardConfig[6][0]
 	variable diodeChannel = str2num(boardConfig[6][2])
+	string pockelDevNum = boardConfig[2][0]
+	variable pockelChannel = str2num(boardConfig[2][2])
 	variable mWPerVolt = str2num(boardConfig[10][2])
 	variable mWPerVolt_offset = str2num(boardConfig[10][3])
-	
+
+	bs_2P_zeroscanners("offset")
+		
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
 	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
 	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
 //	bs_2P_zeroScanners("center")
-	minPockels = 0
-	maxPockels = 2
-	make/n=101/o w_diodeReadings
+	minPockels = 0.2
+	maxPockels = 1
+	make/n=20/o w_diodeReadings
 	setscale x, minPockels , maxPockels, w_diodeReadings
 	variable i
-	for(i=0; i < numpnts(w_diodeReadings); i += 1)
-		pockelValue = i
-		BS_2P_Pockels("open")
-		sleep/s 0.01
+	for(i=0; i < (numpnts(w_diodeReadings)) ; i += 1)
+		variable pockelsVolts = (((maxPockels - minPockels) / numpnts(w_diodeReadings))*i) + minPockels
+//		print pockelsVolts
+		fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelsVolts, minPockels,maxPockels )
+		sleep/s 1
 		w_diodeReadings[i] = sampleDiodeVoltage()
 	endfor
+	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), w_diodeReadings
 	BS_2P_Pockels("close")
-	bs_2P_zeroscanners("offset")
 //	CurveFit/NTHR=0/q line  w_pockelsCalibration /D
 //	wave fit_w_pockelsCalibration
-	dowindow/f pockelsCalib
-	if(!V_flag)
+	dowindow/k/f pockelsCalib
+//	if(!V_flag)
 		display/k=1/n=pockelsCalib w_diodeReadings
 //		appendToGraph fit_w_pockelsCalibration
 		ModifyGraph rgb(w_diodeReadings)=(0,0,0)//,lstyle(fit_w_pockelsCalibration)=2
 		Label left "mW"
 		Label bottom "Pockels (V)"
-	endif
+//	endif
 
 	w_diodeReadings *= mWPerVolt
 	w_diodeReadings += mWPerVolt_offset
@@ -1041,7 +1058,7 @@ function calibratePockels()
 	findLevel/edge=1/q  w_diodeReadings, targetPower
 	maxPockels = v_levelx
 	boardConfig[12][2] = num2str(maxPockels)
-	CurveFit/X=1/NTHR=0/q poly 3,  w_diodeReadings(minPockels, maxPockels) /D
+	CurveFit/X=1/NTHR=0/q poly 3,  w_diodeReadings(0.2, 0.3) /D
 	wave w_coef
 	duplicate/o w_coef root:Packages:BS2P:CalibrationVariables:pockelsPolynomial
 	
@@ -1071,41 +1088,44 @@ function laserPowerCalibrationSample(pockelOpen)
 end
 
 function calibratePower()
-	make/o/n=0 diodeReadings, pockelsPercent, mW
+	make/o/n=20 w_diodeReadings, mW
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
-	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
-	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
+
+	string pockelDevNum = boardConfig[2][0]
+	variable pockelChannel = str2num(boardConfig[2][2])
 	bs_2P_zeroscanners("center")
-	variable i
-	for(i=0; i<11; i+=1)
-		variable meterReading
-		pockelValue = (i*10)
-		redimension/n=(numpnts(diodeReadings)+1) diodeReadings
-		BS_2P_Pockels("open")
-		sleep/s 1
-		diodeReadings[numpnts(diodeReadings)-1] = sampleDiodeVoltage()
 	
-		redimension/n=(numpnts(pockelsPercent)+1) pockelsPercent
-		pockelsPercent[numpnts(pockelsPercent)-1] = pockelValue
+	variable minPockels = 0.2
+	variable maxPockels = 1
+	variable meterReading
+	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), w_diodeReadings
+
+	variable i
+	for(i=0; i < (numpnts(w_diodeReadings)) ; i += 1)
+		variable pockelsVolts = (((maxPockels - minPockels) / numpnts(w_diodeReadings))*i) + minPockels
+//		print pockelsVolts
+		fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelsVolts, minPockels,maxPockels )
+		sleep/s 1
+		w_diodeReadings[i] = sampleDiodeVoltage()
+		
 		prompt meterReading, "Power Meter (mW)"
 		doPrompt "Read the meter", meterReading 
 
-		redimension/n=(numpnts(mW)+1) mW
 		mW[i] = meterReading
 	endfor
+
 	BS_2P_Pockels("close")
 	bs_2P_zeroscanners("offset")
 	
-	display/k=1 mW vs diodeReadings
-	CurveFit/X=1/NTHR=0 line  mW /X=diodeReadings /D
+	display/k=1 mW vs w_diodeReadings
+	CurveFit/X=1/NTHR=0 line  mW /X=w_diodeReadings /D
 	ModifyGraph mode(mW)=3,marker(mW)=19,rgb(mW)=(0,0,0)
 	wave w_coef
-	boardConfig[10][3] = num2str(w_coef[0])
+	boardConfig[10][3] =  num2str(w_coef[0])
 	boardConfig[10][2] = num2str(w_coef[1])
 	NVAR mWPerVolt = root:Packages:BS2P:CurrentScanVariables:mWPerVolt
 	NVAR mWPerVolt_offset = root:Packages:BS2P:CurrentScanVariables:mWPerVolt_offset
-	mWPerVolt_offset = w_coef[0]
+	mWPerVolt_offset = (w_coef[0])///w_coef[1]
 	mWPerVolt = w_coef[1]
 	bs_2P_editConfig()
 end
