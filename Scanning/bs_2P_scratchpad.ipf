@@ -220,7 +220,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		bs_2P_zeroscanners("offset")
 		imageTransform/k stackImages slice_1; wave m_stack
 		duplicate/o m_stack kineticSeries
-	
+		LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, stackDepth)
 		scaleKineticSeries()
 		setScale/p z, 0, (stackResolution * 1e-6), kineticSeries
 		BS_2P_Append3DImageSlider()

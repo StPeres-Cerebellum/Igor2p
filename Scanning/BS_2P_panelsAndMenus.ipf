@@ -437,12 +437,12 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				 	arbitraryScan()
 				 break
 				 
-				 case 11: // 0
-				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -focusStep)
+				 case 11: // page Up
+				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep)
 				 break
 				 
-				 case 12: // .
-				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep) 
+				 case 12: // page Down
+				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -focusStep) 
 				 break
 				 				
 			endswitch
