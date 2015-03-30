@@ -220,6 +220,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		bs_2P_zeroscanners("offset")
 		imageTransform/k stackImages slice_1; wave m_stack
 		duplicate/o m_stack kineticSeries
+		killwaves/z m_stack
 	
 		scaleKineticSeries()
 		setScale/p z, 0, (stackResolution * 1e-6), kineticSeries
