@@ -119,7 +119,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	
 	variable/g frameCounter = 0
 //	string S_kineticHook = "kineticHook("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
-	string S_kineticHook2 = "kineticHook2("+nameofWave(dum)+")"
+	string S_kineticHook2 = "kineticHook2("+nameofWave(dum)+","+num2str(frames)+")"
 	string S_videoHook = "videoHook("+num2str(frameCounter)+","+num2str(10000)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 	string S_stackHook = "stackHook("+num2str(frameCounter)+","+num2str(stackSlices)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 //	string S_kineticTest = "kineticTest("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+")"//","+nameofWave(dum)+")"
@@ -218,7 +218,9 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		duplicate/o kineticSeries $sliceName
 		BS_2P_PMTShutter("close")
 		bs_2P_zeroscanners("offset")
+		LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, stackDepth)
 		imageTransform/k stackImages slice_1; wave m_stack
+		rotateImage(m_stack)
 		duplicate/o m_stack kineticSeries
 		killwaves/z m_stack
 	
@@ -254,6 +256,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	redimension/n=(pixelsPerline, lines) lastFrame
 	duplicate/free lastFrame flipped
 	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
+	rotateImage(lastFrame)
 	duplicate/o lastFrame root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()
 
@@ -291,24 +294,30 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 
 end
 
-function kineticHook2(dum)
+function kineticHook2(dum, frames)
 	wave dum
+	variable frames
 	
 	BS_2P_Pockels("close")
 	BS_2P_PMTShutter("close")
 	bs_2P_zeroscanners("offset")
 	
+
 	differentiate/meth=2/ep=1/p dum
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
-	NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
+//	NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
 	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
 	variable pixelsPerFrame = pixelsPerLine * Totallines
 	
 	redimension/n=(pixelsPerline, totalLines, frames) dum
 	
 	duplicate/free dum flipped
+	//flip every other row for bidirectional scanning
 	dum[][1,(totalLines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
+	
+	//rotate image
+	rotateImage(dum)
 	duplicate/o dum root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	wave kineticSeries =  root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()

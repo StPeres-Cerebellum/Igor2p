@@ -18,7 +18,7 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	// add max min pockels
 	switch(s.eventCode)
 		case 2:
-			newpath/o configPath, "C:Users:2P:Documents"
+//			newpath/o configPath, "C:Users:2P:Documents"
 			save/o/p=configPath boardConfig
 			scanLimit = str2num(boardConfig[8][2])
 			scaleFactor = str2num(boardConfig[9][2])
@@ -40,19 +40,22 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
       endswitch
 end
 
-function bs_2P_getConfig()
-	newpath/o configPath, "C:Users:2P:Documents"
+function/wave bs_2P_getConfig()
+	newpath/o/z configPath, "C:Users:2P:Documents"
+	if(v_flag)
+		newPath/c/m="Which folder should contain the configuration file?" configPath
+	endif
 	variable refnum
 	open/r/z/p=configPath refnum as "boardConfig.ibw"
 	if(v_flag == 0)
 		print "found a config", refnum, s_filename
 		close refNum
-		LoadWave/H/O "C:Users:2P:Documents:boardConfig.ibw"
+		LoadWave/H/O/P=configPath "boardConfig.ibw"
 		wave/t boardConfig
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
 	else
-		make/o/t/n=(20,4) root:Packages:BS2P:CalibrationVariables:boardConfig
+		make/o/t/n=(30,10) root:Packages:BS2P:CalibrationVariables:boardConfig
 		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 
 		setdimlabel 1,0,Board,boardCOnfig
@@ -101,12 +104,12 @@ function bs_2P_getConfig()
 		
 		setdimlabel 0,9,metersPerVolt,boardCOnfig		
 		boardConfig[9][1] = "Constant"
-		boardConfig[9][2] = "33.3E-6"
+		boardConfig[9][2] = "  4.32468e-05"
 		
 		setdimlabel 0,10,mWPerVolt,boardCOnfig		
 		boardConfig[10][1] = "Constant"
-		boardConfig[10][2] = "38.905"	//slope
-		boardConfig[10][3] = "-7.6025"	//offset
+		boardConfig[10][2] = "31.3"	//slope
+		boardConfig[10][3] = "-7.8"	//offset
 
 		setdimlabel 0,11,minPockels,boardCOnfig		
 		boardConfig[11][1] = "Constant"
@@ -124,9 +127,40 @@ function bs_2P_getConfig()
 		boardConfig[14][1] = "Constant"
 		boardConfig[14][2] = "Z"
 		
+		setDimLabel 0, 15, UseLuigs,boardCOnfig
+		boardConfig[15][1] = "Constant"
+		boardConfig[15][2] = "YES"
+		
+		setDimLabel 0, 16, UsePI,boardCOnfig
+		boardConfig[16][1] = "Constant"
+		boardConfig[16][2] = "YES"
+		
+		setDimLabel 0, 17, pockelsPolynomial,boardCOnfig
+		boardConfig[17][1] = "calibrationVariable"
+		boardConfig[17][2] = "8.72516"
+		boardConfig[17][3] = "-107.568"
+		boardConfig[17][4] = "294.209"
+		
+		setDimLabel 0, 18, galvosParkVoltage,boardCOnfig
+		boardConfig[18][1] = "Constant"
+		boardConfig[18][2] = "6"
+
+		setDimLabel 0, 19, horizontalReflect,boardCOnfig
+		boardConfig[19][1] = "Flip image on vertical axis"
+		boardConfig[19][2] = "0"
+		
+		setDimLabel 0, 20, verticalReflect,boardCOnfig
+		boardConfig[20][1] = "Flip image on horizontal axis"
+		boardConfig[20][2] = "0"
+		
+		setDimLabel 0, 21, transposeImage,boardCOnfig
+		boardConfig[21][1] = "swap X and Y"
+		boardConfig[21][2] = "0"
+		
 		edit/k=1/n=Config boardConfig boardConfig.l
 		setwindow config hook(myhook)=configSaveHook
 	endif
+	return boardConfig
 end
 
 function bs_2P_editConfig()

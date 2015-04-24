@@ -71,7 +71,7 @@ end
 Window Control2P() : Panel
 	Init2PVariables()
 	PauseUpdate; Silent 1		// building window...
-	NewPanel /K=1 /W=(19,59,786,137)
+	NewPanel /K=1 /W=(16,58,783,136)
 	ModifyPanel cbRGB=(65534,65534,65534)
 	SetDrawLayer UserBack
 	SetDrawEnv linefgc= (48896,49152,65280),fillfgc= (60928,60928,60928),fillbgc= (48896,49152,65280)
@@ -110,18 +110,6 @@ Window Control2P() : Panel
 	SetVariable DisplayPockelsPercent,fSize=22,format="%.0f%",frame=0,fStyle=1
 	SetVariable DisplayPockelsPercent,valueBackColor=(60928,60928,60928)
 	SetVariable DisplayPockelsPercent,limits={0,200,1},value= root:Packages:BS2P:CurrentScanVariables:pockelValue
-	ValDisplay FrameTime,pos={579,12},size={108,14},title="1 Frame:",fSize=10
-	ValDisplay FrameTime,format="%.1W1Ps",frame=0,fColor=(65280,0,0)
-	ValDisplay FrameTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
-	ValDisplay FrameTime,limits={0,0,0},barmisc={0,1000}
-	ValDisplay FrameTime,value= #"root:Packages:BS2P:CurrentScanVariables:scanFrameTime"
-	ValDisplay TotalTime,pos={579,26},size={109,14},title="1 Line:",fSize=10
-	ValDisplay TotalTime,format="%.1W1Ps",frame=0,fColor=(65280,0,0)
-	ValDisplay TotalTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
-	ValDisplay TotalTime,limits={0,0,0},barmisc={0,1000}
-	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:lineTime"
-	SetVariable objective,pos={621,55},size={136,16},bodyWidth=21,proc=SetobjectiveMagProc,title="Objective Magnification"
-	SetVariable objective,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:objectiveMag
 	PopupMenu galvoFreq,pos={9,49},size={133,21},proc=BS2P_setFreqPopMenuProc,title="Line Speed (KHz):"
 	PopupMenu galvoFreq,mode=3,popvalue="1.0",value= #"\"0.25;0.5;1.0;1.5;2.0;2.5;3.0\""
 	SetVariable lineSpacing,pos={85,22},size={65,16},proc=BS_2P_SetScanVarProc,title=" "
@@ -129,18 +117,29 @@ Window Control2P() : Panel
 	SetVariable lineSpacing,frame=0,fStyle=1,valueColor=(0,0,52224)
 	SetVariable lineSpacing,valueBackColor=(60928,60928,60928)
 	SetVariable lineSpacing,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:lineSpacing
-	PopupMenu pixelsPerLine,pos={150,49},size={102,21},proc=PixPerLinePopMenuProc,title="Pixels/Line"
-	PopupMenu pixelsPerLine,mode=6,popvalue="256",value= #"\"8;16;32;64;128;256;512;1024\""
+	PopupMenu pixelsPerLine,pos={150,49},size={108,21},proc=PixPerLinePopMenuProc,title="Pixels/Line"
+	PopupMenu pixelsPerLine,mode=8,popvalue="1024",value= #"\"8;16;32;64;128;256;512;1024\""
 	SetVariable lineDisplay,pos={182,22},size={31,16},proc=BS_2P_SetScanVarProc,title=" "
 	SetVariable lineDisplay,labelBack=(60928,60928,60928),fSize=10,frame=0,fStyle=1
 	SetVariable lineDisplay,valueColor=(0,0,52224)
 	SetVariable lineDisplay,valueBackColor=(60928,60928,60928)
 	SetVariable lineDisplay,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:totalLines
-	ValDisplay powerGuess,pos={378,52},size={128,14},title="estimated mW:"
+	ValDisplay powerGuess,pos={484,18},size={128,14},title="Estimated mW:"
 	ValDisplay powerGuess,format="%.2g",frame=0,valueColor=(65280,0,0)
 	ValDisplay powerGuess,valueBackColor=(60928,60928,60928)
 	ValDisplay powerGuess,limits={0,0,10},barmisc={0,1000}
 	ValDisplay powerGuess,value= #"poly(root:packages:bs2P:calibrationVariables:pockelsPolynomial, root:Packages:BS2P:CurrentScanVariables:pockelValue/ (100/( root:Packages:BS2P:calibrationVariables:maxPockels-root:Packages:BS2P:calibrationVariables:minPockels))+root:Packages:BS2P:calibrationVariables:minPockels)"
+	ValDisplay dwellTIme,pos={291,39},size={100,14},title="Dwell Time:"
+	ValDisplay dwellTIme,labelBack=(60928,60928,60928),format="%.0W1Ps",frame=0
+	ValDisplay dwellTIme,valueBackColor=(60928,60928,60928)
+	ValDisplay dwellTIme,limits={0,0,0},barmisc={0,1000}
+	ValDisplay dwellTIme,value= #"1/root:packages:bs2p:currentScanVariables:acquisitionFrequency"
+	ValDisplay measuredPower,pos={483,35},size={110,14},title="Last reading:"
+	ValDisplay measuredPower,labelBack=(60928,60928,60928),format="%.1W1PmW",frame=0
+	ValDisplay measuredPower,valueColor=(52224,0,0)
+	ValDisplay measuredPower,valueBackColor=(60928,60928,60928)
+	ValDisplay measuredPower,limits={0,0,0},barmisc={0,1000}
+	ValDisplay measuredPower,value= #"root:Packages:BS2P:CurrentScanVariables:laserPower"
 EndMacro
 
 
@@ -153,11 +152,14 @@ Function Init2PVariables()
 		newdatafolder root:Packages:BS2P:CurrentScanVariables
 		newdatafolder root:Packages:BS2P:ImageDisplayVariables
 		
-		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {8.72516,-107.568,294.209}
-		bs_2P_getConfig()
-		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-		PI_Initialize()
-		LN_initialize()
+		wave/t boardConfig = bs_2P_getConfig()
+		if(stringMatch((boardConfig[15][2]), "YES"))
+			LN_initialize()
+			LN_setSpeed((str2num(boardConfig[13][2])), boardConfig[14][2], 16)
+		endif
+		if(stringMatch((boardConfig[16][2]), "YES"))
+			PI_Initialize()
+		endif
 		
 		
 ////////////////	Stored Calibration Variables	////////////////////	
@@ -224,12 +226,12 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayTotalTime = 0
 		Variable/g root:Packages:BS2P:CurrentScanVariables:displaySpeed = 1	//display speed
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayPixelSize
-//		MakeFullFrameVoltages()
+		
+		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {(str2num(boardConfig[17][2])),(str2num(boardConfig[17][3])),(str2num(boardConfig[17][4]))}
 	endif
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
-	LN_setSpeed(luigsFocusDevice, luigsFocusAxis, 16)
-//	LN_initialize("COM5")
+	
 End
 
 function BS_2P_makeKineticWindow()
@@ -263,13 +265,14 @@ function BS_2P_makeKineticWindow()
 	ModifyGraph minor=1
 
 	ControlBar 80
-	SetVariable BS_2P_pixelShifter,pos={5,47},size={103,16},noproc,title="Pixel Shift"
+	SetVariable BS_2P_pixelShifter,pos={5,47},size={112,16},noproc,title="Pixel Shift"
 	SetVariable BS_2P_pixelShifter,frame=0,valueBackColor=(60928,60928,60928)
 	SetVariable BS_2P_pixelShifter,limits={0,0.0002,5e-07},value= root:Packages:BS2P:CalibrationVariables:pixelShift
-	SetVariable SetPixelSize,pos={4,31},size={90,16},proc=BS_2P_setPixelSizeProc,title="Binning (µm):"
-	SetVariable SetPixelSize,frame=0,valueColor=(65280,0,0)
-	SetVariable SetPixelSize,valueBackColor=(60928,60928,60928)
-	SetVariable SetPixelSize,limits={0.025,inf,0},value= root:Packages:BS2P:CurrentScanVariables:displayPixelSize
+	
+//	SetVariable SetPixelSize,pos={4,31},size={90,16},proc=BS_2P_setPixelSizeProc,title="Binning (µm):"
+//	SetVariable SetPixelSize,frame=0,valueColor=(65280,0,0)
+//	SetVariable SetPixelSize,valueBackColor=(60928,60928,60928)
+//	SetVariable SetPixelSize,limits={0.025,inf,0},value= root:Packages:BS2P:CurrentScanVariables:displayPixelSize
 	if(datafolderexists("root:Packages:WM3DImageSlider:kineticWindow")==0)
 		NewDataFolder/O root:Packages:WM3DImageSlider
 		NewDataFolder/O root:Packages:WM3DImageSlider:kineticWindow
@@ -317,8 +320,8 @@ function BS_2P_makeKineticWindow()
 	ValDisplay FrameTime,value= #"root:Packages:BS2P:CurrentScanVariables:scanFrameTime"
 
 
-	ValDisplay FrameTime1,pos={198,35},size={70,14},title="freq:",fSize=10
-	ValDisplay FrameTime1,format="%.2W1PHz",frame=0,fColor=(65280,0,0)
+	ValDisplay FrameTime1,pos={198,35},size={90,14},title="freq:",fSize=10
+	ValDisplay FrameTime1,format="%.1f Hz",frame=0,fColor=(65280,0,0)
 	ValDisplay FrameTime1,valueColor=(65280,0,0)
 	ValDisplay FrameTime1,valueBackColor=(60928,60928,60928)
 	ValDisplay FrameTime1,limits={0,0,0},barmisc={0,1000}
@@ -344,9 +347,8 @@ function BS_2P_makeKineticWindow()
 //	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=CheckProcSaveAll,title="Save All"
 //	CheckBox BS_2P_SaveEverything,value= 0,side= 1
 	
-	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},title="Save All"
+	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=saveALLCheckProc,title="Save All"
 	CheckBox BS_2P_SaveEverything,variable= root:Packages:BS2P:CurrentScanVariables:saveEmAll
-
 	
 	SetVariable setZoom,pos={609,43},size={82,16},proc=BS_2P_SetFramesProc,title="Zoom (µm)"
 	SetVariable setZoom,frame=0,valueBackColor=(65535,65535,65535)
@@ -382,10 +384,12 @@ function BS_2P_makeKineticWindow()
 	SetVariable stackResolution,frame=0
 	SetVariable stackResolution,limits={0,20,0},value= root:Packages:BS2P:CurrentScanVariables:stackResolution
 
+	ValDisplay pixSize,pos={5,30},size={90,14},title="Pixel Size"
+	ValDisplay pixSize,labelBack=(60928,60928,60928),format="%.W1Pm",frame=0
+	ValDisplay pixSize,valueBackColor=(60928,60928,60928)
+	ValDisplay pixSize,limits={0,0,0},barmisc={0,1000}
+	ValDisplay pixSize,value= #"root:packages:bs2p:currentScanVariables:displayPixelSize"
 	
-	
-
-
 
 end
 
@@ -917,10 +921,11 @@ function bs_2P_zeroscanners(position)
 	string galvoDev = boardConfig[0][0]
 	variable xGalvoChannel = str2num(boardConfig[0][2])
 	variable yGalvoChannel = str2num(boardConfig[1][2])
+	variable parkVoltage =  str2num(boardConfig[18][2])
 	if (stringmatch(position, "center"))
 		offsetx = 0; offsety = 0
 	elseif (stringmatch(position,"offset"))
-		offsety = 6; offsetx = 6
+		offsety = parkVoltage; offsetx = parkVoltage
 	endif
 		fDAQmx_WriteChan(galvoDev, xGalvoChannel, offsetx, -10, 10 )
 		fDAQmx_WriteChan(galvoDev, yGalvoChannel, offsety, -10, 10 )
@@ -1228,11 +1233,27 @@ Function doStack(ba) : ButtonControl
 	NVAR stackDepth =  root:Packages:BS2P:CurrentScanVariables:stackDepth
 	NVAR stackResolution =  root:Packages:BS2P:CurrentScanVariables:stackResolution
 	NVAR frames =  root:Packages:BS2P:CurrentScanVariables:frames
+	
+	NVAR  prefixIncrement = root:Packages:BS2P:CurrentScanVariables:prefixIncrement
+	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
+	SVAR currentPath = root:Packages:BS2P:CurrentScanVariables:currentPath
+	SVAR SaveAsPrefix = root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
+	SVAR fileName2bWritten = root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
+	SVAR currentPathDetails = root:Packages:BS2P:CurrentScanVariables:currentPathDetails
+	string filename2Write = saveAsPrefix+num2str(prefixIncrement)+".ibw"
+	
 	frames = ceil(stackDepth / stackResolution)
 	switch( ba.eventCode )
 		case 2: // mouse up
 			BS_2P_updateVariablesCreateScan()
 			BS_2P_Scan("stack")
+			if(saveemall)
+				BS_2P_saveDum()
+				pathInfo $currentPath
+				currentPathDetails = s_path
+				prefixIncrement += 1
+				fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
+			endif
 			break
 		case -1: // control being killed
 			break
@@ -1249,6 +1270,38 @@ Function BS_2P_VideoButton(ba) : ButtonControl
 			BS_2P_updateVariablesCreateScan()
 			BS_2P_Scan("video")
 
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
+
+Function saveALLCheckProc(cba) : CheckBoxControl
+	STRUCT WMCheckboxAction &cba
+	SVAR pathDetailsListing =  root:Packages:BS2P:CurrentScanVariables:pathDetailsListing
+	SVAR pathsListing =  root:Packages:BS2P:CurrentScanVariables:pathsListing
+	SVAR currentPath =  root:Packages:BS2P:CurrentScanVariables:currentPath
+	SVAR currentPathDetails = root:Packages:BS2P:CurrentScanVariables:currentPathDetails
+	SVAR fileName2bWritten = root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
+	SVAR SaveAsPrefix = root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
+	NVAR prefixIncrement = root:Packages:BS2P:CurrentScanVariables:prefixIncrement
+	switch( cba.eventCode )
+		case 2: // mouse up
+			Variable checked = cba.checked
+			if(checked == 1)
+				if(strlen(currentPathDetails) == 0)
+					string newPathName = "BS_2P_SavePath_"+num2str(itemsinlist(pathDetailsListing))
+					newpath/Q $newPathName
+					pathsListing += ";"+newPathName
+					pathInfo $newPathName
+					pathDetailsListing += ";"+s_path
+					currentPathDetails = s_path
+					currentPath = newPathName
+					fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
+				endif
+			endif
+			break
 		case -1: // control being killed
 			break
 	endswitch

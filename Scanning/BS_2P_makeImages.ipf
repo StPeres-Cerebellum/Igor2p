@@ -297,3 +297,45 @@ function importStack(zStep, images)
 	setScale/p x, 0, pixelSize, m_stack; setScale/p y, 0, pixelSize, m_stack; setScale/p z, 0, (zStep), m_stack
 	makeProjections(m_stack)
 end
+
+function rotateImage(inputImage)
+	wave inputImage
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	variable hReflect = str2num(boardConfig[19][2])
+	variable XYswitch = str2num(boardConfig[21][2])
+	variable vReflect = str2num(boardConfig[20][2])
+	
+	variable frames = dimsize(inputImage,2), frame
+
+	if(XYswitch == 1)
+		if(frames > 1)
+			imagetransform/o/g=(5) transposeVol inputImage; wave m_volumeTranspose
+			duplicate/o m_volumeTranspose inputImage
+			killwaves m_volumeTranspose
+		else
+			matrixOP/o/free switched = inputImage ^t
+			duplicate/o switched inputImage
+		endif
+	endif
+	
+	if(hReflect == 1)
+		if(frames > 1)
+			for(frame=0; frame<frames; frame +=1)
+				imagetransform/p=(frame) flipRows inputImage
+			endfor
+		else
+			imagetransform flipRows inputImage
+		endif
+	endif
+
+	if(vReflect == 1)
+		if(frames > 1)
+			for(frame=0; frame<frames; frame +=1)
+				imagetransform/p=(frame) flipCols inputImage
+			endfor
+		else
+			imagetransform flipCols inputImage
+		endif
+	endif
+
+end
