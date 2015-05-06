@@ -186,14 +186,35 @@ end
 
 Function arbitraryScan()
 	getmarquee/K left, bottom
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	variable hReflect = str2num(boardConfig[19][2])
+	variable XYswitch = str2num(boardConfig[21][2])
+	variable vReflect = str2num(boardConfig[20][2])
 	NVAR scaledX = root:Packages:BS2P:CurrentScanVariables:scaledX
 	NVAR scaledY = root:Packages:BS2P:CurrentScanVariables:scaledY
 	NVAR X_Offset = root:Packages:BS2P:CurrentScanVariables:X_Offset
 	NVAR Y_Offset = root:Packages:BS2P:CurrentScanVariables:Y_Offset
-	X_Offset = v_left
-	Y_offset = v_bottom
-	scaledX = v_right - v_left
-	scaledY = v_top - v_bottom
+	
+	variable scannerLeft = v_left, scannerRight = v_right, scannertop = v_top, scannerBottom = v_bottom
+	
+	if(XYswitch == 1)
+		scannerLeft = v_bottom
+		scannerRight = v_top
+		scannerTop = v_right
+		scannerBottom = v_left
+	endif
+	if(hreflect == 1)
+		scannerLeft = v_right
+		scannerRight = v_left
+	endif
+	if(vreflect == 1)
+		scannerTop = v_bottom
+		scannerBottom = v_top
+	endif	
+	X_Offset = scannerLeft
+	Y_offset = scannerBottom
+	scaledX = scannerRight - scannerLeft
+	scaledY = scannerTop - scannerBottom
 	
 //	print scaledX, scaledY
 	

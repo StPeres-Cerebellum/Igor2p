@@ -26,6 +26,7 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	 		mWperVolt_offset = str2num(boardConfig[10][3])
 	 		luigsFocusDevice = str2num(boardConfig[13][2])
 	 		luigsFocusAxis = boardConfig[14][2]
+	 		rotatekineticWin()
 //			add max/min pockels
 			break
 		case 1:
@@ -35,6 +36,7 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 			mWperVolt_offset = str2num(boardConfig[10][3])
 			luigsFocusDevice = str2num(boardConfig[13][2])
 			luigsFocusAxis = boardConfig[14][2]
+			rotatekineticWin()
       			// add max/min pockles
       		break
       endswitch

@@ -390,6 +390,8 @@ function BS_2P_makeKineticWindow()
 	ValDisplay pixSize,limits={0,0,0},barmisc={0,1000}
 	ValDisplay pixSize,value= #"root:packages:bs2p:currentScanVariables:displayPixelSize"
 	
+	rotatekineticWin()
+	
 
 end
 

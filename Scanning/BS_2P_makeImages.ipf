@@ -339,3 +339,29 @@ function rotateImage(inputImage)
 	endif
 
 end
+
+function rotatekineticWin()
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	variable hReflect = str2num(boardConfig[19][2])
+	variable XYswitch = str2num(boardConfig[21][2])
+	variable vReflect = str2num(boardConfig[20][2])
+
+	if(XYswitch == 1)
+		ModifyGraph/w=kineticWindow swapXY=1
+	else
+		ModifyGraph/w=kineticWindow swapXY=0
+	endif
+	
+	if(hReflect == 1)
+		SetAxis/a/R/w=kineticWindow bottom
+	else
+		SetAxis/a/w=kineticWindow bottom
+	endif
+
+	if(vReflect == 1)
+		SetAxis/a/R/w=kineticWindow left
+	else
+		SetAxis/a/w=kineticWindow left
+	endif
+
+end

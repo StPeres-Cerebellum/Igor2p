@@ -220,7 +220,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		bs_2P_zeroscanners("offset")
 		LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, stackDepth)
 		imageTransform/k stackImages slice_1; wave m_stack
-		rotateImage(m_stack)
+//		rotateImage(m_stack)
 		duplicate/o m_stack kineticSeries
 		killwaves/z m_stack
 	
@@ -256,7 +256,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	redimension/n=(pixelsPerline, lines) lastFrame
 	duplicate/free lastFrame flipped
 	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
-	rotateImage(lastFrame)
+//	rotateImage(lastFrame)
 	duplicate/o lastFrame root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()
 
@@ -317,7 +317,7 @@ function kineticHook2(dum, frames)
 	dum[][1,(totalLines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
 	
 	//rotate image
-	rotateImage(dum)
+//	rotateImage(dum)
 	duplicate/o dum root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	wave kineticSeries =  root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()
