@@ -255,11 +255,10 @@ function BS_2P_makeKineticWindow()
 	DoWindow/C kineticWindow
 	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
 
-	DrawLine/W=kineticWindow  (-10e-6), (0),  (10e-6),  (0)
-
+	DrawLine/W=kineticWindow  (-39e-6), (-23.9e-6),  (-19e-6),  (-23.9e-6)
 	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
 
-	DrawLine/W=kineticWindow  (0), (-10e-6),  (0),  (10e-6)
+	DrawLine/W=kineticWindow  (-29e-6), (-34e-6),  (-29e-6),  (-14e-6)
 	ModifyGraph width=0,height={Plan,1,left,bottom}
 	ModifyGraph mirror=2
 	ModifyGraph minor=1

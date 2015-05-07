@@ -158,7 +158,14 @@ function ClearROIsFromHere()
 	wave Image = ImageNameToWaveRef(S_MarqueeWin,ImageName)
 
 	removeall(s_marqueeWin, Image)
+	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
+
+	DrawLine/W=kineticWindow  (-39e-6), (-23.9e-6),  (-19e-6),  (-23.9e-6)
+	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
+
+	DrawLine/W=kineticWindow  (-29e-6), (-34e-6),  (-29e-6),  (-14e-6)
 end
+
 function ImageDFF()
 	
 	string ImageName=ImageNameList("","")
