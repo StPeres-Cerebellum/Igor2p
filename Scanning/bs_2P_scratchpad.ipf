@@ -90,6 +90,10 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	wave runx, runy, dum
 	variable frames, trigger
 	string imageMode
+	
+	variable drawPause = 50e-3 //seconds to draw the frame  --try to make this as short as possible
+	variable userPause = 0	//seconds to wait between frames
+	
 	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:KineticSeries
 	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
 	redimension/n=(-1,-1,1) kineticSeries
@@ -97,6 +101,8 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	setdatafolder root:Packages:BS2P:CurrentScanVariables
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+	
+	variable frameDuration = dimsize(runy,0) * dimdelta(runy,0)
 	
 	NVAR stackDepth = root:Packages:BS2P:CurrentScanVariables:stackDepth
 	NVAR stackResolution = root:Packages:BS2P:CurrentScanVariables:stackResolution
@@ -111,9 +117,10 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string xGalvoChannel = boardConfig[0][2]
 	string yGalvoChannel = boardConfig[1][2]
 	
-	string pmtSource = "/"+pmtDev+"/pfi8"
+	string pmtSource = "/"+pmtDev+"/pfi"+boardConfig[3][2]
 	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
 	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
+	string frameClock = "/"+pmtDev+"/Ctr1InternalOutput"
 	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
 	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
 	
@@ -122,7 +129,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string S_kineticHook2 = "kineticHook2("+nameofWave(dum)+","+num2str(frames)+")"
 	string S_videoHook = "videoHook("+num2str(frameCounter)+","+num2str(10000)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 	string S_stackHook = "stackHook("+num2str(frameCounter)+","+num2str(stackSlices)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
-//	string S_kineticTest = "kineticTest("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+")"//","+nameofWave(dum)+")"
+	string S_kineticTest = "kineticTest("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 	string S_scanString = nameofwave(runx)+", 0; "+nameofwave(runy)+", 1"
 //	print S_kineticHook2
 	
@@ -140,8 +147,17 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
-		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_kineticHook2 0//;frameCounter += 1;concatenate/np=1 {dum}, kineticDum;" 0//+s_kinetictest 0
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=8e6/DIR=0/clk=pixelCLock/wave=dum/eosh = s_kineticHook2 0	//Dir=0 means that pfi10 (on x-series boards)
+																																	//determines the direction of counting
+																																	// init=8e6 means we start the counting half-way between
+																																	//0 and 24 bits (see below)
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frames) galvoChannels
+		DAQmx_CTR_OutputPulse/DEV="dev1"/FREQ={(1/frameDuration),0.5}/NPLS=(frames)/out="/dev1/pfi10" 1	//pfi10 is used to change the direction of photon counting --away or towards 0
+																										//the edge counters have a 24 bit readout register and we have to keep the total
+																										//counts far from 24 bits 2^24 counts or they will start being rounded to the nearest bit
+																										//and that will decrease the resolution of images
+																										//so we switch the counting direction between frames, differentiate the counts
+																										//and take the absolute value to get
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/trig={startTrigChannel, trigger}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(stringmatch(imageMode, "stack"))
@@ -149,6 +165,12 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+	elseif(stringmatch(imageMode, "test"))		//used for testing shit
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_kineticTest 0//;frameCounter += 1;concatenate/np=1 {dum}, kineticDum;" 0//+s_kinetictest 0
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/trig={frameClock}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+		DAQmx_CTR_OutputPulse/trig={startTrigChannel, trigger}/DEV=pmtDev/SEC={10e-6, (frameDuration+drawPause+userPause)}/NPLS=(frames) 1 ///FRAME CLOCK
 	endif
 	
 
@@ -304,6 +326,7 @@ function kineticHook2(dum, frames)
 	
 
 	differentiate/meth=2/ep=1/p dum
+	dum = abs(dum)	//we do this because we switch the direction of the counting for each frame
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
 //	NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
@@ -332,6 +355,63 @@ function kineticHook2(dum, frames)
 	setdatafolder currentFolder
 end
 
+function kineticTest(frame, frames, lines, pixelsPerLine runx, runy, dum)//, imageMode)
+	variable frame, frames, lines, pixelsPerLine
+	wave runx, runy, dum
+	
+	NVAR frameCounter
+	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
+	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
+
+	frameCounter += 1
+	variable pixelsPerFrame = pixelsPerLine * lines
+	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:KineticSeries
+	string S_kineticTest = "kineticTest("+num2str(frameCounter)+","+num2str(frames)+","+num2str(lines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
+
+//	duplicate/o/free dum lastFrame
+//	dum = nan
+	
+//	differentiate/meth=2/ep=1/p lastFrame
+//	redimension/n=(pixelsPerline, lines) lastFrame
+//	duplicate/free lastFrame flipped
+//	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
+//	if(frameCounter == 1)
+//		make/o/free/n=(pixelsPerFrame) buffer
+//		scaleKineticSeries()
+//	endif
+	wave buffer = root:Packages:BS2P:CurrentScanVariables:buffer
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
+	string galvoDev = boardConfig[0][0]
+	string pmtDev = boardConfig[3][0]
+	string startTrigDev = boardConfig[5][0]
+	string startTrigChannel = "/"+startTrigDev+"/"+"pfi"+boardConfig[5][2]
+	string xGalvoChannel = boardConfig[0][2]
+	string yGalvoChannel = boardConfig[1][2]
+	
+	string pmtSource = "/"+pmtDev+"/pfi"+boardConfig[3][2]
+	string frameClock = "/"+pmtDev+"/Ctr1InternalOutput"
+	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
+	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
+	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
+	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
+	
+
+	if(frameCounter == frames)	//shut it down
+//		concatenate/np=2 {lastFrame} , buffer
+		BS_2P_PMTShutter("close")
+		bs_2P_zeroscanners("offset")
+		BS_2P_Append3DImageSlider()
+//		BS_2P_writeScanParamsInWave(kineticSeries)
+		setdatafolder currentFolder
+	elseif(frameCounter < frames)	//otherwise set up another one
+//		concatenate/np=2 {lastFrame} , buffer
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_kineticTest 0
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/trig={frameClock}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+	endif
+
+end
 
 function 	scaleKineticSeries()
 	
