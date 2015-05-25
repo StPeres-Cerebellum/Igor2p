@@ -32,9 +32,9 @@ function BS_2P_Pockels(openOrClose)
 
 	variable pockelVoltage	// convert percent to volts -- 0.5V is max
 	if(stringmatch(openOrCLose, "open"))
-		pockelVoltage = pockelValue/(100/(maxPockels-minPockels))+minPockels
+		pockelVoltage = pockelValue//(100/(maxPockels-minPockels))+minPockels
 	elseif(stringmatch(openOrCLose, "close"))
-		pockelVoltage = minPockels
+		pockelVoltage = 0 //minPockels
 	endif
 	fDAQmx_WriteChan(pockelDevNum, pockelChannel, pockelVoltage, 0,2 )
 	return pockelVoltage
@@ -147,20 +147,12 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
-		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=8e6/DIR=0/clk=pixelCLock/wave=dum/eosh = s_kineticHook2 0	//Dir=0 means that pfi10 (on x-series boards)
-																																	//determines the direction of counting
-																																	// init=8e6 means we start the counting half-way between
-																																	//0 and 24 bits (see below)
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_kineticHook2 0
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frames) galvoChannels
-		DAQmx_CTR_OutputPulse/DEV="dev1"/FREQ={(1/frameDuration),0.5}/NPLS=(frames)/out="/dev1/pfi10" 1	//pfi10 is used to change the direction of photon counting --away or towards 0
-																										//the edge counters have a 24 bit readout register and we have to keep the total
-																										//counts far from 24 bits 2^24 counts or they will start being rounded to the nearest bit
-																										//and that will decrease the resolution of images
-																										//so we switch the counting direction between frames, differentiate the counts
-																										//and take the absolute value to get
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/trig={startTrigChannel, trigger}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(stringmatch(imageMode, "stack"))
+		readLaserPower()
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelClock/wave=dum/EOSH=S_stackHook 0
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
@@ -240,6 +232,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		duplicate/o kineticSeries $sliceName
 		BS_2P_PMTShutter("close")
 		bs_2P_zeroscanners("offset")
+		readLaserPower()
 		LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, stackDepth)
 		imageTransform/k stackImages slice_1; wave m_stack
 //		rotateImage(m_stack)
@@ -324,9 +317,9 @@ function kineticHook2(dum, frames)
 	BS_2P_PMTShutter("close")
 	bs_2P_zeroscanners("offset")
 	
-
+//	duplicate/o dum dum_bkp
 	differentiate/meth=2/ep=1/p dum
-	dum = abs(dum)	//we do this because we switch the direction of the counting for each frame
+//	dum = abs(dum)	//we do this because we switch the direction of the counting for each frame
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
 //	NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
@@ -346,7 +339,8 @@ function kineticHook2(dum, frames)
 	scaleKineticSeries()
 	BS_2P_Append3DImageSlider()
 	BS_2P_writeScanParamsInWave(kineticSeries)
-	BS_2P_writeScanParamsInWave(dum)
+//	readLaserPower()
+//	BS_2P_writeScanParamsInWave(dum)
 	if(datafolderexists ("root:currentrois") == 1)
 		NewUpdate(kineticSeries)
 	endif

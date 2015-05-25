@@ -176,7 +176,7 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 		
 		variable xPixels = ceil(scaledX/displayPixelSize)
 
-		make/o/n=((((pixelsPerLine) * totalLines)+1)) root:Packages:BS2P:CurrentScanVariables:dum = nan	//add one because we're going to take the first derivative
+		make/o/n=((((pixelsPerLine) * totalLines)+1))/y=4 root:Packages:BS2P:CurrentScanVariables:dum = nan	//add one because we're going to take the first derivative
 		wave dum = root:Packages:BS2P:CurrentScanVariables:dum
 		variable dumDelta =  (lineTime) / (pixelsPerLine)
 		SetScale/p x, 0, dumDelta , "s", dum

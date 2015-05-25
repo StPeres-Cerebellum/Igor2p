@@ -15,6 +15,8 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	NVAR mWperVolt_offset = root:Packages:BS2P:CalibrationVariables:mWperVolt_offset
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
+	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
+	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
 	// add max min pockels
 	switch(s.eventCode)
 		case 2:
@@ -26,6 +28,8 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 	 		mWperVolt_offset = str2num(boardConfig[10][3])
 	 		luigsFocusDevice = str2num(boardConfig[13][2])
 	 		luigsFocusAxis = boardConfig[14][2]
+	 		minPockels =  str2num(boardConfig[11][2])
+	 		maxPockels = str2num(boardConfig[12][2])
 	 		rotatekineticWin()
 //			add max/min pockels
 			break
@@ -36,6 +40,8 @@ function configSaveHook(s)    //This is a hook for the mousewheel movement in Ma
 			mWperVolt_offset = str2num(boardConfig[10][3])
 			luigsFocusDevice = str2num(boardConfig[13][2])
 			luigsFocusAxis = boardConfig[14][2]
+			minPockels =  str2num(boardConfig[11][2])
+	 		maxPockels = str2num(boardConfig[12][2])
 			rotatekineticWin()
       			// add max/min pockles
       		break

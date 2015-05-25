@@ -13,9 +13,10 @@
 #include <all ip procedures>
 
 Menu "2P"
-	Submenu "Panels"
-		"Control", /q, MakeControl2PPanel()
-	end
+//	Submenu "Panels"
+		"Turn ON 2P", /q, MakeControl2PPanel()
+	"-----"
+//	end
 //	SubMenu "Import"
 //		"1 wave", /q, BS_2P_Import1()
 //	end
@@ -28,7 +29,7 @@ Menu "2P"
 			"Open", /q, BS_2P_Pockels("open")
 			"Close", /q, BS_2P_Pockels("close")
 			"-----"
-			"Set Max Power", /q, calibratePockels()
+//			"Set Max Power", /q, calibratePockels()
 			"Calibrate With Power Meter", /q, calibratePower()
 
 		end
@@ -105,11 +106,11 @@ Window Control2P() : Panel
 	SetVariable DisplayInDigitization,format="%.1W1PHz",frame=0,fStyle=1
 	SetVariable DisplayInDigitization,valueBackColor=(60928,60928,60928)
 	SetVariable DisplayInDigitization,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:AcquisitionFrequency,noedit= 1
-	SetVariable DisplayPockelsPercent,pos={404,19},size={72,30},title=" "
+	SetVariable DisplayPockelsPercent,pos={404,19},size={92,30},title=" "
 	SetVariable DisplayPockelsPercent,labelBack=(60928,60928,60928),font="Arial"
-	SetVariable DisplayPockelsPercent,fSize=22,format="%.0f%",frame=0,fStyle=1
+	SetVariable DisplayPockelsPercent,fSize=22,format="%.2f V",frame=0,fStyle=1
 	SetVariable DisplayPockelsPercent,valueBackColor=(60928,60928,60928)
-	SetVariable DisplayPockelsPercent,limits={0,200,1},value= root:Packages:BS2P:CurrentScanVariables:pockelValue
+	SetVariable DisplayPockelsPercent,limits={0,2,0.01},value= root:Packages:BS2P:CurrentScanVariables:pockelValue
 	PopupMenu galvoFreq,pos={9,49},size={133,21},proc=BS2P_setFreqPopMenuProc,title="Line Speed (KHz):"
 	PopupMenu galvoFreq,mode=3,popvalue="1.0",value= #"\"0.25;0.5;1.0;1.5;2.0;2.5;3.0\""
 	SetVariable lineSpacing,pos={85,22},size={65,16},proc=BS_2P_SetScanVarProc,title=" "
@@ -118,28 +119,24 @@ Window Control2P() : Panel
 	SetVariable lineSpacing,valueBackColor=(60928,60928,60928)
 	SetVariable lineSpacing,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:lineSpacing
 	PopupMenu pixelsPerLine,pos={150,49},size={108,21},proc=PixPerLinePopMenuProc,title="Pixels/Line"
-	PopupMenu pixelsPerLine,mode=8,popvalue="1024",value= #"\"8;16;32;64;128;256;512;1024\""
+	PopupMenu pixelsPerLine,mode=8,popvalue="256",value= #"\"8;16;32;64;128;256;512;1024\""
 	SetVariable lineDisplay,pos={182,22},size={31,16},proc=BS_2P_SetScanVarProc,title=" "
 	SetVariable lineDisplay,labelBack=(60928,60928,60928),fSize=10,frame=0,fStyle=1
 	SetVariable lineDisplay,valueColor=(0,0,52224)
 	SetVariable lineDisplay,valueBackColor=(60928,60928,60928)
 	SetVariable lineDisplay,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:totalLines
-	ValDisplay powerGuess,pos={484,18},size={128,14},title="Estimated mW:"
-	ValDisplay powerGuess,format="%.2g",frame=0,valueColor=(65280,0,0)
-	ValDisplay powerGuess,valueBackColor=(60928,60928,60928)
-	ValDisplay powerGuess,limits={0,0,10},barmisc={0,1000}
-	ValDisplay powerGuess,value= #"poly(root:packages:bs2P:calibrationVariables:pockelsPolynomial, root:Packages:BS2P:CurrentScanVariables:pockelValue/ (100/( root:Packages:BS2P:calibrationVariables:maxPockels-root:Packages:BS2P:calibrationVariables:minPockels))+root:Packages:BS2P:calibrationVariables:minPockels)"
 	ValDisplay dwellTIme,pos={291,39},size={100,14},title="Dwell Time:"
 	ValDisplay dwellTIme,labelBack=(60928,60928,60928),format="%.0W1Ps",frame=0
 	ValDisplay dwellTIme,valueBackColor=(60928,60928,60928)
 	ValDisplay dwellTIme,limits={0,0,0},barmisc={0,1000}
 	ValDisplay dwellTIme,value= #"1/root:packages:bs2p:currentScanVariables:acquisitionFrequency"
-	ValDisplay measuredPower,pos={483,35},size={110,14},title="Last reading:"
-	ValDisplay measuredPower,labelBack=(60928,60928,60928),format="%.1W1PmW",frame=0
-	ValDisplay measuredPower,valueColor=(52224,0,0)
+	ValDisplay measuredPower,pos={392,50},size={110,14},title="Last reading:"
+	ValDisplay measuredPower,labelBack=(60928,60928,60928),format="%.1W1PmW"
+	ValDisplay measuredPower,frame=0,valueColor=(52224,0,0)
 	ValDisplay measuredPower,valueBackColor=(60928,60928,60928)
 	ValDisplay measuredPower,limits={0,0,0},barmisc={0,1000}
 	ValDisplay measuredPower,value= #"root:Packages:BS2P:CurrentScanVariables:laserPower"
+
 EndMacro
 
 
@@ -969,13 +966,16 @@ function bs_2p_initShutter()
 end
 
 function readLaserPower()
+	bs_2P_zeroscanners("offset")
+	BS_2P_Pockels("open")
 	sampleDiodeVoltage()
-	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
+	BS_2P_Pockels("close")
+//	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
 	
-	print "."
-	print "."
-	printf "%.2g mW (after objective) currently sent to galvos\r", laserPower
-	print "."
+//	print "."
+//	print "."
+//	printf "%.2g mW (after objective) currently sent to galvos\r", laserPower
+//	print "."
 end
 
 function sampleDiodeVoltage()
@@ -1031,7 +1031,7 @@ function calibratePockels()
 	NVAR minPockels = root:Packages:BS2P:CalibrationVariables:minPockels
 	NVAR maxPockels = root:Packages:BS2P:CalibrationVariables:maxPockels
 //	bs_2P_zeroScanners("center")
-	minPockels = 0.2
+	minPockels = 0//.2
 	maxPockels = 1
 	make/n=20/o w_diodeReadings
 	setscale x, minPockels , maxPockels, w_diodeReadings
@@ -1052,27 +1052,27 @@ function calibratePockels()
 		display/k=1/n=pockelsCalib w_diodeReadings
 //		appendToGraph fit_w_pockelsCalibration
 		ModifyGraph rgb(w_diodeReadings)=(0,0,0)//,lstyle(fit_w_pockelsCalibration)=2
-		Label left "mW"
+		Label left "Diode (V)"
 		Label bottom "Pockels (V)"
 //	endif
 
-	w_diodeReadings *= mWPerVolt
-	w_diodeReadings += mWPerVolt_offset
-	findLevel/edge=1/q  w_diodeReadings, (wavemin(w_diodeReadings)+0.01)
-	minPockels = v_levelx
-	boardConfig[11][2] = num2str(minPockels)
-	findLevel/edge=1/q  w_diodeReadings, targetPower
-	maxPockels = v_levelx
-	boardConfig[12][2] = num2str(maxPockels)
-	CurveFit/X=1/NTHR=0/q poly 3,  w_diodeReadings(0.2, 0.3) /D
-	wave w_coef
-	duplicate/o w_coef root:Packages:BS2P:CalibrationVariables:pockelsPolynomial
+//	w_diodeReadings *= mWPerVolt
+//	w_diodeReadings += mWPerVolt_offset
+//	findLevel/edge=1/q  w_diodeReadings, (wavemin(w_diodeReadings)+0.01)
+//	minPockels = v_levelx
+//	boardConfig[11][2] = num2str(minPockels)
+//	findLevel/edge=1/q  w_diodeReadings, targetPower
+//	maxPockels = v_levelx
+//	boardConfig[12][2] = num2str(maxPockels)
+//	CurveFit/X=1/NTHR=0/q poly 3,  w_diodeReadings(0.2, 0.3) /D
+//	wave w_coef
+//	duplicate/o w_coef root:Packages:BS2P:CalibrationVariables:pockelsPolynomial
 	
-	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2,fillpat= 0
-	DrawRect minPockels, (wavemin(w_diodeReadings)),maxPockels,targetPower
-	bs_2P_getConfig()
-	print "Min Power = ", wavemin(w_diodeReadings), "mW"
-	print "Max power set to", targetPower, "mW"
+//	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2,fillpat= 0
+//	DrawRect minPockels, (wavemin(w_diodeReadings)),maxPockels,targetPower
+//	bs_2P_getConfig()
+//	print "Min Power = ", wavemin(w_diodeReadings), "mW"
+//	print "Max power set to", targetPower, "mW"
 //	wave w_coef
 //	print "diodeVoltsPerPockels =", w_coef[1]
 //	return w_coef[1]
@@ -1101,10 +1101,11 @@ function calibratePower()
 	variable pockelChannel = str2num(boardConfig[2][2])
 	bs_2P_zeroscanners("center")
 	
-	variable minPockels = 0.2
+	variable minPockels = 0
 	variable maxPockels = 1
 	variable meterReading
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), w_diodeReadings
+	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), mW
 
 	variable i
 	for(i=0; i < (numpnts(w_diodeReadings)) ; i += 1)
@@ -1126,6 +1127,7 @@ function calibratePower()
 	display/k=1 mW vs w_diodeReadings
 	CurveFit/X=1/NTHR=0 line  mW /X=w_diodeReadings /D
 	ModifyGraph mode(mW)=3,marker(mW)=19,rgb(mW)=(0,0,0)
+	
 	wave w_coef
 	boardConfig[10][3] =  num2str(w_coef[0])
 	boardConfig[10][2] = num2str(w_coef[1])
@@ -1134,6 +1136,16 @@ function calibratePower()
 	mWPerVolt_offset = (w_coef[0])///w_coef[1]
 	mWPerVolt = w_coef[1]
 	bs_2P_editConfig()
+	
+	display/k=1 mW
+	CurveFit/X=1/NTHR=0/q poly 3,  mW(0.2,0.5) /D
+	wave w_coef
+	duplicate/o w_coef root:Packages:BS2P:CalibrationVariables:pockelsPolynomial
+	boardConfig[17][2] = num2str(w_coef[0])
+	boardConfig[17][3] = num2str(w_coef[1])
+	boardConfig[17][4] = num2str(w_coef[2])
+	
+	display/k=1 w_diodeReadings 
 end
 
 
