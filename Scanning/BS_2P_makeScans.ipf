@@ -156,9 +156,8 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 /////////////	Added this in order to fix scanning frequency  (bs 141118)	///////////////////////
 		dwelltime = lineTime/pixelsPerLine		//seconds						///
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
-		totalLines = ceil(ScaledY/lineSpacing)
-		
-		makeRasters(lineTime, totalLines,frames)//, pixelShift)
+			
+		makeRasters(lineTime,frames)//, pixelShift)
 		
 //		BS_2P_saneScanCheck(scaledX, scaledY, X_Offset, Y_Offset)
 //		BS_rasterByDwellTime(ScaledX,ScaledY,X_VoltageOffset,Y_VoltageOffset, scanOutFreq,dwellTime, lineSpacing,frames)
@@ -296,25 +295,11 @@ function BS_GENERATESimpleRasterScan(ScaledX,ScaledY,pixelSize,DwellTime,ScanBac
 	runy /= ScaleFactor
 end
 
-function makeRasters(lineTime, lines,frames)//, pixelShift)
-	variable lineTime, lines, frames//, pixelShift		//seconds
-	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
+function makeRasters(lineTime,frames)//, pixelShift)
+	variable lineTime, frames//, pixelShift		//seconds
 	
 	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-
-	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(pixelsPerLine))*(lines))
-	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(pixelsPerLine)*pi)-0.5)*(-2)+1
-
-
-	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
-	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
-	runy[numpnts(runy)-(pixelsPerLine),] =  runy[numpnts(runy)-(pixelsPerLine+1)] -  ((runy[numpnts(runy)-(pixelsPerLine+1)] / pixelsPerLine) * (p - (numpnts(runy)-(pixelsPerLine))))
-	runx[numpnts(runx)-(pixelsPerLine),] = runx[numpnts(runx)-1] > 0.5 ? 0 : runx
-	
-	wave runy_temp = root:Packages:BS2P:CurrentScanVariables:runy_temp
-
-	SetScale/I x 0,(lines*lineTime),"s", runx, runy
-
+	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor
 	NVAR X_offset = root:Packages:BS2P:CurrentScanVariables:X_offset
 	NVAR Y_offset = root:Packages:BS2P:CurrentScanVariables:Y_offset
@@ -324,7 +309,30 @@ function makeRasters(lineTime, lines,frames)//, pixelShift)
 	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit
 	NVAR XYswapped = root:Packages:BS2P:CurrentScanVariables:XYswapped
 	
+	variable Lines = ceil(ScaledY/lineSpacing)
+	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(pixelsPerLine))*(lines))
+	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(pixelsPerLine)*pi)-0.5)*(-2)+1
+	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
+	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
+	SetScale/I x 0,(lines*lineTime),"s", runx, runy
+	runy[numpnts(runy)-(pixelsPerLine),] =  runy[numpnts(runy)-(pixelsPerLine+1)] -  ((runy[numpnts(runy)-(pixelsPerLine+1)] / pixelsPerLine) * (p - (numpnts(runy)-(pixelsPerLine))))
+	runx[numpnts(runx)-(pixelsPerLine),] = runx[numpnts(runx)-1] > 0.5 ? 0 : runx
+	
+	wave runy_temp = root:Packages:BS2P:CurrentScanVariables:runy_temp
+
+	
 	if((scaledX < scaledY) && (StringMatch(boardConfig[22][2], "YES")== 1) )
+		Lines = ceil(ScaledX/lineSpacing)
+		make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(pixelsPerLine))*(lines))
+		make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(pixelsPerLine)*pi)-0.5)*(-2)+1
+		SetScale/I x 0,(lines*lineTime),"s", runx, runy
+		runy[numpnts(runy)-(pixelsPerLine),] =  runy[numpnts(runy)-(pixelsPerLine+1)] -  ((runy[numpnts(runy)-(pixelsPerLine+1)] / pixelsPerLine) * (p - (numpnts(runy)-(pixelsPerLine))))
+		runx[numpnts(runx)-(pixelsPerLine),] = runx[numpnts(runx)-1] > 0.5 ? 0 : runx
+		duplicate/o/free runy runy_temp
+		duplicate/o/free runx runx_temp
+		
+		duplicate/o runy_temp runx
+		duplicate/o runx_temp runy
 		/////////////////////Scale it to Microns 
 		runy *= Scaledy; runy += y_offset
 		runx *= lineSpacing; runx += x_offset
@@ -335,6 +343,7 @@ function makeRasters(lineTime, lines,frames)//, pixelShift)
 		
 		XYswapped = 1
 	else
+
 		/////////////////////Scale it to Microns 
 		runx *= ScaledX; runx += x_offset
 		runy *= lineSpacing; runy += y_offset
@@ -345,7 +354,8 @@ function makeRasters(lineTime, lines,frames)//, pixelShift)
 		
 		XYswapped = 0
 	endif
-	
+	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+	totalLines = lines
 end
 
 function limitVoltage(inputWave)

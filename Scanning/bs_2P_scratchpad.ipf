@@ -271,8 +271,8 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	redimension/n=(pixelsPerline, lines) lastFrame
 	duplicate/free lastFrame flipped
 	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
-	checkXYSwitch(lastFrame,frames)
 //	rotateImage(lastFrame)
+	checkXYSwitch(lastFrame,1)
 	duplicate/o lastFrame root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()
 
