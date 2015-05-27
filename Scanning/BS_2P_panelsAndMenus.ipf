@@ -216,6 +216,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:samplesPerPixel = 1
 		variable/g root:Packages:BS2P:CurrentScanVariables:moveStep = 20 //microns
 		variable/g root:Packages:BS2P:CurrentScanVariables:laserPower
+		variable/g root:Packages:BS2P:CurrentScanVariables:XYswapped = 0
 		
 ////////////////	Used For Display Only	////////////////////
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayFrameTime = 0

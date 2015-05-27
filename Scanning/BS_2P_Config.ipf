@@ -62,109 +62,11 @@ function/wave bs_2P_getConfig()
 		wave/t boardConfig
 		killwaves/z root:Packages:BS2P:CalibrationVariables:boardConfig
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
+		updateConfig()
 	else
 		make/o/t/n=(30,10) root:Packages:BS2P:CalibrationVariables:boardConfig
-		wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-
-		setdimlabel 1,0,Board,boardCOnfig
-		setdimlabel 1,1,Type,boardCOnfig
-		setdimlabel 1,2,Channel,boardCOnfig
-		setdimlabel 1,3,variable_2,boardCOnfig
-		
-		setdimlabel 0,0,xGalvo,boardConfig
-		boardConfig[0][0] = "dev1"
-		boardConfig[0][1] = "DA"
-		boardConfig[0][2] = "2"
-		
-		setdimlabel 0,1,yGalvo,boardCOnfig
-		boardConfig[1][0] = "dev1"
-		boardConfig[1][1] = "DA"
-		boardConfig[1][2] = "3"
-
-		setdimlabel 0,2,Pockels,boardCOnfig		
-		boardConfig[2][0] = "dev1"
-		boardConfig[2][1] = "DA"
-		boardConfig[2][2] = "0"
-
-		setdimlabel 0,3,PMT,boardCOnfig
-		boardConfig[3][0] = "dev1"
-		boardConfig[3][1] = "PFI"
-		boardConfig[3][2] = "8"		
-		
-		setdimlabel 0,4,PMTshutter,boardCOnfig
-		boardConfig[4][0] = "dev1"
-		boardConfig[4][1] = "PFI"
-		boardConfig[4][2] = "2"
-		
-		setdimlabel 0,5,startTrig,boardCOnfig
-		boardConfig[5][0] = "dev1"
-		boardConfig[5][1] = "PFI"
-		boardConfig[5][2] = "0"	
-		
-		setdimlabel 0,6,laserPhotoDiode,boardCOnfig	
-		boardConfig[6][0] = "dev1"
-		boardConfig[6][1] = "AD"
-		boardConfig[6][2] = "0"	
-	
-		setdimlabel 0,8,maxGalvoVolts,boardCOnfig
-		boardConfig[8][1] = "Constant"
-		boardConfig[8][2] = "4"
-		
-		setdimlabel 0,9,metersPerVolt,boardCOnfig		
-		boardConfig[9][1] = "Constant"
-		boardConfig[9][2] = "  4.32468e-05"
-		
-		setdimlabel 0,10,mWPerVolt,boardCOnfig		
-		boardConfig[10][1] = "Constant"
-		boardConfig[10][2] = "31.3"	//slope
-		boardConfig[10][3] = "-7.8"	//offset
-
-		setdimlabel 0,11,minPockels,boardCOnfig		
-		boardConfig[11][1] = "Constant"
-		boardConfig[11][2] = "0.25833"
-
-		setdimlabel 0,12,maxPockels,boardCOnfig		
-		boardConfig[12][1] = "Constant"
-		boardConfig[12][2] = "1.105"
-		
-		setDimLabel 0, 13, LuigsFocusDevice,boardCOnfig
-		boardConfig[13][1] = "Constant"
-		boardConfig[13][2] = "3"
-		
-		setDimLabel 0, 14, LuigsFocusAxis,boardCOnfig
-		boardConfig[14][1] = "Constant"
-		boardConfig[14][2] = "Z"
-		
-		setDimLabel 0, 15, UseLuigs,boardCOnfig
-		boardConfig[15][1] = "Constant"
-		boardConfig[15][2] = "YES"
-		
-		setDimLabel 0, 16, UsePI,boardCOnfig
-		boardConfig[16][1] = "Constant"
-		boardConfig[16][2] = "YES"
-		
-		setDimLabel 0, 17, pockelsPolynomial,boardCOnfig
-		boardConfig[17][1] = "calibrationVariable"
-		boardConfig[17][2] = "8.72516"
-		boardConfig[17][3] = "-107.568"
-		boardConfig[17][4] = "294.209"
-		
-		setDimLabel 0, 18, galvosParkVoltage,boardCOnfig
-		boardConfig[18][1] = "Constant"
-		boardConfig[18][2] = "6"
-
-		setDimLabel 0, 19, horizontalReflect,boardCOnfig
-		boardConfig[19][1] = "Flip image on vertical axis"
-		boardConfig[19][2] = "0"
-		
-		setDimLabel 0, 20, verticalReflect,boardCOnfig
-		boardConfig[20][1] = "Flip image on horizontal axis"
-		boardConfig[20][2] = "0"
-		
-		setDimLabel 0, 21, transposeImage,boardCOnfig
-		boardConfig[21][1] = "swap X and Y"
-		boardConfig[21][2] = "0"
-		
+//		wave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
+		updateConfig()
 		edit/k=1/n=Config boardConfig boardConfig.l
 		setwindow config hook(myhook)=configSaveHook
 	endif
@@ -180,3 +82,150 @@ function bs_2P_editConfig()
 	setwindow config hook(myhook)=configSaveHook
 end
 
+
+function updateCOnfig()
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	
+														//sets defaults unless already set
+	if(!(stringMatch(getdimlabel(boardConfig,0,0),"xGalvo")))
+		setdimlabel 0,0,xGalvo,boardConfig
+		boardConfig[0][0] = "dev1"
+		boardConfig[0][1] = "DA"
+		boardConfig[0][2] = "2"
+	endif
+
+	if(!(stringMatch(getdimlabel(boardConfig,0,1),"yGalvo")))
+		setdimlabel 0,1,yGalvo,boardCOnfig
+		boardConfig[1][0] = "dev1"
+		boardConfig[1][1] = "DA"
+		boardConfig[1][2] = "3"
+	endif
+
+	if(!(stringMatch(getdimlabel(boardConfig,0,2),"Pockels")))
+		setdimlabel 0,2,Pockels,boardCOnfig		
+		boardConfig[2][0] = "dev1"
+		boardConfig[2][1] = "DA"
+		boardConfig[2][2] = "0"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,3),"PMT")))
+		setdimlabel 0,3,PMT,boardCOnfig
+		boardConfig[3][0] = "dev1"
+		boardConfig[3][1] = "PFI"
+		boardConfig[3][2] = "8"		
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,4),"PMTshutter")))
+		setdimlabel 0,4,PMTshutter,boardCOnfig
+		boardConfig[4][0] = "dev1"
+		boardConfig[4][1] = "PFI"
+		boardConfig[4][2] = "2"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,5),"startTrig")))
+		setdimlabel 0,5,startTrig,boardCOnfig
+		boardConfig[5][0] = "dev1"
+		boardConfig[5][1] = "PFI"
+		boardConfig[5][2] = "0"
+	endif	
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,6),"laserPhotoDiode")))	
+		setdimlabel 0,6,laserPhotoDiode,boardCOnfig	
+		boardConfig[6][0] = "dev1"
+		boardConfig[6][1] = "AD"
+		boardConfig[6][2] = "0"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,8),"maxGalvoVolts")))
+		setdimlabel 0,8,maxGalvoVolts,boardCOnfig
+		boardConfig[8][1] = "Constant"
+		boardConfig[8][2] = "4"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,9),"metersPerVolt")))	
+		setdimlabel 0,9,metersPerVolt,boardCOnfig		
+		boardConfig[9][1] = "Constant"
+		boardConfig[9][2] = "  4.32468e-05"
+	endif
+		
+	if(!(stringMatch(getdimlabel(boardConfig,0,10),"mWPerVolt")))	
+		setdimlabel 0,10,mWPerVolt,boardCOnfig		
+		boardConfig[10][1] = "Constant"
+		boardConfig[10][2] = "31.3"	//slope
+		boardConfig[10][3] = "-7.8"	//offset
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,11),"minPockels")))	
+		setdimlabel 0,11,minPockels,boardCOnfig		
+		boardConfig[11][1] = "Constant"
+		boardConfig[11][2] = "0.25833"
+	endif
+
+	if(!(stringMatch(getdimlabel(boardConfig,0,12),"maxPockels")))	
+		setdimlabel 0,12,maxPockels,boardCOnfig		
+		boardConfig[12][1] = "Constant"
+		boardConfig[12][2] = "1.105"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,13),"LuigsFocusDevice")))		
+		setDimLabel 0, 13, LuigsFocusDevice,boardCOnfig
+		boardConfig[13][1] = "Constant"
+		boardConfig[13][2] = "3"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,14),"LuigsFocusAxis")))
+		setDimLabel 0, 14, LuigsFocusAxis,boardCOnfig
+		boardConfig[14][1] = "Constant"
+		boardConfig[14][2] = "Z"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,15),"UseLuigs")))	
+		setDimLabel 0, 15, UseLuigs,boardCOnfig
+		boardConfig[15][1] = "Constant"
+		boardConfig[15][2] = "NO"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,16),"UsePI")))	
+		setDimLabel 0, 16, UsePI,boardCOnfig
+		boardConfig[16][1] = "Constant"
+		boardConfig[16][2] = "NO"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,17),"pockelsPolynomial")))
+		setDimLabel 0, 17, pockelsPolynomial,boardCOnfig
+		boardConfig[17][1] = "calibrationVariable"
+		boardConfig[17][2] = "8.72516"
+		boardConfig[17][3] = "-107.568"
+		boardConfig[17][4] = "294.209"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,18),"galvosParkVoltage")))	
+		setDimLabel 0, 18, galvosParkVoltage,boardCOnfig
+		boardConfig[18][1] = "Constant"
+		boardConfig[18][2] = "6"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,19),"horizontalReflect")))
+		setDimLabel 0, 19, horizontalReflect,boardCOnfig
+		boardConfig[19][1] = "Flip image on vertical axis"
+		boardConfig[19][2] = "0"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,20),"verticalReflect")))
+		setDimLabel 0, 20, verticalReflect,boardCOnfig
+		boardConfig[20][1] = "Flip image on horizontal axis"
+		boardConfig[20][2] = "0"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,21),"transposeImage")))
+		setDimLabel 0, 21, transposeImage,boardCOnfig
+		boardConfig[21][1] = "swap X and Y"
+		boardConfig[21][2] = "0"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,22),"scanXYSwitch")))
+		setDimLabel 0, 22, scanXYSwitch,boardCOnfig
+		boardConfig[22][1] = "Allow interchanging XY scanners"		//	If this is enabled then program will always scan with the minimum number of lines to
+		boardConfig[22][2] = "NO"									//	in order to maximize the scanning speed by switching the fast axis between X and Y
+	endif														
+end

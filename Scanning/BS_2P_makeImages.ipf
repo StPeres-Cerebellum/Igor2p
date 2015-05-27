@@ -365,3 +365,19 @@ function rotatekineticWin()
 	endif
 
 end
+
+function checkXYSwitch(inputWave,frames)
+	wave inputWave
+	variable frames
+	NVAR XYswapped = root:Packages:BS2P:CurrentScanVariables:XYswapped
+	if(XYswapped == 1)
+		if(frames > 1)
+			imagetransform/o/g=(5) transposeVol inputWave; wave m_volumeTranspose
+			duplicate/o m_volumeTranspose inputWave
+			killwaves m_volumeTranspose
+		else
+			matrixOP/o/free switched = inputWave ^t
+			duplicate/o switched inputWave
+		endif
+	endif
+end

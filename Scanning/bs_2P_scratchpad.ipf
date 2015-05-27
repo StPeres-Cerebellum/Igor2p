@@ -238,7 +238,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 //		rotateImage(m_stack)
 		duplicate/o m_stack kineticSeries
 		killwaves/z m_stack
-	
+		checkXYSwitch(kineticSeries,frames)
 		scaleKineticSeries()
 		setScale/p z, 0, (stackResolution * 1e-6), kineticSeries
 		BS_2P_Append3DImageSlider()
@@ -271,6 +271,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	redimension/n=(pixelsPerline, lines) lastFrame
 	duplicate/free lastFrame flipped
 	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
+	checkXYSwitch(lastFrame,frames)
 //	rotateImage(lastFrame)
 	duplicate/o lastFrame root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()
@@ -333,6 +334,7 @@ function kineticHook2(dum, frames)
 	dum[][1,(totalLines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
 	
 	//rotate image
+	checkXYSwitch(dum,frames)
 //	rotateImage(dum)
 	duplicate/o dum root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	wave kineticSeries =  root:Packages:BS2P:CurrentScanVariables:kineticSeries
