@@ -182,8 +182,9 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 		wave dum = root:Packages:BS2P:CurrentScanVariables:dum
 		
 		if(ePhysRec)
-			make/o/n=(ePhysFreq * 1000 * displayTotalTime) ePhysDum
+			make/o/n=(ePhysFreq * 1000 * displayTotalTime) root:Packages:BS2P:CurrentScanVariables:ePhysDum
 			wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
+			setScale/p x, 0, (1/(1000 *  ePhysFreq)), "s", ePhysDum
 		endif
 		
 		variable dumDelta =  (lineTime) / (pixelsPerLine)

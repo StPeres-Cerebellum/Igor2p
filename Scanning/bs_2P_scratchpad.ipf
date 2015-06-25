@@ -129,7 +129,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	
 	string ePhysDev =  boardConfig[23][0]
 	string ePhysChan = boardConfig[23][2]
-	string ePhysConfig = nameofWave(ePhysDum)+","+ePhysChan+"/PDIFF, -10, 10"
+	string ePhysConfig = "ePhysDum,"+ePhysChan+"/DIFF, -10, 10"
 	
 	variable/g frameCounter = 0
 //	string S_kineticHook = "kineticHook("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
@@ -155,7 +155,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
 		if(ePhysRec)
-			DAQmx_Scan/BKG/DEV="DEV1"/TRIG={scanClock}Waves=ePhysConfig
+			DAQmx_Scan/BKG/DEV=ePhysDev/TRIG={scanClock}Waves=ePhysConfig
 		endif
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_kineticHook2 0
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frames) galvoChannels
@@ -323,6 +323,9 @@ end
 function kineticHook2(dum, frames)
 	wave dum
 	variable frames
+		
+	wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
+	NVAR ePhysRec = root:Packages:BS2P:CurrentScanVariables:ePhysRec
 	
 	BS_2P_Pockels("close")
 	BS_2P_PMTShutter("close")
@@ -355,6 +358,13 @@ function kineticHook2(dum, frames)
 //	BS_2P_writeScanParamsInWave(dum)
 	if(datafolderexists ("root:currentrois") == 1)
 		NewUpdate(kineticSeries)
+	endif
+
+	if(ePhysRec)
+		dowindow ePhysWIn
+		if(!v_flag)
+			display/k=1/n=ephysWin ePhysDum
+		endif
 	endif
 	
 	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
