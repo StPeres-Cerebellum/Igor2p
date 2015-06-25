@@ -130,7 +130,7 @@ Window Control2P() : Panel
 	ValDisplay dwellTIme,valueBackColor=(60928,60928,60928)
 	ValDisplay dwellTIme,limits={0,0,0},barmisc={0,1000}
 	ValDisplay dwellTIme,value= #"1/root:packages:bs2p:currentScanVariables:acquisitionFrequency"
-	ValDisplay measuredPower,pos={392,50},size={110,14},title="Last reading:"
+	ValDisplay measuredPower,pos={392,50},size={120,14},title="Last reading:"
 	ValDisplay measuredPower,labelBack=(60928,60928,60928),format="%.1W1PmW"
 	ValDisplay measuredPower,frame=0,valueColor=(52224,0,0)
 	ValDisplay measuredPower,valueBackColor=(60928,60928,60928)
