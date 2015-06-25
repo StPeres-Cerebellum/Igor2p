@@ -113,6 +113,9 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 		NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 		NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
 		NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+		NVAR ePhysRec = root:Packages:BS2P:CurrentScanVariables:ePhysRec
+		NVAR ePhysFreq = root:Packages:BS2P:CurrentScanVariables:ePhysFreq
+		
 //		print pixelSHift
 		
 //		samplesPerPixel /= 100	//convert samples per pixel to kHz
@@ -177,6 +180,12 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 
 		make/o/n=((((pixelsPerLine) * totalLines)+1))/y=4 root:Packages:BS2P:CurrentScanVariables:dum = nan	//add one because we're going to take the first derivative
 		wave dum = root:Packages:BS2P:CurrentScanVariables:dum
+		
+		if(ePhysRec)
+			make/o/n=(ePhysFreq * 1000 * displayTotalTime) ePhysDum
+			wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
+		endif
+		
 		variable dumDelta =  (lineTime) / (pixelsPerLine)
 		SetScale/p x, 0, dumDelta , "s", dum
 		BS_2P_writeScanParamsInWave(dum)

@@ -227,5 +227,12 @@ function updateCOnfig()
 		setDimLabel 0, 22, scanXYSwitch,boardCOnfig
 		boardConfig[22][1] = "Allow interchanging XY scanners"		//	If this is enabled then program will always scan with the minimum number of lines to
 		boardConfig[22][2] = "NO"									//	in order to maximize the scanning speed by switching the fast axis between X and Y
-	endif														
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,23),"ePHYS1")))
+		setDimLabel 0, 23, ePHYS,boardCOnfig
+		boardConfig[23][0] = "dev1"
+		boardConfig[23][1] = "AD"
+		boardConfig[23][2] = "2"
+	endif															
 end

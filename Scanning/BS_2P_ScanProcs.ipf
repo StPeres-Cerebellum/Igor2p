@@ -238,12 +238,15 @@ function BS_2P_saveDum()
 	SVAR currentPath = root:Packages:BS2P:CurrentScanVariables:currentPath
 	SVAR SaveAsPrefix = root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
 	wave dum  = root:Packages:BS2P:CurrentScanVariables:dum
+	wave ePhysDum  = root:Packages:BS2P:CurrentScanVariables:ePhysDum
 	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	SVAR fileName2bWritten = root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
 	SVAR currentPathDetails = root:Packages:BS2P:CurrentScanVariables:currentPathDetails
 	string filename2Write = saveAsPrefix+num2str(prefixIncrement)+".ibw"
+	string ePhysName2Write = saveAsPrefix+num2str(prefixIncrement)+"_ephys"+".ibw"
 	
 	save/c/o/p=$currentPath kineticSeries as filename2Write
+	save/c/o/p=$currentPath ePhysDum as ePhysName2Write
 	pathInfo $currentPath
 	currentPathDetails = s_path
 	prefixIncrement += 1

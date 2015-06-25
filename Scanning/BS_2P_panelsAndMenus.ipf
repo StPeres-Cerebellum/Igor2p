@@ -72,7 +72,7 @@ end
 Window Control2P() : Panel
 	Init2PVariables()
 	PauseUpdate; Silent 1		// building window...
-	NewPanel /K=1 /W=(16,58,783,136)
+	NewPanel /K=1 /W=(16,58,780,133)
 	ModifyPanel cbRGB=(65534,65534,65534)
 	SetDrawLayer UserBack
 	SetDrawEnv linefgc= (48896,49152,65280),fillfgc= (60928,60928,60928),fillbgc= (48896,49152,65280)
@@ -118,7 +118,7 @@ Window Control2P() : Panel
 	SetVariable lineSpacing,frame=0,fStyle=1,valueColor=(0,0,52224)
 	SetVariable lineSpacing,valueBackColor=(60928,60928,60928)
 	SetVariable lineSpacing,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:lineSpacing
-	PopupMenu pixelsPerLine,pos={150,49},size={108,21},proc=PixPerLinePopMenuProc,title="Pixels/Line"
+	PopupMenu pixelsPerLine,pos={150,49},size={102,21},proc=PixPerLinePopMenuProc,title="Pixels/Line"
 	PopupMenu pixelsPerLine,mode=8,popvalue="256",value= #"\"8;16;32;64;128;256;512;1024\""
 	SetVariable lineDisplay,pos={182,22},size={31,16},proc=BS_2P_SetScanVarProc,title=" "
 	SetVariable lineDisplay,labelBack=(60928,60928,60928),fSize=10,frame=0,fStyle=1
@@ -131,12 +131,16 @@ Window Control2P() : Panel
 	ValDisplay dwellTIme,limits={0,0,0},barmisc={0,1000}
 	ValDisplay dwellTIme,value= #"1/root:packages:bs2p:currentScanVariables:acquisitionFrequency"
 	ValDisplay measuredPower,pos={392,50},size={110,14},title="Last reading:"
-	ValDisplay measuredPower,labelBack=(60928,60928,60928),format="%.1W1PmW"
-	ValDisplay measuredPower,frame=0,valueColor=(52224,0,0)
+	ValDisplay measuredPower,labelBack=(60928,60928,60928),format="%.1W1PmW",frame=0
+	ValDisplay measuredPower,valueColor=(52224,0,0)
 	ValDisplay measuredPower,valueBackColor=(60928,60928,60928)
 	ValDisplay measuredPower,limits={0,0,0},barmisc={0,1000}
 	ValDisplay measuredPower,value= #"root:Packages:BS2P:CurrentScanVariables:laserPower"
-
+	GroupBox ephysBox,pos={520,5},size={119,65},title="ePhys"
+	CheckBox ePhysRec,pos={539,24},size={82,14},title="Collect ePhys"
+	CheckBox ePhysRec,variable= root:Packages:BS2P:CurrentScanVariables:ePhysREC
+	SetVariable EphysFreq,pos={527,39},size={104,16},title="Dig. Freq (kHz)"
+	SetVariable EphysFreq,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:ePhysFreq
 EndMacro
 
 
@@ -200,6 +204,8 @@ Function Init2PVariables()
 		string/g root:Packages:BS2P:CurrentScanVariables:fileName2bWritten= ""
 		variable/g root:Packages:BS2P:CurrentScanVariables:prefixIncrement = 0
 		variable/g root:Packages:BS2P:CurrentScanVariables:saveEmAll = 0
+		variable/g root:Packages:BS2P:CurrentScanVariables:saveEphys = 0
+		
 		
 		variable/g root:Packages:BS2P:CurrentScanVariables:powermW = 0 //Display mW for the power
 		variable/g root:Packages:BS2P:CurrentScanVariables:powerPercent = 1 //Display % for the power
@@ -217,6 +223,10 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:moveStep = 20 //microns
 		variable/g root:Packages:BS2P:CurrentScanVariables:laserPower
 		variable/g root:Packages:BS2P:CurrentScanVariables:XYswapped = 0
+		
+////////////////	ePHYS	////////////////////		
+		variable/g root:Packages:BS2P:CurrentScanVariables:ePhysFreq = 10 	//kHz
+		variable/g root:Packages:BS2P:CurrentScanVariables:ePhysREC = 0
 		
 ////////////////	Used For Display Only	////////////////////
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayFrameTime = 0
@@ -302,7 +312,8 @@ function BS_2P_makeKineticWindow()
 	SetVariable focusStep,pos={310,41},size={50,16},title="µm",frame=0
 	SetVariable focusStep,valueBackColor=(60928,60928,60928)
 	SetVariable focusStep,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
-
+	
+	
 
 	SetVariable setFrames,pos={197,3},size={66,16},proc=BS_2P_SetFramesProc,title="Frames"
 	SetVariable setFrames,frame=0,valueBackColor=(65535,65535,65535)
@@ -333,7 +344,6 @@ function BS_2P_makeKineticWindow()
 	SetVariable SaveAs,pos={538,22},size={219,16},title=" ",frame=0
 	SetVariable SaveAs,value= root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
 
-
 	
 	PopupMenu BS_2P_SaveWhere,pos={571,2},size={43,21},bodyWidth=43,proc=BS_2P_pathSelectionPopMenuProc,title="Path"
 	PopupMenu BS_2P_SaveWhere,mode=0,value= #"root:Packages:BS2P:CurrentScanVariables:pathDetailsListing"
@@ -344,30 +354,37 @@ function BS_2P_makeKineticWindow()
 //	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=CheckProcSaveAll,title="Save All"
 //	CheckBox BS_2P_SaveEverything,value= 0,side= 1
 	
-	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=saveALLCheckProc,title="Save All"
+	CheckBox BS_2P_SaveEverything,pos={644,41},size={79,14},proc=saveALLCheckProc,title="Save images"
 	CheckBox BS_2P_SaveEverything,variable= root:Packages:BS2P:CurrentScanVariables:saveEmAll
 	
-	SetVariable setZoom,pos={609,43},size={82,16},proc=BS_2P_SetFramesProc,title="Zoom (µm)"
+	CheckBox BS_2P_SaveEphys,pos={644,57},size={75,14},title="Save ePhys"
+	CheckBox BS_2P_SaveEphys,variable= root:Packages:BS2P:CurrentScanVariables:saveEphys
+
+
+	
+	SetVariable setZoom,pos={545,43},size={82,16},proc=BS_2P_SetFramesProc,title="Zoom (µm)"
 	SetVariable setZoom,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setZoom,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:zoomFactor
 
 	
-	Button zoomout,pos={607,58},size={34,20},proc=ZoomOutProc_2,title="out"
+	Button zoomout,pos={543,58},size={34,20},proc=ZoomOutProc_2,title="out"
 	Button zoomout,fSize=8
 
-	Button zoomIn,pos={653,58},size={34,20},proc=ZoomInProc_2,title="in",fSize=8
 
+	Button zoomIn,pos={589,58},size={34,20},proc=ZoomInProc_2,title="in",fSize=8
 
-	SetVariable setMoveStep,pos={521,46},size={22,16},title=" ",frame=0
+	
+	SetVariable setMoveStep,pos={496,46},size={22,16},title=" ",frame=0
 	SetVariable setMoveStep,valueBackColor=(65535,65535,65535)
 	SetVariable setMoveStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:moveStep
 
 
-	Button moveU,pos={525,31},size={14,16},proc=MoveUProc,title="^",fSize=8
-	Button moveR,pos={544,48},size={14,16},proc=MoveRProc,title=">",fSize=8
-	Button moveD,pos={525,63},size={14,16},proc=MoveDProc,title="v",fSize=8
-	Button moveL,pos={505,48},size={14,16},proc=MoveLProc,title="<",fSize=8
 
+	Button moveU,pos={500,31},size={14,16},proc=MoveUProc,title="^",fSize=8
+	Button moveR,pos={519,48},size={14,16},proc=MoveRProc,title=">",fSize=8
+	Button moveD,pos={500,63},size={14,16},proc=MoveDProc,title="v",fSize=8
+	Button moveL,pos={480,48},size={14,16},proc=MoveLProc,title="<",fSize=8
+	
 	GroupBox stackBox,pos={370,24},size={103,53}
 
 	
