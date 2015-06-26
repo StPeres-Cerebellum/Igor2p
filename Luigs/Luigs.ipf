@@ -251,9 +251,9 @@ function LN_sendData()
 		if(V_VDT > 0)
 			break
 		endif
-		sleep/T 10
+//		sleep/T 10
 	endfor
-	sleep/T 10
+//	sleep/T 10
 	VDTWriteBinaryWave2 vdtSend
 //	killwaves/z vdtSend
 //	VDTReadBinaryWave2 vdtReceive
