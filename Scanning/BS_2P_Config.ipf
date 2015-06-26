@@ -118,8 +118,9 @@ function updateCOnfig()
 	if(!(stringMatch(getdimlabel(boardConfig,0,4),"PMTshutter")))
 		setdimlabel 0,4,PMTshutter,boardCOnfig
 		boardConfig[4][0] = "dev1"
-		boardConfig[4][1] = "PFI"
-		boardConfig[4][2] = "2"
+		boardConfig[4][1] = "0"
+		boardConfig[4][2] = "0"
+		boardConfig[4][3] = "<---Port number line number"
 	endif
 	
 	if(!(stringMatch(getdimlabel(boardConfig,0,5),"startTrig")))

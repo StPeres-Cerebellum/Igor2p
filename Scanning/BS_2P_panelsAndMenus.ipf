@@ -972,9 +972,9 @@ function bs_2p_initShutter()
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	
 	string devNum = boardConfig[4][0]
-	string pfiLine = boardConfig[4][1] + boardConfig[4][2]
+//	string pfiLine = boardConfig[4][1] + boardConfig[4][2]
 	
-	string pfiString = "/"+devNum+"/"+pfiLine
+	string pfiString = "/"+devNum+"/port"+ boardConfig[4][1] + "/line" + boardConfig[4][2]
 	NVAR/z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
 	if(NVAR_exists(shutterIOtaskNumber))
 		 fdaqmx_dio_finished(devNum,shutterIOtaskNumber)
