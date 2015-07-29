@@ -164,6 +164,8 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
+		fDAQmx_WriteChan(pmtDev, (str2num(xGalvoChannel)), runx[0], -10, 10 )		/////////Moves laser to first point of X//////////
+		fDAQmx_WriteChan(pmtDev,  (str2num(yGalvoChannel)), runy[0], -10, 10 )
 		DAQmx_Scan/BKG/DEV=inGalvoDev/TRIG={scanClock} Waves=galvoInConfig
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_kineticHook2 0
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frames) galvoChannels

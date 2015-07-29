@@ -141,7 +141,7 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 //		endif																	///
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		if((lineTime / pixelsPerLine) < 5e-9)
+		if((lineTime / pixelsPerLine) <  2E-7) //5e-9)
 			abort "Can't digitize this fast.  Decrease line speed or pixels per line"
 		endif
 //		if((((scaledX / displayPixelSize) / lineTime ) * samplesPerPixel) > 190000)	//samples per pixel in kHz
@@ -179,14 +179,14 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 		variable xPixels = ceil(scaledX/displayPixelSize)
 
 		make/o/n=((((pixelsPerLine) * totalLines)+1))/y=4 root:Packages:BS2P:CurrentScanVariables:dum = nan	//add one because we're going to take the first derivative
-		make/o/n=((((pixelsPerLine) * totalLines * frames)))/y=4 root:Packages:BS2P:CurrentScanVariables:xGalvoDum = nan
-		make/o/n=((((pixelsPerLine) * totalLines * frames)))/y=4 root:Packages:BS2P:CurrentScanVariables:yGalvoDum = nan
+		make/o/n=((((pixelsPerLine) * totalLines * frames))) root:Packages:BS2P:CurrentScanVariables:xGalvoDum = nan
+		make/o/n=((((pixelsPerLine) * totalLines * frames))) root:Packages:BS2P:CurrentScanVariables:yGalvoDum = nan
 		wave dum = root:Packages:BS2P:CurrentScanVariables:dum
 		wave xGalvoDum = root:Packages:BS2P:CurrentScanVariables:xGalvoDum
 		wave yGalvoDum = root:Packages:BS2P:CurrentScanVariables:yGalvoDum
 		
 		if(ePhysRec)
-			make/o/n=(ePhysFreq * 1000 * displayTotalTime)/y=4 root:Packages:BS2P:CurrentScanVariables:ePhysDum
+			make/o/n=(ePhysFreq * 1000 * displayTotalTime) root:Packages:BS2P:CurrentScanVariables:ePhysDum = nan
 			wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
 			setScale/p x, 0, (1/(1000 *  ePhysFreq)), "s", ePhysDum
 		endif
@@ -326,14 +326,16 @@ function makeRasters(lineTime,frames)//, pixelShift)
 	
 	variable Lines = ceil(ScaledY/lineSpacing)
 	
-	make/n=(lines*(resolutionLimit))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(resolutionLimit))*(lines))
-	make/n=(lines*(resolutionLimit))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(resolutionLimit)*pi)-0.5)*(-2)+1
+	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(pixelsPerLine))*(lines))
+	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(pixelsPerLine)*pi)-0.5)*(-2)+1
 	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
 	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
 	SetScale/I x 0,(lines*lineTime),"s", runx, runy
 
 	//This ramps the Y scanner back to the start to avoid jumping jumping it sacrifices (linesForReturn) lines
-	variable linesForReturn = 2
+	variable linesForReturn = 4
+
+	
 	runy[numpnts(runy)-(linesForReturn*pixelsPerLine),] =  runy[numpnts(runy)-((linesForReturn*pixelsPerLine)+1)] -  ((runy[numpnts(runy)-((linesForReturn*pixelsPerLine)+1)] / (linesForReturn*pixelsPerLine)) * (p - (numpnts(runy)-(linesForReturn*pixelsPerLine))))
 
 	//This makes sure that the X scanner ends on the same side it starts (it sacrifices 1 or 0 lines)

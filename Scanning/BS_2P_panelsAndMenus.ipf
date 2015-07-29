@@ -1247,11 +1247,13 @@ Function BS2P_setFreqPopMenuProc(pa) : PopupMenuControl
 
 			
 			variable digFreq = (1/((str2num(popstr))*1000*2))/(pixelsPerLine)
+//			print digFreq
 //
 //			tune line time so acquisition is multiple of 5e-8
 			digFreq = 5e-8 * (round(digFreq/5e-8))
-
+//			print digFreq
 			lineTime = (pixelsPerLine)*digFreq 	//seconds
+//			print lineTime
 			BS_2P_UpdateVariablesCreateScan()
 			break
 		case -1: // control being killed
