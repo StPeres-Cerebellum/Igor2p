@@ -231,30 +231,9 @@ function updateCOnfig()
 	endif
 	
 	if(!(stringMatch(getdimlabel(boardConfig,0,23),"ePHYS1")))
-		setDimLabel 0, 23, ePHYS1,boardCOnfig
+		setDimLabel 0, 23, ePHYS,boardCOnfig
 		boardConfig[23][0] = "dev1"
 		boardConfig[23][1] = "AD"
 		boardConfig[23][2] = "2"
-	endif
-	
-	if(!(stringMatch(getdimlabel(boardConfig,0,24),"ePHYS2")))
-		setDimLabel 0, 24, ePHYS1,boardCOnfig
-		boardConfig[24][0] = "dev1"
-		boardConfig[24][1] = "AD"
-		boardConfig[24][2] = "3"
-	endif
-	
-	if(!(stringMatch(getdimlabel(boardConfig,0,25),"xGalvoPosition")))
-		setDimLabel 0, 25, xGalvoPosition,boardCOnfig
-		boardConfig[25][0] = "dev1"
-		boardConfig[25][1] = "AD"
-		boardConfig[25][2] = "4"
-	endif
-
-	if(!(stringMatch(getdimlabel(boardConfig,0,26),"yGalvoPosition")))
-		setDimLabel 0, 26, yGalvoPosition,boardCOnfig
-		boardConfig[26][0] = "dev1"
-		boardConfig[26][1] = "AD"
-		boardConfig[26][2] = "5"
-	endif																
+	endif															
 end

@@ -179,8 +179,6 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 		variable xPixels = ceil(scaledX/displayPixelSize)
 
 		make/o/n=((((pixelsPerLine) * totalLines)+1))/y=4 root:Packages:BS2P:CurrentScanVariables:dum = nan	//add one because we're going to take the first derivative
-		make/o/n=((((pixelsPerLine) * totalLines)))/y=4 root:Packages:BS2P:CurrentScanVariables:xGalvoDum = nan
-		make/o/n=((((pixelsPerLine) * totalLines)))/y=4 root:Packages:BS2P:CurrentScanVariables:yGalvoDum = nan
 		wave dum = root:Packages:BS2P:CurrentScanVariables:dum
 		
 		if(ePhysRec)
@@ -320,21 +318,14 @@ function makeRasters(lineTime,frames)//, pixelShift)
 	NVAR lineSpacing = root:Packages:BS2P:CurrentScanVariables:lineSpacing
 	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit
 	NVAR XYswapped = root:Packages:BS2P:CurrentScanVariables:XYswapped
-	variable resolutionLimit = pixelsPerLine > 256 ? 256 : pixelsPerLine
 	
 	variable Lines = ceil(ScaledY/lineSpacing)
-	
-	make/n=(lines*(resolutionLimit))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(resolutionLimit))*(lines))
-	make/n=(lines*(resolutionLimit))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(resolutionLimit)*pi)-0.5)*(-2)+1
+	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(pixelsPerLine))*(lines))
+	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(pixelsPerLine)*pi)-0.5)*(-2)+1
 	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
 	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
 	SetScale/I x 0,(lines*lineTime),"s", runx, runy
-
-	//This ramps the Y scanner back to the start to avoid jumping jumping it sacrifices (linesForReturn) lines
-	variable linesForReturn = 2
-	runy[numpnts(runy)-(linesForReturn*pixelsPerLine),] =  runy[numpnts(runy)-((linesForReturn*pixelsPerLine)+1)] -  ((runy[numpnts(runy)-((linesForReturn*pixelsPerLine)+1)] / (linesForReturn*pixelsPerLine)) * (p - (numpnts(runy)-(linesForReturn*pixelsPerLine))))
-
-	//This makes sure that the X scanner ends on the same side it starts (it sacrifices 1 or 0 lines)
+	runy[numpnts(runy)-(pixelsPerLine),] =  runy[numpnts(runy)-(pixelsPerLine+1)] -  ((runy[numpnts(runy)-(pixelsPerLine+1)] / pixelsPerLine) * (p - (numpnts(runy)-(pixelsPerLine))))
 	runx[numpnts(runx)-(pixelsPerLine),] = runx[numpnts(runx)-1] > 0.5 ? 0 : runx
 	
 	wave runy_temp = root:Packages:BS2P:CurrentScanVariables:runy_temp

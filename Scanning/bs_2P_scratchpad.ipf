@@ -95,8 +95,6 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	variable userPause = 0	//seconds to wait between frames
 	
 	wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
-	wave xGalvoDum = root:Packages:BS2P:CurrentScanVariables:xGalvoDum
-	wave yGalvoDum = root:Packages:BS2P:CurrentScanVariables:yGalvoDum
 	NVAR ePhysRec = root:Packages:BS2P:CurrentScanVariables:ePhysRec
 	
 	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:KineticSeries
@@ -122,9 +120,6 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string xGalvoChannel = boardConfig[0][2]
 	string yGalvoChannel = boardConfig[1][2]
 	
-	string xGalvoInChannel = boardConfig[25][2]
-	string yGalvoInChannel = boardConfig[26][2]
-	
 	string pmtSource = "/"+pmtDev+"/pfi"+boardConfig[3][2]
 	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
 	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
@@ -135,10 +130,6 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string ePhysDev =  boardConfig[23][0]
 	string ePhysChan = boardConfig[23][2]
 	string ePhysConfig = "ePhysDum,"+ePhysChan+"/DIFF, -10, 10"
-	string galvoInConfig = "xGalvoDum,"+xGalvoInChannel+"/DIFF, -10, 10; yGalvoDum,"+yGalvoInChannel+"/DIFF, -10, 10"
-	if(ePhysRec)
-		galvoInConfig = galvoInConfig + ";"+ePhysConfig
-	endif
 	
 	variable/g frameCounter = 0
 //	string S_kineticHook = "kineticHook("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
@@ -163,7 +154,9 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
-		DAQmx_Scan/BKG/DEV=galvoDev/TRIG={scanClock}Waves=galvoInConfig
+		if(ePhysRec)
+			DAQmx_Scan/BKG/DEV=ePhysDev/TRIG={scanClock}Waves=ePhysConfig
+		endif
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_kineticHook2 0
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frames) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
