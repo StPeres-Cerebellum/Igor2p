@@ -179,20 +179,18 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 		variable xPixels = ceil(scaledX/displayPixelSize)
 
 		make/o/n=((((pixelsPerLine) * totalLines)+1))/y=4 root:Packages:BS2P:CurrentScanVariables:dum = nan	//add one because we're going to take the first derivative
-		make/o/n=((((pixelsPerLine) * totalLines * frames)))/y=4 root:Packages:BS2P:CurrentScanVariables:xGalvoDum = nan
-		make/o/n=((((pixelsPerLine) * totalLines * frames)))/y=4 root:Packages:BS2P:CurrentScanVariables:yGalvoDum = nan
+		make/o/n=((((pixelsPerLine) * totalLines)))/y=4 root:Packages:BS2P:CurrentScanVariables:xGalvoDum = nan
+		make/o/n=((((pixelsPerLine) * totalLines)))/y=4 root:Packages:BS2P:CurrentScanVariables:yGalvoDum = nan
 		wave dum = root:Packages:BS2P:CurrentScanVariables:dum
-		wave xGalvoDum = root:Packages:BS2P:CurrentScanVariables:xGalvoDum
-		wave yGalvoDum = root:Packages:BS2P:CurrentScanVariables:yGalvoDum
 		
 		if(ePhysRec)
-			make/o/n=(ePhysFreq * 1000 * displayTotalTime)/y=4 root:Packages:BS2P:CurrentScanVariables:ePhysDum
+			make/o/n=(ePhysFreq * 1000 * displayTotalTime) root:Packages:BS2P:CurrentScanVariables:ePhysDum
 			wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
 			setScale/p x, 0, (1/(1000 *  ePhysFreq)), "s", ePhysDum
 		endif
 		
 		variable dumDelta =  (lineTime) / (pixelsPerLine)
-		SetScale/p x, 0, dumDelta , "s", dum, xGalvoDum, yGalvoDum
+		SetScale/p x, 0, dumDelta , "s", dum
 		BS_2P_writeScanParamsInWave(dum)
 		return dum
 end

@@ -238,7 +238,7 @@ function updateCOnfig()
 	endif
 	
 	if(!(stringMatch(getdimlabel(boardConfig,0,24),"ePHYS2")))
-		setDimLabel 0, 24, ePHYS2,boardCOnfig
+		setDimLabel 0, 24, ePHYS1,boardCOnfig
 		boardConfig[24][0] = "dev1"
 		boardConfig[24][1] = "AD"
 		boardConfig[24][2] = "3"
