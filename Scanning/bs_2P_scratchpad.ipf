@@ -255,6 +255,11 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		BS_2P_writeScanParamsInWave(kineticSeries)
 		makeProjections(kineticSeries)
 		
+		NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
+		if(saveemall)
+			BS_2P_saveDum()
+		endif
+		
 		setdatafolder currentFolder
 	endif
 
@@ -337,7 +342,6 @@ function kineticHook2(dum, frames)
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
 //	NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
-	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
 	variable pixelsPerFrame = pixelsPerLine * Totallines
 	
 	redimension/n=(pixelsPerline, totalLines, frames) dum
@@ -365,6 +369,11 @@ function kineticHook2(dum, frames)
 		if(!v_flag)
 			display/k=1/n=ephysWin ePhysDum
 		endif
+	endif
+	
+	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
+	if(saveemall)
+		BS_2P_saveDum()
 	endif
 	
 	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder

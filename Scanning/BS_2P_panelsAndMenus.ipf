@@ -527,25 +527,13 @@ end
 
 Function BS_2P_KineticSeriesButton(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
-	NVAR  prefixIncrement = root:Packages:BS2P:CurrentScanVariables:prefixIncrement
-	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
-	SVAR currentPath = root:Packages:BS2P:CurrentScanVariables:currentPath
-	SVAR SaveAsPrefix = root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
+	
+		SVAR SaveAsPrefix = root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
 	wave dum  = root:Packages:BS2P:CurrentScanVariables:dum
-	SVAR fileName2bWritten = root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
-	SVAR currentPathDetails = root:Packages:BS2P:CurrentScanVariables:currentPathDetails
-	string filename2Write = saveAsPrefix+num2str(prefixIncrement)+".ibw"
 	switch( ba.eventCode )
 		case 2: // mouse up
 			BS_2P_updateVariablesCreateScan()
 			BS_2P_Scan("kinetic")
-			if(saveemall)
-				BS_2P_saveDum()
-				pathInfo $currentPath
-				currentPathDetails = s_path
-				prefixIncrement += 1
-				fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
-			endif
 		case -1: // control being killed
 			break
 	endswitch
