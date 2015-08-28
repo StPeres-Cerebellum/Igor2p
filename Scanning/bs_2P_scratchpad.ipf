@@ -375,9 +375,14 @@ function kineticHook2(dum, frames)
 	if(saveemall)
 		BS_2P_saveDum()
 	endif
-	
+
 	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
 	setdatafolder currentFolder
+	
+	NVAR trigLoop = root:Packages:BS2P:CurrentScanVariables:trigLoop
+	if(trigLoop)
+		BS_2P_Scan("kinetic")
+	endif
 end
 
 function kineticTest(frame, frames, lines, pixelsPerLine runx, runy, dum)//, imageMode)
