@@ -225,7 +225,11 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:moveStep = 20 //microns
 		variable/g root:Packages:BS2P:CurrentScanVariables:laserPower
 		variable/g root:Packages:BS2P:CurrentScanVariables:XYswapped = 0
+<<<<<<< HEAD
 		variable/g root:Packages:BS2P:CurrentScanVariables:frameAvg = 1
+=======
+		variable/g root:Packages:BS2P:CurrentScanVariables:trigLoop = 0
+>>>>>>> origin/master
 		
 ////////////////	ePHYS	////////////////////		
 		variable/g root:Packages:BS2P:CurrentScanVariables:ePhysFreq = 10 	//kHz
@@ -302,8 +306,9 @@ function BS_2P_makeKineticWindow()
 	CheckBox AxesConstrain,pos={8,3},size={88,14},proc=BS_2P_constrainAxes,title="Constrain Axes"
 	CheckBox AxesConstrain,value= 1
 	
-	Button FocusUP,pos={313,21},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
+	Button FocusUP,pos={313,22},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
 	Button FocusUP,fSize=8
+
 	
 	Button FocusDown,pos={381,2},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
 	Button FocusDown,fSize=8
@@ -413,6 +418,11 @@ function BS_2P_makeKineticWindow()
 	ValDisplay pixSize,valueBackColor=(60928,60928,60928)
 	ValDisplay pixSize,limits={0,0,0},barmisc={0,1000}
 	ValDisplay pixSize,value= #"root:packages:bs2p:currentScanVariables:displayPixelSize"
+	
+	CheckBox BS_2P_TrigLoop,pos={364,4},size={75,14},title="LoopTrigger"
+	CheckBox BS_2P_TrigLoop,variable= root:Packages:BS2P:CurrentScanVariables:trigLoop
+	GroupBox stackBox1,pos={265,1},size={179,20}
+
 	
 	rotatekineticWin()
 	
