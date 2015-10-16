@@ -111,6 +111,8 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	NVAR stackResolution = root:Packages:BS2P:CurrentScanVariables:stackResolution
 	variable stackSlices = ceil(stackDepth / stackResolution)
 	
+	NVAR frameAvg = root:Packages:BS2P:CurrentScanVariables:frameAvg
+	
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
 
 	string galvoDev = boardConfig[0][0]
@@ -144,8 +146,9 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	BS_2P_Pockels("open")
 	
 	if(stringmatch(imageMode, "video"))
+		redimension/n=((pixelsPerLine * totalLines * frameAvg) + 0) dum
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelClock/wave=dum/EOSH=S_videoHook 0
-		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frameAvg) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(stringmatch(imageMode, "snapshot"))
@@ -273,6 +276,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	BS_2P_Pockels("close")
 	NVAR frameCounter
 	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
+	NVAR frameAvg = root:Packages:BS2P:CurrentScanVariables:frameAvg
 	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
 	frameCounter += 1
 	variable pixelsPerFrame = pixelsPerLine * lines
@@ -283,7 +287,14 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	dum = nan
 	
 	differentiate/meth=2/ep=1/p lastFrame
-	redimension/n=(pixelsPerline, lines) lastFrame
+	If(frameAvg == 1)
+		redimension/n=(pixelsPerline, lines) lastFrame
+	else
+		redimension/n=(pixelsPerline, lines, frameAvg) lastFrame
+		duplicate/o/free lastFrame avgHolder
+		matrixop/o lastFrame = sumBeams(avgHolder)  / frameAvg
+	endif
+	
 	duplicate/free lastFrame flipped
 	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
 //	rotateImage(lastFrame)

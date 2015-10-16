@@ -1,6 +1,8 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 //Igorized by Brandon M. Stell from Michael Graupner's Python libraries 23/09/2014
+//For USB make sure that Luigs Drivers are installed.
+//On a mac just connect the Luigs controller to the serial port.
 
 Menu "2P"
 	Submenu "Devices"
@@ -10,6 +12,7 @@ Menu "2P"
 	end
 end
 
+//Run this once to choose the port.
 function LN_initialize()
 	if(datafolderexists("root:packages:Luigs")==0)
 		newdatafolder root:packages:Luigs

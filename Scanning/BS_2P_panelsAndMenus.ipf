@@ -225,6 +225,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:moveStep = 20 //microns
 		variable/g root:Packages:BS2P:CurrentScanVariables:laserPower
 		variable/g root:Packages:BS2P:CurrentScanVariables:XYswapped = 0
+		variable/g root:Packages:BS2P:CurrentScanVariables:frameAvg = 1
 		
 ////////////////	ePHYS	////////////////////		
 		variable/g root:Packages:BS2P:CurrentScanVariables:ePhysFreq = 10 	//kHz
@@ -320,28 +321,35 @@ function BS_2P_makeKineticWindow()
 	SetVariable setFrames,pos={197,3},size={66,16},proc=BS_2P_SetFramesProc,title="Frames"
 	SetVariable setFrames,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setFrames,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frames
+	
+	SetVariable setAvg,pos={197,20},size={66,16},title="Avg",frame=0
+	SetVariable setAvg,valueBackColor=(65535,65535,65535)
+	SetVariable setAvg,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frameAvg
+
+	
 	CheckBox BS_2P_ExternalTrigger,pos={269,4},size={92,14},title="External Trigger"
 	CheckBox BS_2P_ExternalTrigger,variable= root:Packages:BS2P:CurrentScanVariables:externalTrigger
 	
-	ValDisplay FrameTime,pos={197,21},size={117,14},title="1 Frame:",fSize=10
+	ValDisplay FrameTime,pos={197,37},size={117,14},title="1 Frame:",fSize=10
 	ValDisplay FrameTime,format="%.2W1Ps",frame=0,fColor=(65280,0,0)
 	ValDisplay FrameTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay FrameTime,limits={0,0,0},barmisc={0,1000}
 	ValDisplay FrameTime,value= #"root:Packages:BS2P:CurrentScanVariables:scanFrameTime"
-
-
-	ValDisplay FrameTime1,pos={198,35},size={90,14},title="freq:",fSize=10
+	
+	ValDisplay FrameTime1,pos={198,51},size={90,14},title="freq:",fSize=10
 	ValDisplay FrameTime1,format="%.1f Hz",frame=0,fColor=(65280,0,0)
 	ValDisplay FrameTime1,valueColor=(65280,0,0)
 	ValDisplay FrameTime1,valueBackColor=(60928,60928,60928)
 	ValDisplay FrameTime1,limits={0,0,0},barmisc={0,1000}
 	ValDisplay FrameTime1,value= #"root:Packages:BS2P:CurrentScanVariables:displayFrameHz"
 
-	ValDisplay TotalTime,pos={197,48},size={106,14},title="Total time:",fSize=10
+
+	ValDisplay TotalTime,pos={197,64},size={106,14},title="Total time:",fSize=10
 	ValDisplay TotalTime,format="%.1W1Ps",frame=0,fColor=(65280,0,0)
 	ValDisplay TotalTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay TotalTime,limits={0,0,0},barmisc={0,1000}
 	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:displayTotalTime"
+
 
 	SetVariable SaveAs,pos={538,22},size={219,16},title=" ",frame=0
 	SetVariable SaveAs,value= root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
