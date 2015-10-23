@@ -225,11 +225,11 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:moveStep = 20 //microns
 		variable/g root:Packages:BS2P:CurrentScanVariables:laserPower
 		variable/g root:Packages:BS2P:CurrentScanVariables:XYswapped = 0
-<<<<<<< HEAD
+
 		variable/g root:Packages:BS2P:CurrentScanVariables:frameAvg = 1
-=======
+
 		variable/g root:Packages:BS2P:CurrentScanVariables:trigLoop = 0
->>>>>>> origin/master
+
 		
 ////////////////	ePHYS	////////////////////		
 		variable/g root:Packages:BS2P:CurrentScanVariables:ePhysFreq = 10 	//kHz
