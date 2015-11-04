@@ -814,6 +814,7 @@ Function BS_2P_abortButtonProc_2(ba) : ButtonControl
 			bs_2P_reset2p()
 			BS_2P_Pockels("close")
 			BS_2P_PMTShutter("close")
+			bs_2p_zeroscanners("offset")
 			///////////////////// Don't forget to add this ---->  close Pockels
 			break
 		case -1: // control being killed
