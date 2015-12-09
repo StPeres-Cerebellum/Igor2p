@@ -437,7 +437,7 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 	NVAR focusStep = root:Packages:BS2P:CurrentScanVariables:focusStep
 		NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
-	wave kineicSeries =  root:Packages:BS2P:CurrentScanVariables:kinteicSeries
+	wave kineticSeries =  root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	switch(s.eventCode)
 		case 11:
 			switch(s.keycode)

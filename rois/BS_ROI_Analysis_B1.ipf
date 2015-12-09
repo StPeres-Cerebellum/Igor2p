@@ -4,11 +4,14 @@
 #include "BS_BatchAnalyze_B1"
 #include "InsertSkippedImages"
 #include "BS_Utilities"
+#include "bs_Acq4"
+#include "bs_2p_quickRois"
 
 
 Menu "ROIs"
 //	"Update/6",  /q, update()
 	"Import a FITS", Show1FITS()
+	"Import an Acq4", /q, loadAcq4Image()
 	"Set the Frame Rate" , /q, SETKCT()
 	"Set DFF Baseline for data in this folder" , /q, ManualSetDFFs()
 	"-"
@@ -30,6 +33,7 @@ Menu "GraphMarquee"
 	
 	"-"
 		Submenu "ROIs"
+			"Quick Explore", /q, RoiExplore()
 			"Freehand Signal", /q, CalcROI()
 			"Freehand Background", /q, CalcROI()
 //				SubMenu "old square rois"
@@ -49,10 +53,14 @@ Menu "GraphMarquee"
 		End
 		SubMenu "Image"
 		"Autoscale", /q, NewAutoscale()
+		"Set Aspect", /q, aspectImage()
 		"-"
-		"DFF the Image", /q, ImageDFF()
+		"\"DFF\" the Image", /q, ImageDFF()
 		"Where is this Image?", /q, WhereIsThisImage()
 		"Bin Pixels in Image", /q, binPixels()
+		"Average this Image", /q, imageAvg()
+		"Make Projections --Full image--", /q, projectionsFullImage()
+		"Make Projections --sub-region--", /q, projectionsSubImage()
 		SubMenu "Colors"
 				ChoosePalette(), /q, ChangeColors()
 		End
@@ -64,6 +72,32 @@ Menu "GraphMarquee"
 
 	
 End
+
+function aspectImage()
+	String info,vaxis,haxis
+	String list= ImageNameList("",";")
+	String imagePlot = StringFromList(0,list, ";")
+	wave Image = ImageNameToWaveRef("",ImagePlot)
+	info=ImageInfo("",imagePlot,0)
+	info = replacestring(" ", info, "")
+	vaxis=StringByKey("YAXIS",info)
+	haxis=StringByKey("XAXIS",info)
+	variable plane=str2num(StringByKey("plane",info, "="))
+
+	
+	ModifyGraph width={Plan,1,$haxis,$vaxis},height={Plan,1,$vaxis,$haxis}
+end
+
+function imageAvg()
+
+	getmarquee/K
+	string ImageName=ImageNameList(S_MarqueeWin, ";")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave Image = ImageNameToWaveRef(S_MarqueeWin,ImageName)
+	imagetransform averageImage image; wave M_AveImage
+	copyscales image m_aveImage
+	newImage/F/k=1 m_aveImage	
+end
 
 Function CalcROI()
 	GetLastUserMenuInfo
@@ -92,9 +126,10 @@ Function CalcROI()
 		string/g root:CurrentROIs:sigcolor = "("+num2str(roicolors[0][0])+", "+num2str(roicolors[0][1])+", "+num2str(roicolors[0][1])+")"
 		string/g root:CurrentROIs:backcolor = "(0,0,65280)"
 		string/g Root:CurrentROIs:ImageName = GetWavesDataFolder(Image, 2)
-		setkct()
 	endif
+	
 	setdatafolder root:currentrois
+	setkct(image)
 	
 	strswitch(ROItype)
 		case "Freehand Signal":
@@ -272,16 +307,21 @@ function ROICOLOR()
 	
 end
 
-Function SETKCT()
+Function SETKCT(image)
+	wave image
 	variable tempkct
-	prompt tempKCT, "Time between frames (s)."  
-	DoPrompt "KCT", TempKCT
-	if (V_Flag)
-		return -1								// User canceled
-	endif
 	NVAR KCT = root:currentROIs:KCT
-	if(NVAR_exists(KCT) == 0 )
-		variable/g root:currentrois:KCT
+	if(dimdelta(image,2) !=1)
+		tempkct = dimdelta(image,2)
+	else
+		prompt tempKCT, "Time between frames (s)."  
+		DoPrompt "KCT", TempKCT
+		if (V_Flag)
+			return -1								// User canceled
+		endif
+		if(NVAR_exists(KCT) == 0 )
+			variable/g root:currentrois:KCT
+		endif
 	endif
 	KCT = TempKCT
 //	update()
@@ -1320,7 +1360,7 @@ end
 function NewUpdate(Image)
 	wave Image
 
-	
+	SETKCT(image)
 	string crntfldr = getdatafolder(Image)
 	setdatafolder root:currentrois
 		
@@ -1437,25 +1477,151 @@ Override Function/S MyCleanupFitsFolderName(nameIn)
 End
 
 function NewAutoscale()
+	
+	print "----------------"
+	String info,vaxis,haxis
+	String list= ImageNameList("",";")
+	String imagePlot = StringFromList(0,list, ";")
+	info=ImageInfo("",imagePlot,0)
+	info = replacestring(" ", info, "")
+	vaxis=StringByKey("YAXIS",info)
+	haxis=StringByKey("XAXIS",info)
+	variable plane=str2num(StringByKey("plane",info, "="))
+//	print StringByKey("plane",info)
+	
+	string glayerLocation = "root:packages:WM3dImageSlider:"+WinName(0,1)+":glayer"
+	NVAR/Z glayer=$glayerLocation
+	
 
-	getmarquee/K left, bottom
 	string ImageName=ImageNameList("","")
 	Imagename = Replacestring(";", Imagename,"") 
 	wave Image = ImageNameToWaveRef("",ImageName)
 	
-	string glayerLocation = "root:packages:WM3dImageSlider:"+WinName(0,1)+":glayer"
+	getmarquee $haxis, $vaxis
+	variable leftRow, rightRow, topColumn, bottomColumn
+	leftrow = x2pnt(image, v_left)
+	rightRow = x2pnt(image, v_right)
+	topColumn = (v_top - DimOffset(image, 1))/DimDelta(image,1)
+	bottomColumn = (v_bottom - DimOffset(image, 1))/DimDelta(image,1)
+
+	//make sure right is bigger than left and bottom is bigger than bottom
+	if( bottomColumn > topColumn)
+		variable temp_bottom = v_bottom
+		v_bottom = v_top
+		v_top = temp_bottom
+	endif
+	if(leftRow > rightRow)
+		variable temp_right = v_right
+		v_right = v_left
+		v_left = temp_right
+	endif
 	
+//	print leftRow, rightRow, bottomColumn, topColumn
+//	print V_left, v_right, v_bottom, V_top
 	
-	NVAR/Z glayer=$glayerLocation
-	
-	if(NVAR_Exists(glayer))
-		imagestats/GS={V_Left, V_Right, V_Bottom, V_Top}/P=(glayer) Image
-//		print V_min, V_max, glayer
+//	getmarquee	
+	if(dimsize(image,2) >= 2)
+		imagestats/m=1/GS={V_Left, V_Right, V_Bottom, V_Top}/P=(plane) Image
+//		print V_min, V_max, plane
 	else
-		imagestats/GS={V_Left, V_Right, V_Bottom, V_Top} Image
+		imagestats/m=1/GS={V_Left, V_Right, V_Bottom, V_Top} Image
+//		print v_flag, V_min, V_max, plane, "2D"
+//		print "2D"
+	endif
+//		print V_Left, V_Right, V_Bottom, V_Top
 //		print V_min, V_max, "No_glayer"
-	endif 
+//	endif 
 	
 	ModifyImage $ImageName ctab= {V_min,V_max,}
 
+end
+
+
+
+function/Wave getImageName()
+	string ImageName=ImageNameList("","")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave Image = ImageNameToWaveRef("",ImageName)
+	return Image
+end
+
+function projectionsFullImage()
+	wave imageStack = getImageName()
+	makeProjections(imageStack)
+end
+
+function  projectionsSubImage()
+	wave subImageStack = makeSubImage()
+	makeProjections(subImageStack)
+end
+
+function/Wave makeSubImage()
+	wave imageStack = getImageName()
+	
+	String info,vaxis,haxis
+	String list= ImageNameList("",";")
+	String imagePlot = StringFromList(0,list, ";")
+	info=ImageInfo("",imagePlot,0)
+	vaxis=StringByKey("YAXIS",info)
+	haxis=StringByKey("XAXIS",info)
+	
+	getmarquee $haxis, $vaxis
+	
+	duplicate/o/r=(v_left,v_right)(v_bottom,v_top)() imageStack subIMage
+//	newImage/F/k=1 subIMage
+	
+	return subIMage
+end
+
+function makeProjections(imageStack)
+	wave imageStack 
+	variable xScale = dimdelta(imageStack,0)
+	variable xOffset = dimOffset(ImageStack,0)
+	variable yScale = dimdelta(ImageStack,1)
+	variable yOffset = dimOffset(ImageStack,1)
+	variable zScale = dimdelta(ImageStack,2)
+	variable zOffset = dimOffset(ImageStack,2)
+	imageTransform/meth=1 zProjection imageStack 
+	imageTransform/meth=1 xProjection imageStack 
+	imageTransform/meth=1 yProjection imageStack 
+	
+	wave m_zprojection
+	wave m_xprojection
+	wave m_yprojection
+	
+//	imagetransform flipcols m_xprojection 
+	matrixop/o/free xProj = m_xprojection ^ t
+	duplicate/o xProj m_xprojection
+//	imagetransform flipcols m_yprojection
+	
+	SetScale/P x zOffset,(zScale),"m", m_xprojection;SetScale/P y yOffset,(yScale),"m", m_xprojection
+	SetScale/P x xOffset,(xscale),"m", m_yprojection;SetScale/P y zOffset,(zScale),"m", m_yProjection
+	SetScale/P x xOffset,(xScale),"m", m_zprojection;SetScale/P y yOffset,(yScale),"m", m_zProjection
+	
+	dowindow/k zProjection
+	dowindow/k xProjection
+	dowindow/k yProjection
+	
+	newImage/F/k=1/n=zProjection m_zprojection
+	ModifyGraph/W=zProjection height={Plan,1,left,bottom}
+	moveWindow/W=zProjection 695.5,  48.5,  1048.5,  224
+	newImage/F/k=1/n=xProjection m_xprojection
+	moveWindow/W=xProjection 483,  48.5,  689.5,  224
+	ModifyGraph/W=xProjection height={Plan,1,left,bottom}
+	newImage/F/k=1/n=yProjection m_yprojection
+	moveWindow/W=yProjection  695.5,  240,  1048.5,  500
+	ModifyGraph/W=yProjection height={Plan,1,left,bottom}
+	
+//	dowindow/k projectionBrowser
+//	display/k=1/n=projectionBrowser
+//	appendimage/w=projectionBrowser m_zprojection
+//	appendimage/w=projectionBrowser m_xprojection
+//	appendimage/w=projectionBrowser m_yprojection
+//	ModifyGraph width={Plan,1,bottom,left}
+//	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (52224,52224,52224),dash= 8
+//	DrawLine ((dimdelta(m_xProjection,0) * dimsize(m_xProjection,0))),0,(dimdelta(m_yProjection,0) * dimsize(m_yProjection,0)),0
+//	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (52224,52224,52224),dash= 8
+//	DrawLine 0,((dimdelta(m_xProjection,0) * dimsize(m_xProjection,0))),0,(dimdelta(m_yProjection,0) * dimsize(m_yProjection,0))
+
+	
 end
