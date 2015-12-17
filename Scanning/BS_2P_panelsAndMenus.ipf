@@ -41,9 +41,6 @@ Menu "2P"
 		subMenu "Configure BNCs"
 			"Edit Configuration", /q, bs_2P_editConfig()
 		end
-		
-		
-		
 	End
 	"-"
 	"Measure laser Power", /q, readLaserPower()
@@ -549,6 +546,10 @@ function bs_2P_reset2P()
 	fDAQmx_CTR_Finished(pmtDev, 1)
 	fDAQmx_WaveformStop(galvoDev)
 	fDAQmx_ScanStop(galvoDev)
+	
+	if((stringMatch((boardConfig[24][2]), "YES")))
+		closePythonServer()
+	endif
 end
 
 Function BS_2P_KineticSeriesButton(ba) : ButtonControl

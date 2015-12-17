@@ -5,6 +5,17 @@
 // 172.20.61.89
 // 5555
 
+Menu "2P"
+	subMenu "Devices"
+		SubMenu "Python Postions"
+			"Connect to Server", /q, connectPythonPositionServer()
+			"Close connection", /q, closePythonServer()
+			"________"
+			"Print current positions", /q, pythonReadPosition()
+		end
+	end
+end	
+
 
 
 Function connectPythonPositionServer()
@@ -46,6 +57,12 @@ end
 function pythonReadPosition()
 	NVAR acq4Sock = root:Packages:pythonPositions:acq4Sock		
 	sockitsendmsg/time=30 acq4Sock, "getPos"
+	
+	NVAR xPos = root:Packages:pythonPositions:xPos
+	NVAR yPos = root:Packages:pythonPositions:yPos
+	NVAR zPos = root:Packages:pythonPositions:zPos
+	
+	print "xPos = ", xPos, "|  yPos = ", yPos, "|  zPos = ", zPos
 end
 
 Function closePythonServer()
