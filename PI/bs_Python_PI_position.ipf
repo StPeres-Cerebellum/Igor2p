@@ -7,7 +7,7 @@
 
 
 
-Function connectPositionServer()
+Function connectPythonPositionServer()
 	string serverIP = "172.20.61.89"
 	variable portNum = 5555
 	

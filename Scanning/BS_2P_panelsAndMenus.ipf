@@ -9,6 +9,7 @@
 #include "bs_freehandrois_2p"
 #include "BS_ROI_Analysis_2p"
 #include "bs_2P_config"
+#include "bs_python_pi_position"
 #include "BS_Utilities"
 #include <all ip procedures>
 
@@ -163,6 +164,9 @@ Function Init2PVariables()
 		if(stringMatch((boardConfig[16][2]), "YES"))
 			PI_Initialize()
 		endif
+		if(stringMatch((boardConfig[24][2]), "YES"))
+			connectPythonPositionServer()
+		endif
 		
 		
 ////////////////	Stored Calibration Variables	////////////////////	
@@ -254,6 +258,7 @@ function BS_2P_makeKineticWindow()
 	NVAR scanLimit = root:Packages:BS2P:CalibrationVariables:scanLimit 		//volts
 	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor		//meters per volt
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	
 	make/o/n=(pixelsPerline,pixelsPerLine) root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:kineticSeries
@@ -306,23 +311,6 @@ function BS_2P_makeKineticWindow()
 	CheckBox AxesConstrain,pos={8,3},size={88,14},proc=BS_2P_constrainAxes,title="Constrain Axes"
 	CheckBox AxesConstrain,value= 1
 	
-	Button FocusUP,pos={313,22},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
-	Button FocusUP,fSize=8
-
-	
-	Button FocusDown,pos={381,2},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
-	Button FocusDown,fSize=8
-
-	Button FocusDown,pos={314,57},size={33,18},proc=BS_2P_focusDownButtonProc,title="down"
-	Button FocusDown,fSize=8
-
-	
-	SetVariable focusStep,pos={310,41},size={50,16},title="µm",frame=0
-	SetVariable focusStep,valueBackColor=(60928,60928,60928)
-	SetVariable focusStep,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
-	
-	
-
 	SetVariable setFrames,pos={197,3},size={66,16},proc=BS_2P_SetFramesProc,title="Frames"
 	SetVariable setFrames,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setFrames,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frames
@@ -389,29 +377,49 @@ function BS_2P_makeKineticWindow()
 	Button zoomIn,pos={589,58},size={34,20},proc=ZoomInProc_2,title="in",fSize=8
 
 	
-	SetVariable setMoveStep,pos={496,46},size={22,16},title=" ",frame=0
-	SetVariable setMoveStep,valueBackColor=(65535,65535,65535)
-	SetVariable setMoveStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:moveStep
 
 
-
-	Button moveU,pos={500,31},size={14,16},proc=MoveUProc,title="^",fSize=8
-	Button moveR,pos={519,48},size={14,16},proc=MoveRProc,title=">",fSize=8
-	Button moveD,pos={500,63},size={14,16},proc=MoveDProc,title="v",fSize=8
-	Button moveL,pos={480,48},size={14,16},proc=MoveLProc,title="<",fSize=8
+	//Stage Control ----------------------------------------------------------------
+	if((stringMatch((boardConfig[16][2]), "YES")) || (stringMatch((boardConfig[24][2]), "YES")))
+			
+		Button moveU,pos={500,31},size={14,16},proc=MoveUProc,title="^",fSize=8
+		Button moveR,pos={519,48},size={14,16},proc=MoveRProc,title=">",fSize=8
+		Button moveD,pos={500,63},size={14,16},proc=MoveDProc,title="v",fSize=8
+		Button moveL,pos={480,48},size={14,16},proc=MoveLProc,title="<",fSize=8
+		
+		SetVariable setMoveStep,pos={496,46},size={22,16},title=" ",frame=0
+		SetVariable setMoveStep,valueBackColor=(65535,65535,65535)
+		SetVariable setMoveStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:moveStep
 	
-	GroupBox stackBox,pos={370,24},size={103,53}
-
+	endif
+	//----------------------------------------------------------------------------------------
 	
-	Button doStack,pos={402,27},size={34,20},proc=doStack,title="stack",fSize=8
-	Button doStack,fColor=(61440,61440,61440)
+	//Z Control ----------------------------------------------------------------
+	if((stringMatch((boardConfig[15][2]), "YES")) || (stringMatch((boardConfig[24][2]), "YES")))
+		Button FocusUP,pos={313,22},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
+		Button FocusUP,fSize=8
+//		Button FocusDown,pos={381,2},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
+//		Button FocusDown,fSize=8
+		Button FocusDown,pos={314,57},size={33,18},proc=BS_2P_focusDownButtonProc,title="down"
+		Button FocusDown,fSize=8
+		SetVariable focusStep,pos={310,41},size={50,16},title="µm",frame=0
+		SetVariable focusStep,valueBackColor=(60928,60928,60928)
+		SetVariable focusStep,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
+		GroupBox stackBox,pos={370,24},size={103,53}
 
-	SetVariable stackDepth,pos={381,46},size={86,16},title="depth (µm)",frame=0
-	SetVariable stackDepth,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:stackDepth
+		Button doStack,pos={402,27},size={34,20},proc=doStack,title="stack",fSize=8
+		Button doStack,fColor=(61440,61440,61440)
 
-	SetVariable stackResolution,pos={375,61},size={95,16},title="resolution (µm)"
-	SetVariable stackResolution,frame=0
-	SetVariable stackResolution,limits={0,20,0},value= root:Packages:BS2P:CurrentScanVariables:stackResolution
+		SetVariable stackDepth,pos={381,46},size={86,16},title="depth (µm)",frame=0
+		SetVariable stackDepth,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:stackDepth
+
+		SetVariable stackResolution,pos={375,61},size={95,16},title="resolution (µm)"
+		SetVariable stackResolution,frame=0
+		SetVariable stackResolution,limits={0,20,0},value= root:Packages:BS2P:CurrentScanVariables:stackResolution
+	endif
+	//----------------------------------------------------------------------------------------
+	
+	
 
 	ValDisplay pixSize,pos={5,30},size={90,14},title="Pixel Size"
 	ValDisplay pixSize,labelBack=(60928,60928,60928),format="%.W1Pm",frame=0
@@ -565,11 +573,16 @@ Function BS_2P_focusUpButtonProc(ba) : ButtonControl
 	NVAR focusStep = root:packages:BS2P:CurrentScanVariables:focusStep
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
 			// click code here
-			LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep)
+			if(stringMatch((boardConfig[15][2]), "YES")) //Luigs
+				LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep)
+			elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
+				pythonMoveRelative(-1* focusStep, "z")
+			endif
 			//	scan ONE frame using current settings
 			//	draw image from dum
 			//	copy image over kineticSeries
@@ -587,6 +600,7 @@ Function BS_2P_focusDownButtonProc(ba) : ButtonControl
 	NVAR focusStep = root:packages:BS2P:CurrentScanVariables:focusStep
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
@@ -594,7 +608,11 @@ Function BS_2P_focusDownButtonProc(ba) : ButtonControl
 			//	scan one frame using current settings
 			//	draw image from dum
 			//	copy image over kineticSeries
-			LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, -focusStep)
+			if(stringMatch((boardConfig[15][2]), "YES")) //Luigs
+				LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -focusStep)
+			elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
+				pythonMoveRelative(focusStep, "z")
+			endif
 			break
 		case -1: // control being killed
 			break
@@ -880,10 +898,15 @@ End
 Function MoveLProc(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
 	NVAR moveStep =  root:Packages:BS2P:CurrentScanVariables:moveStep
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
-			PI_moveMicrons("y", moveStep)
+			if(stringMatch((boardConfig[16][2]), "YES")) //PI
+				PI_moveMicrons("y", moveStep)
+			elseif(stringMatch((boardConfig[24][2]), "YES"))
+				pythonMoveRelative(moveStep, "y")
+			endif
 			break
 		case -1: // control being killed
 			break
@@ -895,10 +918,15 @@ End
 Function MoveRProc(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
 	NVAR moveStep =  root:Packages:BS2P:CurrentScanVariables:moveStep
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
-			PI_moveMicrons("y", -1* moveStep)
+			if(stringMatch((boardConfig[16][2]), "YES")) //PI
+				PI_moveMicrons("y", -1* moveStep)
+			elseif(stringMatch((boardConfig[24][2]), "YES"))
+				pythonMoveRelative(-1* moveStep, "y")
+			endif
 			break
 		case -1: // control being killed
 			break
@@ -910,10 +938,15 @@ End
 Function MoveUProc(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
 	NVAR moveStep =  root:Packages:BS2P:CurrentScanVariables:moveStep
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
-			PI_moveMicrons("x", -1* moveStep)
+			if(stringMatch((boardConfig[16][2]), "YES")) //PI
+				PI_moveMicrons("x", -1* moveStep)
+			elseif(stringMatch((boardConfig[24][2]), "YES"))
+				pythonMoveRelative(-1* moveStep, "x")
+			endif
 			break
 		case -1: // control being killed
 			break
@@ -926,10 +959,15 @@ End
 Function MoveDProc(ba) : ButtonControl
 	STRUCT WMButtonAction &ba
 	NVAR moveStep =  root:Packages:BS2P:CurrentScanVariables:moveStep
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
-			PI_moveMicrons("x", moveStep)
+			if(stringMatch((boardConfig[16][2]), "YES")) //PI
+				PI_moveMicrons("x", moveStep)
+			elseif(stringMatch((boardConfig[24][2]), "YES"))
+				pythonMoveRelative(moveStep, "x")
+			endif
 			break
 		case -1: // control being killed
 			break

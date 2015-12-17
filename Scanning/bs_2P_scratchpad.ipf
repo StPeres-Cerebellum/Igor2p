@@ -167,8 +167,9 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_CTR_OutputPulse/trig={startTrigChannel, trigger}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(stringmatch(imageMode, "stack"))
 		readLaserPower()
+		redimension/n=((pixelsPerLine * totalLines * frameAvg) + 0) dum
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelClock/wave=dum/EOSH=S_stackHook 0
-		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frameAvg) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(stringmatch(imageMode, "test"))		//used for testing shit
@@ -201,8 +202,18 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 
 	duplicate/o/free dum lastFrame
 	dum = nan
-	
 	differentiate/meth=2/ep=1/p lastFrame
+	
+	NVAR frameAvg = root:Packages:BS2P:CurrentScanVariables:frameAvg
+		If(frameAvg == 1)
+		redimension/n=(pixelsPerline, lines) lastFrame
+	else
+		redimension/n=(pixelsPerline, lines, frameAvg) lastFrame
+		duplicate/o/free lastFrame avgHolder
+		matrixop/o lastFrame = sumBeams(avgHolder)  / frameAvg
+	endif
+	
+	
 	redimension/n=(pixelsPerline, lines) lastFrame
 	duplicate/free lastFrame flipped
 	lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
@@ -231,7 +242,11 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		string sliceName = "slice_"+num2str(frameCounter)
 		redimension/n=(-1,-1) kineticSeries
 		duplicate/o kineticSeries $sliceName
-		LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, -stackResolution)
+		if(stringMatch((boardConfig[15][2]), "YES")) //Luigs
+			LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -stackResolution)
+		elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
+			pythonMoveRelative(stackResolution, "z")
+		endif
 		sleep/s 0.100
 		BS_2P_Pockels("open")
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_stackHook 0
@@ -247,7 +262,11 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		BS_2P_PMTShutter("close")
 		bs_2P_zeroscanners("offset")
 		readLaserPower()
-		LN_moveMicrons(luigsFocusDevice,luigsFocusAxis, stackDepth)
+		if(stringMatch((boardConfig[15][2]), "YES")) //Luigs
+			LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, stackDepth)
+		elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
+			pythonMoveRelative(-stackDepth, "z")
+		endif
 		imageTransform/k stackImages slice_1; wave m_stack
 //		rotateImage(m_stack)
 		duplicate/o m_stack kineticSeries

@@ -83,9 +83,9 @@ function bs_2P_editConfig()
 end
 
 
-function updateCOnfig()
+function updateConfig()
 	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-	
+	redimension/n=(30,10) boardConfig
 														//sets defaults unless already set
 	if(!(stringMatch(getdimlabel(boardConfig,0,0),"xGalvo")))
 		setdimlabel 0,0,xGalvo,boardConfig
@@ -235,5 +235,11 @@ function updateCOnfig()
 		boardConfig[23][0] = "dev1"
 		boardConfig[23][1] = "AD"
 		boardConfig[23][2] = "2"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,24),"UsePythonPI")))	
+		setDimLabel 0, 24, UsePythonPI,boardCOnfig
+		boardConfig[24][1] = "Constant"
+		boardConfig[24][2] = "NO"
 	endif															
 end
