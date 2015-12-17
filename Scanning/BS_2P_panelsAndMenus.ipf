@@ -327,7 +327,7 @@ function BS_2P_makeKineticWindow()
 	ValDisplay FrameTime,format="%.2W1Ps",frame=0,fColor=(65280,0,0)
 	ValDisplay FrameTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay FrameTime,limits={0,0,0},barmisc={0,1000}
-	ValDisplay FrameTime,value= #"root:Packages:BS2P:CurrentScanVariables:scanFrameTime"
+	ValDisplay FrameTime,value= #"root:Packages:BS2P:CurrentScanVariables:scanFrameTime *root:Packages:BS2P:CurrentScanVariables:frameAvg"
 	
 	ValDisplay FrameTime1,pos={198,51},size={90,14},title="freq:",fSize=10
 	ValDisplay FrameTime1,format="%.1f Hz",frame=0,fColor=(65280,0,0)
@@ -341,7 +341,7 @@ function BS_2P_makeKineticWindow()
 	ValDisplay TotalTime,format="%.1W1Ps",frame=0,fColor=(65280,0,0)
 	ValDisplay TotalTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay TotalTime,limits={0,0,0},barmisc={0,1000}
-	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:displayTotalTime"
+	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:displayTotalTime *root:Packages:BS2P:CurrentScanVariables:frameAvg"
 
 
 	SetVariable SaveAs,pos={538,22},size={219,16},title=" ",frame=0
