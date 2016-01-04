@@ -183,9 +183,9 @@ function BS_2P_WriteScanParamsInWave(w)
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine; variableNote +=  "pixelsPerLine:"+num2str(pixelsPerLine)+";"
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue; variableNote +=  "pockelValue:"+num2str(pockelValue)+";" 
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower; variableNote +=  "laserPower:"+num2str(laserPower)+";" 
-	NVAR xPos = root:Packages:pythonPositions:xPos; variableNote +=  "pythoPosX:"+num2str(xPos)+";" 
-	NVAR yPos = root:Packages:pythonPositions:yPos; variableNote +=  "pythoPosY:"+num2str(yPos)+";" 
-	NVAR zPos = root:Packages:pythonPositions:zPos; variableNote +=  "pythoPosZ:"+num2str(zPos)+";" 
+	NVAR xPos = root:Packages:pythonPositions:xPos; variableNote +=  "pythonPosX:"+num2str(xPos)+";" 
+	NVAR yPos = root:Packages:pythonPositions:yPos; variableNote +=  "pythonPosY:"+num2str(yPos)+";" 
+	NVAR zPos = root:Packages:pythonPositions:zPos; variableNote +=  "pythonPosZ:"+num2str(zPos)+";" 
 	note/K w, variableNote
 
 end

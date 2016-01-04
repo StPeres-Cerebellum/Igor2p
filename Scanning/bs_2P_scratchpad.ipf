@@ -262,11 +262,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		BS_2P_PMTShutter("close")
 		bs_2P_zeroscanners("offset")
 		readLaserPower()
-		if(stringMatch((boardConfig[15][2]), "YES")) //Luigs
-			LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, stackDepth)
-		elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
-			pythonMoveRelative(-stackDepth, "z")
-		endif
+
 		imageTransform/k stackImages slice_1; wave m_stack
 //		rotateImage(m_stack)
 		duplicate/o m_stack kineticSeries
@@ -275,12 +271,17 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		scaleKineticSeries()
 		setScale/p z, 0, (stackResolution * 1e-6), kineticSeries
 		BS_2P_Append3DImageSlider()
-		BS_2P_writeScanParamsInWave(kineticSeries)
 		makeProjections(kineticSeries)
-		
+		BS_2P_writeScanParamsInWave(kineticSeries)
 		NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
 		if(saveemall)
 			BS_2P_saveDum()
+		endif
+		
+		if(stringMatch((boardConfig[15][2]), "YES")) //Luigs
+			LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, stackDepth)
+		elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
+			pythonMoveRelative(-stackDepth, "z")
 		endif
 		
 		setdatafolder currentFolder

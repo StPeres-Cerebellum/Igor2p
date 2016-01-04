@@ -547,9 +547,9 @@ function bs_2P_reset2P()
 	fDAQmx_WaveformStop(galvoDev)
 	fDAQmx_ScanStop(galvoDev)
 	
-	if((stringMatch((boardConfig[24][2]), "YES")))
-		closePythonServer()
-	endif
+//	if((stringMatch((boardConfig[24][2]), "YES")))
+//		closePythonServer()
+//	endif
 end
 
 Function BS_2P_KineticSeriesButton(ba) : ButtonControl
@@ -906,7 +906,7 @@ Function MoveLProc(ba) : ButtonControl
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
 				PI_moveMicrons("y", moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
-				pythonMoveRelative(moveStep, "y")
+				pythonMoveRelative(moveStep, "x")
 			endif
 			break
 		case -1: // control being killed
@@ -926,7 +926,7 @@ Function MoveRProc(ba) : ButtonControl
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
 				PI_moveMicrons("y", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
-				pythonMoveRelative(-1* moveStep, "y")
+				pythonMoveRelative(-1* moveStep, "x")
 			endif
 			break
 		case -1: // control being killed
@@ -946,7 +946,7 @@ Function MoveUProc(ba) : ButtonControl
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
 				PI_moveMicrons("x", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
-				pythonMoveRelative(-1* moveStep, "x")
+				pythonMoveRelative(-1* moveStep, "y")
 			endif
 			break
 		case -1: // control being killed
@@ -967,7 +967,7 @@ Function MoveDProc(ba) : ButtonControl
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
 				PI_moveMicrons("x", moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
-				pythonMoveRelative(moveStep, "x")
+				pythonMoveRelative(moveStep, "y")
 			endif
 			break
 		case -1: // control being killed
