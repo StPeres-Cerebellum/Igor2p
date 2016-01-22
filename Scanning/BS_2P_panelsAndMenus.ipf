@@ -830,6 +830,7 @@ Function BS_2P_abortButtonProc_2(ba) : ButtonControl
 	switch( ba.eventCode )
 		case 2: // mouse up
 			// click code here
+			sampleDiodeVoltage()
 			bs_2P_reset2p()
 			BS_2P_Pockels("close")
 			BS_2P_PMTShutter("close")
@@ -1051,7 +1052,7 @@ function sampleDiodeVoltage()
 	variable mWPerVolt = str2num(boardConfig[10][2])
 	variable mWPerVolt_offset = str2num(boardConfig[10][3])
 	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
-	make/n=10000/o sampleDiode
+	make/d/n=10000/o sampleDiode
 	setscale/p x, 0, 0.0001, sampleDiode
 	
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
@@ -1167,8 +1168,8 @@ function calibratePower()
 	variable pockelChannel = str2num(boardConfig[2][2])
 	bs_2P_zeroscanners("center")
 	
-	variable minPockels = 0
-	variable maxPockels = 1
+	variable minPockels = 0.15
+	variable maxPockels = 0.2
 	variable meterReading
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), w_diodeReadings
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), mW
@@ -1203,13 +1204,13 @@ function calibratePower()
 	mWPerVolt = w_coef[1]
 	bs_2P_editConfig()
 	
-	display/k=1 mW
-	CurveFit/X=1/NTHR=0/q poly 3,  mW(0.2,0.5) /D
-	wave w_coef
-	duplicate/o w_coef root:Packages:BS2P:CalibrationVariables:pockelsPolynomial
-	boardConfig[17][2] = num2str(w_coef[0])
-	boardConfig[17][3] = num2str(w_coef[1])
-	boardConfig[17][4] = num2str(w_coef[2])
+//	display/k=1 mW
+//	CurveFit/X=1/NTHR=0/q poly 3,  mW(0.2,0.5) /D
+//	wave w_coef
+//	duplicate/o w_coef root:Packages:BS2P:CalibrationVariables:pockelsPolynomial
+//	boardConfig[17][2] = num2str(w_coef[0])
+//	boardConfig[17][3] = num2str(w_coef[1])
+//	boardConfig[17][4] = num2str(w_coef[2])
 	
 	display/k=1 w_diodeReadings 
 end
@@ -1231,20 +1232,20 @@ function showLaserPower()
 	variable diodeChannel = str2num(boardConfig[6][2])
 	variable mWPerVolt = str2num(boardConfig[10][2])
 	variable mWPerVolt_offset = str2num(boardConfig[10][3])
-	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
-	make/n=1000/o  root:Packages:BS2P:CalibrationVariables:sampleDiode
-	wave sampleDiode = root:Packages:BS2P:CalibrationVariables:sampleDiode
+	make/n=1000/o sampleDiode
+//	wave sampleDiode = root:Packages:BS2P:CalibrationVariables:sampleDiode
 	setscale/p x, 0, 0.0001, sampleDiode	
 	
-	string diodeHook = "calcLaserHook(mWPerVolt,mWPerVolt_offset)"
-	
-	DAQmx_Scan/rpt=1/bkg/DEV=diodeDevNum/rpth=diodeHook waves=diodeWaves
+	string diodeHook = "calcLaserHook(mWPerVolt,mWPerVolt_offset,sampleDiode)"
+	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
+
+	DAQmx_Scan/bkg/DEV=diodeDevNum/eosh=diodeHook waves=diodeWaves
 	
 end
 
-function calcLaserHook(mWPerVolt, mWPerVolt_offset)
+function calcLaserHook(mWPerVolt, mWPerVolt_offset,sampleDiode)
 	variable mWPerVolt, mWPerVolt_offset
-	wave sampleDiode = root:Packages:BS2P:CalibrationVariables:sampleDiode
+	wave sampleDiode// = root:Packages:BS2P:CalibrationVariables:sampleDiode
 	
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
 	laserPower = (mean(sampleDiode) * mWPerVolt) + mWPerVolt_offset

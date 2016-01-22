@@ -236,7 +236,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	string galvoChannels = "runx, "+ xGalvoChannel+"; runy, "+yGalvoChannel
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
-
+	
 
 	if(frameCounter < frames)	//otherwise set up another one
 		string sliceName = "slice_"+num2str(frameCounter)
@@ -261,7 +261,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		duplicate/o kineticSeries $sliceName
 		BS_2P_PMTShutter("close")
 		bs_2P_zeroscanners("offset")
-		readLaserPower()
+		sampleDiodeVoltage()
 
 		imageTransform/k stackImages slice_1; wave m_stack
 //		rotateImage(m_stack)
@@ -342,6 +342,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	
 	if(frameCounter == frames)	//shut it down
 		BS_2P_writeScanParamsInWave(kineticSeries)
+		sampleDiodeVoltage()
 		BS_2P_PMTShutter("close")
 		bs_2P_zeroscanners("offset")
 		setdatafolder currentFolder
@@ -363,7 +364,7 @@ function kineticHook2(dum, frames)
 		
 	wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
 	NVAR ePhysRec = root:Packages:BS2P:CurrentScanVariables:ePhysRec
-	
+	sampleDiodeVoltage()
 	BS_2P_Pockels("close")
 	BS_2P_PMTShutter("close")
 	bs_2P_zeroscanners("offset")
@@ -388,6 +389,7 @@ function kineticHook2(dum, frames)
 	duplicate/o dum root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	wave kineticSeries =  root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()
+	
 	BS_2P_Append3DImageSlider()
 	BS_2P_writeScanParamsInWave(kineticSeries)
 //	readLaserPower()
