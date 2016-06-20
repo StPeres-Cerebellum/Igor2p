@@ -147,11 +147,11 @@ EndMacro
 Function Init2PVariables()
 	
 	if(datafolderexists("root:Packages:BS2P") == 0)
-		newdatafolder root:Packages
-		newdatafolder root:Packages:BS2P
-		newdatafolder root:Packages:BS2P:CalibrationVariables
-		newdatafolder root:Packages:BS2P:CurrentScanVariables
-		newdatafolder root:Packages:BS2P:ImageDisplayVariables
+		newdatafolder/o root:Packages
+		newdatafolder/o root:Packages:BS2P
+		newdatafolder/o root:Packages:BS2P:CalibrationVariables
+		newdatafolder/o root:Packages:BS2P:CurrentScanVariables
+		newdatafolder/o root:Packages:BS2P:ImageDisplayVariables
 		
 		wave/t boardConfig = bs_2P_getConfig()
 		if(stringMatch((boardConfig[15][2]), "YES"))
