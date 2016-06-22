@@ -70,7 +70,7 @@ end
 Window Control2P() : Panel
 	Init2PVariables()
 	PauseUpdate; Silent 1		// building window...
-	NewPanel /K=1 /W=(16,58,780,133)
+	NewPanel /K=1 /W=(11,57,775,132)
 	ModifyPanel cbRGB=(65534,65534,65534)
 	SetDrawLayer UserBack
 	SetDrawEnv linefgc= (48896,49152,65280),fillfgc= (60928,60928,60928),fillbgc= (48896,49152,65280)
@@ -123,16 +123,9 @@ Window Control2P() : Panel
 	SetVariable lineDisplay,valueColor=(0,0,52224)
 	SetVariable lineDisplay,valueBackColor=(60928,60928,60928)
 	SetVariable lineDisplay,limits={0.2,500,0},value= root:Packages:BS2P:CurrentScanVariables:totalLines
-	ValDisplay dwellTIme,pos={291,39},size={100,14},title="Dwell Time:"
-	ValDisplay dwellTIme,labelBack=(60928,60928,60928),format="%.0W1Ps",frame=0
-	ValDisplay dwellTIme,valueBackColor=(60928,60928,60928)
-	ValDisplay dwellTIme,limits={0,0,0},barmisc={0,1000}
-	ValDisplay dwellTIme,value= #"1/root:packages:bs2p:currentScanVariables:acquisitionFrequency"
-
 	ValDisplay measuredPower,pos={392,50},size={120,14},title="Last reading:"
-	ValDisplay measuredPower,labelBack=(60928,60928,60928),format="%.1W1PmW"
-	ValDisplay measuredPower,frame=0,valueColor=(52224,0,0)
-
+	ValDisplay measuredPower,labelBack=(60928,60928,60928),format="%.1W1PmW",frame=0
+	ValDisplay measuredPower,valueColor=(52224,0,0)
 	ValDisplay measuredPower,valueBackColor=(60928,60928,60928)
 	ValDisplay measuredPower,limits={0,0,0},barmisc={0,1000}
 	ValDisplay measuredPower,value= #"root:Packages:BS2P:CurrentScanVariables:laserPower"
@@ -141,6 +134,13 @@ Window Control2P() : Panel
 	CheckBox ePhysRec,variable= root:Packages:BS2P:CurrentScanVariables:ePhysREC
 	SetVariable EphysFreq,pos={527,39},size={104,16},title="Dig. Freq (kHz)"
 	SetVariable EphysFreq,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:ePhysFreq
+	CheckBox fixedDwell,pos={293,54},size={80,14},proc=fixDwellTime,title="Fix dwell time"
+	CheckBox fixedDwell,variable= root:Packages:BS2P:CurrentScanVariables:fixedDwell
+	SetVariable dwellTime,pos={297,36},size={92,16},proc=SetDwellProc,title="Dwell time"
+	SetVariable dwellTime,format="%.0W1Ps"
+	SetVariable dwellTime,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:dwellTime
+
+
 EndMacro
 
 
@@ -208,6 +208,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:prefixIncrement = 0
 		variable/g root:Packages:BS2P:CurrentScanVariables:saveEmAll = 0
 		variable/g root:Packages:BS2P:CurrentScanVariables:saveEphys = 0
+		variable/g root:Packages:BS2P:CurrentScanVariables:fixedDwell = 0
 		
 		
 		variable/g root:Packages:BS2P:CurrentScanVariables:powermW = 0 //Display mW for the power
@@ -689,6 +690,23 @@ Function BS_2P_ChangeSavePrefix(sva) : SetVariableControl
 	return 0
 End
 
+Function SetDwellProc(sva) : SetVariableControl
+	STRUCT WMSetVariableAction &sva
+
+	switch( sva.eventCode )
+		case 1: // mouse up
+		case 2: // Enter key
+		case 3: // Live update
+			Variable dval = sva.dval
+			String sval = sva.sval
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	BS_2P_UpdateVariablesCreateScan()
+	return 0
+End
+
 Function BS_2P_pathSelectionPopMenuProc(pa) : PopupMenuControl
 	STRUCT WMPopupAction &pa
 	SVAR pathDetailsListing =  root:Packages:BS2P:CurrentScanVariables:pathDetailsListing
@@ -823,6 +841,24 @@ Function SetobjectiveMagProc(sva) : SetVariableControl
 	return 0
 End
 
+Function fixDwellTime(cba) : CheckBoxControl
+	STRUCT WMCheckboxAction &cba
+	NVAR fixedDwell =  root:Packages:BS2P:CurrentScanVariables:fixedDwell
+	switch( cba.eventCode )
+		case 2: // mouse up
+			Variable checked = cba.checked
+			if(checked)
+				PopupMenu galvoFreq disable=2
+			else
+				PopupMenu galvoFreq disable=0
+			endif
+			break
+		case -1: // control being killed
+			break
+	endswitch
+	BS_2P_UpdateVariablesCreateScan()
+	return 0
+End
 
 Function BS_2P_abortButtonProc_2(ba) : ButtonControl
 	STRUCT WMButtonAction &ba

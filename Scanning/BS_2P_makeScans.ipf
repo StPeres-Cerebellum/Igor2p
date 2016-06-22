@@ -115,7 +115,7 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 		NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
 		NVAR ePhysRec = root:Packages:BS2P:CurrentScanVariables:ePhysRec
 		NVAR ePhysFreq = root:Packages:BS2P:CurrentScanVariables:ePhysFreq
-		
+		NVAR fixedDwell = root:Packages:BS2P:CurrentScanVariables:fixedDwell
 //		print pixelSHift
 		
 //		samplesPerPixel /= 100	//convert samples per pixel to kHz
@@ -132,7 +132,10 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 		
 //		BS_2P_saneScanCheck(scaledX, scaledY, X_VoltageOffset, Y_VoltageOffset)
 		
-
+		if(fixedDwell)
+			lineTime = pixelsPerLine * dwellTime
+			print lineTime
+		endif
 /////////////	Removed this in order to fix scanning frequency  (bs 141118)	///////////////////////
 //		lineTime = (ScaledX/spotSize)*DwellTime		//limit the scan frequency		///
 //		if(lineTime < (1/(2*freqLimit)))												///
