@@ -53,6 +53,7 @@ Menu "GraphMarquee"
 	"-"
 	Submenu "2P Scan"
 		"Scan here", /q, arbitraryScan()
+		"Multiple scans", /q, multipleScans()
 	end
 	SubMenu "Image Tools"
 		"Measure distances", /q, BS_2P_measure()

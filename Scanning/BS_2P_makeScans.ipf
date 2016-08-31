@@ -197,6 +197,11 @@ Function/wave BS_2P_UpdateVariablesCreateScan()
 end
 
 Function arbitraryScan()
+	makeArbitraryScan()
+	BS_2P_Scan("snapshot")
+end
+
+Function makeArbitraryScan()
 	getmarquee/K left, bottom
 	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	variable hReflect = str2num(boardConfig[19][2])
@@ -231,8 +236,6 @@ Function arbitraryScan()
 //	print scaledX, scaledY
 	
 	BS_2P_updateVariablesCreateScan()
-	BS_2P_Scan("snapshot")
-
 end
 
 

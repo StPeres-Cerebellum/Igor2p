@@ -884,6 +884,44 @@ function loadStack()
 
 end
 
+static function makeProjections(imageStack)
+	wave imageStack
+	
+	variable xScale = dimdelta(imageStack,0)
+	variable yScale = dimdelta(ImageStack,1)
+	variable zScale = dimdelta(ImageStack,2)
+	imageTransform zProjection imageStack 
+	imageTransform xProjection imageStack 
+	imageTransform yProjection imageStack 
+	
+	wave m_zprojection
+	wave m_xprojection
+	wave m_yprojection
+	
+//	imagetransform flipcols m_xprojection 
+	matrixop/o/free xProj = m_xprojection ^ t
+	duplicate/o xProj m_xprojection
+//	imagetransform flipcols m_yprojection
+	
+	SetScale/P x 0,(-zScale),"m", m_xprojection;SetScale/P y 0,(xScale),"m", m_xprojection
+	SetScale/P x 0,(yscale),"m", m_yprojection;SetScale/P y 0,(-zScale),"m", m_yProjection
+	SetScale/P x 0,(xScale),"m", m_zprojection;SetScale/P y 0,(yScale),"m", m_zProjection
+	
+	
+	
+	display/k=1/n=projectionBrowser
+	appendimage/w=projectionBrowser m_zprojection
+	appendimage/w=projectionBrowser m_xprojection
+	appendimage/w=projectionBrowser m_yprojection
+	ModifyGraph width={Plan,1,bottom,left}
+	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (52224,52224,52224),dash= 8
+	DrawLine ((dimdelta(m_xProjection,0) * dimsize(m_xProjection,0))),0,(dimdelta(m_yProjection,0) * dimsize(m_yProjection,0)),0
+	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (52224,52224,52224),dash= 8
+	DrawLine 0,((dimdelta(m_xProjection,0) * dimsize(m_xProjection,0))),0,(dimdelta(m_yProjection,0) * dimsize(m_yProjection,0))
+
+	
+end
+
 
 Window findKeyboardCodes() : Panel
 	NewPanel /W=(519,137,819,337)
