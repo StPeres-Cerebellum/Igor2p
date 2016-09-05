@@ -143,8 +143,7 @@ function imageSubProjections()
 	copyScales m_volumeTranspose, m_xprojection
 	
 	
-	variable depth = pnt2x(subSection, plane)
-
+	variable depth = indexToScale(subsection, plane, 2)
 	
 	dowindow/F viewABove
 	if(!v_flag)
@@ -163,11 +162,9 @@ function imageSubProjections()
 	if(!v_flag)
 		newImage/k=1/n=bottomEdge m_yprojection
 		ModifyGraph width={Plan,1,top,left}
-//		setDrawEnv gstart, gname=bottomEdgeLine
 		SetDrawEnv/w=bottomEdge xcoord= top,ycoord= left,linefgc= (65535,65533,32768),dash= 3
 		SetDrawEnv/w=bottomEdge linethick= 2.00
-		drawLine/w=bottomEdge minWidth,depth, maxWidth, depth; print depth, minWidth, maxWidth
-//		setDrawEnv gstop
+		drawLine/w=bottomEdge minWidth,depth, maxWidth, depth
 	endif
 	
 	dowindow/F rightEdge
@@ -206,18 +203,27 @@ Function scrollImagePlanesHook(s)	//This is a hook for the mousewheel movement i
 						plane += 1
 
 						ModifyImage $ImageName plane=(plane)
-						depth = pnt2x(Image, plane)
+						depth = indexToScale(Image, plane, 2)
 						
 						dowindow bottomEdge
 						if(v_flag)
-							setDrawEnv/w=bottomEdge gname = bottomEdgeLine
+							
+							setDrawLayer/w=bottomEdge/k userFront
+							SetDrawEnv/w=bottomEdge xcoord= top,ycoord= left,linefgc= (65535,65533,32768),dash= 3
+							SetDrawEnv/w=bottomEdge linethick= 2.00
 							drawLine/w=bottomEdge minWidth,depth, maxWidth, depth
+							
 						endif
 						
 //						print plane, depth
 					
 						dowindow rightEdge
 						if(v_flag)
+							
+							setDrawLayer/w=rightEdge/k userFront
+							SetDrawEnv/w=rightEdge xcoord= bottom,ycoord= left,linefgc= (65535,65533,32768),dash= 3
+							SetDrawEnv/w=rightEdge linethick= 2.00
+							drawLine/w=rightEdge depth,minHeight, depth, maxHeight
 								
 						endif
 						
@@ -230,17 +236,26 @@ Function scrollImagePlanesHook(s)	//This is a hook for the mousewheel movement i
 	//					Print "down"
 						plane -= 1
 						ModifyImage $ImageName plane=(plane)
-						depth = pnt2x(Image, plane)
+						depth = indexToScale(Image, plane, 2)
 						
 						dowindow bottomEdge
 						if(v_flag)
-							setDrawEnv/w=bottomEdge gname = bottomEdgeLine
+						
+							setDrawLayer/w=bottomEdge/k userFront
+							SetDrawEnv/w=bottomEdge xcoord= top,ycoord= left,linefgc= (65535,65533,32768),dash= 3
+							SetDrawEnv/w=bottomEdge linethick= 2.00
 							drawLine/w=bottomEdge minWidth,depth, maxWidth, depth
+							
 						endif
 		
 						dowindow rightEdge
 						if(v_flag)
 								
+							setDrawLayer/w=rightEdge/k userFront
+							SetDrawEnv/w=rightEdge xcoord= bottom,ycoord= left,linefgc= (65535,65533,32768),dash= 3
+							SetDrawEnv/w=rightEdge linethick= 2.00
+							drawLine/w=rightEdge depth,minHeight, depth, maxHeight
+							
 						endif
 //						print plane
 	//					Print "up"
