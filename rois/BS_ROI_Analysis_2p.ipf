@@ -41,7 +41,8 @@ Menu "GraphMarquee"
 		"DFF the Image", /q, ImageDFF()
 		"Where is this Image?", /q, WhereIsThisImage()
 		"Bin Pixels in Image", /q, binPixels()
-		"Make Projections", /q,  imageProjection()
+		"Make Projections", /q,  imageSubProjections()
+		"Average stack", /q, averageStack()
 		SubMenu "Colors"
 				ChoosePalette(), /q, ChangeColors()
 		End
@@ -56,7 +57,16 @@ End
 
 function imageProjection()
 	
-	getmarquee/K left, bottom
+	String info,vaxis,haxis
+	String list= ImageNameList("",";")
+	String imagePlot = StringFromList(0,list, ";")
+	info=ImageInfo("",imagePlot,0)
+	info = replacestring(" ", info, "")
+	vaxis=StringByKey("YAXIS",info)
+	haxis=StringByKey("XAXIS",info)
+	variable plane=str2num(StringByKey("plane",info, "="))
+
+	getmarquee $haxis, $vaxis
 	string ImageName=ImageNameList("","")
 	Imagename = Replacestring(";", Imagename,"") 
 	wave ImageStack = ImageNameToWaveRef("",ImageName)
@@ -95,6 +105,177 @@ function imageProjection()
 	DrawLine 0,((dimdelta(m_xProjection,0) * dimsize(m_xProjection,0))),0,(dimdelta(m_yProjection,0) * dimsize(m_yProjection,0))
 
 	
+end
+
+function imageSubProjections()
+	String info,vaxis,haxis
+	String list= ImageNameList("",";")
+	String imagePlot = StringFromList(0,list, ";")
+	info=ImageInfo("",imagePlot,0)
+	info = replacestring(" ", info, "")
+	vaxis=StringByKey("YAXIS",info)
+	haxis=StringByKey("XAXIS",info)
+	variable plane=str2num(StringByKey("plane",info, "="))
+
+	getmarquee $haxis, $vaxis
+	string ImageName=ImageNameList("","")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave ImageStack = ImageNameToWaveRef("",ImageName)
+	
+//	variable xScale = dimdelta(imageStack,0)
+//	variable yScale = dimdelta(ImageStack,1)
+//	variable zScale = dimdelta(ImageStack,2)
+	
+	duplicate/o/r=(v_left,v_right)(v_top,v_bottom) ImageStack subSection
+	
+	imageTransform zProjection subSection; copyScales subSection, m_zprojection
+	imageTransform yProjection subSection
+	imageTransform/g=1 transposeVol subsection; copyScales m_volumeTranspose, m_yprojection
+	imageTransform xProjection subSection
+	imageTransform/g=3 transposeVol subsection
+	
+	wave m_zprojection
+	wave m_xprojection
+	wave m_yprojection
+	
+	matrixop/o/free xProj = m_xprojection ^ t
+	duplicate/o xProj m_xprojection
+	copyScales m_volumeTranspose, m_xprojection
+	
+	
+	variable depth = pnt2x(subSection, plane)
+
+	
+	dowindow/F viewABove
+	if(!v_flag)
+		newImage/k=1/n=viewAbove/F subSection
+		ModifyGraph width={Plan,1,bottom,left}
+		ModifyImage/W=viewAbove subSection plane=(plane)
+		SetWindow viewAbove, hook(MyHook) = scrollImagePlanesHook
+	endif
+	
+	getAxis/q/W=viewAbove $vAxis
+	variable minHeight = v_min, maxHeight = v_max
+	getAxis/q/W=viewAbove $hAxis
+	variable minWidth = v_min, maxWidth = v_max
+	
+	dowindow/F bottomEdge
+	if(!v_flag)
+		newImage/k=1/n=bottomEdge m_yprojection
+		ModifyGraph width={Plan,1,top,left}
+//		setDrawEnv gstart, gname=bottomEdgeLine
+		SetDrawEnv/w=bottomEdge xcoord= top,ycoord= left,linefgc= (65535,65533,32768),dash= 3
+		SetDrawEnv/w=bottomEdge linethick= 2.00
+		drawLine/w=bottomEdge minWidth,depth, maxWidth, depth; print depth, minWidth, maxWidth
+//		setDrawEnv gstop
+	endif
+	
+	dowindow/F rightEdge
+	if(!v_flag)
+		newImage/F/k=1/n=rightEdge m_xprojection;
+		ModifyGraph width={Plan,1,bottom,left}	
+	endif
+	
+end
+
+Function scrollImagePlanesHook(s)	//This is a hook for the mousewheel movement in MatrixExplorer
+	STRUCT WMWinHookStruct &s
+	
+	String info,vaxis,haxis
+	string ImageName=ImageNameList("","")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave Image = ImageNameToWaveRef("",ImageName)
+	info=ImageInfo("",nameofwave(Image),0)
+	info = replacestring(" ", info, "")
+	vaxis=StringByKey("YAXIS",info)
+	haxis=StringByKey("XAXIS",info)
+	variable plane=str2num(StringByKey("plane",info, "="))
+	variable depth = pnt2x(Image, plane)
+	getAxis/q/W=viewAbove $vAxis
+	variable minHeight = v_min, maxHeight = v_max
+	getAxis/q/W=viewAbove $hAxis
+	variable minWidth = v_min, maxWidth = v_max
+	
+
+	Variable hookResult = 0
+	switch(s.eventCode)
+		case 22:					// mouseWheel event
+			switch (s.wheelDy)	//wheel movement
+				case 3:	//mouse wheel down
+					if(plane >= 0 && plane < dimsize(Image,2))
+						plane += 1
+
+						ModifyImage $ImageName plane=(plane)
+						depth = pnt2x(Image, plane)
+						
+						dowindow bottomEdge
+						if(v_flag)
+							setDrawEnv/w=bottomEdge gname = bottomEdgeLine
+							drawLine/w=bottomEdge minWidth,depth, maxWidth, depth
+						endif
+						
+//						print plane, depth
+					
+						dowindow rightEdge
+						if(v_flag)
+								
+						endif
+						
+	//					Print "up"
+					endif
+	
+					break
+				case -3:	//mouse wheel up
+					if(plane > 0 && plane <= dimsize(Image,2))
+	//					Print "down"
+						plane -= 1
+						ModifyImage $ImageName plane=(plane)
+						depth = pnt2x(Image, plane)
+						
+						dowindow bottomEdge
+						if(v_flag)
+							setDrawEnv/w=bottomEdge gname = bottomEdgeLine
+							drawLine/w=bottomEdge minWidth,depth, maxWidth, depth
+						endif
+		
+						dowindow rightEdge
+						if(v_flag)
+								
+						endif
+//						print plane
+	//					Print "up"
+					endif
+					break
+			endswitch
+		break
+
+		case 2:	//close window
+		break
+//			print "dead"
+	endswitch
+
+		return hookResult	// If non-zero, we handled event and Igor will ignore it.
+	
+end
+
+function averageStack()
+	getmarquee/K left, bottom
+	string ImageName=ImageNameList("","")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave ImageStack = ImageNameToWaveRef("",ImageName)
+
+	variable xScale = dimdelta(imageStack,0)
+	variable yScale = dimdelta(ImageStack,1)
+	
+	imageTransform averageImage imageStack; wave m_aveImage
+	copyscales imageStack, m_aveImage
+//	SetScale/P x 0,(xScale),"m", m_aveImage;SetScale/P y 0,(yScale),"m", m_aveImage
+	
+	dowindow/F averagedStack
+	if(!v_flag)
+		display/k=1/n=averagedStack
+		appendimage/w=averagedStack M_AveImage
+	endif
 end
 
 Function CalcROI(ROItype)
@@ -1172,7 +1353,7 @@ function NewUpdate(Image)
 	wave Image
 
 	
-	string crntfldr = getdatafolder(Image)
+	string crntfldr = getdatafolder(0,Image)
 	setdatafolder root:currentrois
 		
 	MakeListofROIs()
@@ -1287,7 +1468,7 @@ Override Function/S MyCleanupFitsFolderName(nameIn)
 	return nameIn
 End
 
-function NewAutoscale()
+function badAutoscale_2()
 
 	print "new autoscale"
 	getmarquee/z/K left, bottom//, top, right
@@ -1296,18 +1477,53 @@ function NewAutoscale()
 	Imagename = Replacestring(";", Imagename,"") 
 	wave Image = ImageNameToWaveRef("",ImageName)
 	
-	string glayerLocation = "root:packages:WM3dImageSlider:"+WinName(0,1)+":glayer"
 	
+	variable glayer = str2num(stringByKey("plane", imageInfo(S_marqueeWin, nameOfWave(Image), 0),"= "))
+	imagestats/GS={V_Left, V_Right, V_Bottom, V_Top}/P=(glayer) Image
+	ModifyImage $ImageName ctab= {V_min,V_max,}
+
+end
+
+function NewAutoscale()
 	
-	NVAR/Z glayer=$glayerLocation
+	String info,vaxis,haxis
+	String list= ImageNameList("",";")
+	String imagePlot = StringFromList(0,list, ";")
+	info=ImageInfo("",imagePlot,0)
+	info = replacestring(" ", info, "")
+	vaxis=StringByKey("YAXIS",info)
+	haxis=StringByKey("XAXIS",info)
+	variable plane=str2num(StringByKey("plane",info, "="))
+
+	string ImageName=ImageNameList("","")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave Image = ImageNameToWaveRef("",ImageName)
 	
-	if(NVAR_Exists(glayer))
-		imagestats/GS={V_Left, V_Right, V_Bottom, V_Top}/P=(glayer) Image
-//		print V_min, V_max, glayer
+	getmarquee $haxis, $vaxis
+	variable leftRow, rightRow, topColumn, bottomColumn
+	leftrow = x2pnt(image, v_left)
+	rightRow = x2pnt(image, v_right)
+	topColumn = (v_top - DimOffset(image, 1))/DimDelta(image,1)
+	bottomColumn = (v_bottom - DimOffset(image, 1))/DimDelta(image,1)
+
+	//make sure right is bigger than left and bottom is bigger than bottom
+	if( bottomColumn > topColumn)
+		variable temp_bottom = v_bottom
+		v_bottom = v_top
+		v_top = temp_bottom
+	endif
+	if(leftRow > rightRow)
+		variable temp_right = v_right
+		v_right = v_left
+		v_left = temp_right
+	endif
+	
+
+	if(dimsize(image,2) >= 2)
+		imagestats/m=1/GS={V_Left, V_Right, V_Bottom, V_Top}/P=(plane) Image
 	else
-		imagestats/GS={V_Left, V_Right, V_Bottom, V_Top} Image
-//		print V_min, V_max, "No_glayer"
-	endif 
+		imagestats/m=1/GS={V_Left, V_Right, V_Bottom, V_Top} Image
+	endif
 	
 	ModifyImage $ImageName ctab= {V_min,V_max,}
 
