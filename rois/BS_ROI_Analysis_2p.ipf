@@ -43,6 +43,7 @@ Menu "GraphMarquee"
 		"Bin Pixels in Image", /q, binPixels()
 		"Make Projections", /q,  imageSubProjections()
 		"Average stack", /q, averageStack()
+		"Max Stack", /q, projectStack()
 		SubMenu "Colors"
 				ChoosePalette(), /q, ChangeColors()
 		End
@@ -143,7 +144,8 @@ function imageSubProjections()
 	copyScales m_volumeTranspose, m_xprojection
 	
 	
-	variable depth = indexToScale(subsection, plane, 2)
+	variable depth = dimOffset(subSection, 2) + (dimdelta(subsection, 2) * plane) // For Igor 7.0  -> indexToScale(subsection, plane, 2)
+	
 	
 	dowindow/F viewABove
 	if(!v_flag)
@@ -201,9 +203,9 @@ Function scrollImagePlanesHook(s)	//This is a hook for the mousewheel movement i
 				case 3:	//mouse wheel down
 					if(plane >= 0 && plane < dimsize(Image,2))
 						plane += 1
-
+						print plane
 						ModifyImage $ImageName plane=(plane)
-						depth = indexToScale(Image, plane, 2)
+						depth = dimOffset(subSection, 2) + (dimdelta(subsection, 2) * plane) // For Igor 7.0  -> indexToScale(subsection, plane, 2)
 						
 						dowindow bottomEdge
 						if(v_flag)
@@ -236,7 +238,7 @@ Function scrollImagePlanesHook(s)	//This is a hook for the mousewheel movement i
 	//					Print "down"
 						plane -= 1
 						ModifyImage $ImageName plane=(plane)
-						depth = indexToScale(Image, plane, 2)
+						depth = dimOffset(subSection, 2) + (dimdelta(subsection, 2) * plane) // For Igor 7.0  -> indexToScale(subsection, plane, 2)
 						
 						dowindow bottomEdge
 						if(v_flag)
@@ -286,11 +288,29 @@ function averageStack()
 	copyscales imageStack, m_aveImage
 //	SetScale/P x 0,(xScale),"m", m_aveImage;SetScale/P y 0,(yScale),"m", m_aveImage
 	
-	dowindow/F averagedStack
-	if(!v_flag)
-		display/k=1/n=averagedStack
-		appendimage/w=averagedStack M_AveImage
-	endif
+	newImage/f M_AveImage
+	ModifyGraph width={Plan,1,bottom,left}
+	
+//	dowindow/F averagedStack
+//	if(!v_flag)
+//		display/k=1/n=averagedStack
+//		appendimage/w=averagedStack M_AveImage
+//	endif
+end
+
+function projectStack()
+	getmarquee/K left, bottom
+	string ImageName=ImageNameList("","")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave ImageStack = ImageNameToWaveRef("",ImageName)
+
+	imageTransform zProjection imageStack; wave m_zProjection
+	copyscales imageStack, m_zProjection
+//	SetScale/P x 0,(xScale),"m", m_aveImage;SetScale/P y 0,(yScale),"m", m_aveImage
+	
+	newImage/f m_zprojection
+	ModifyGraph width={Plan,1,bottom,left}
+	
 end
 
 Function CalcROI(ROItype)
