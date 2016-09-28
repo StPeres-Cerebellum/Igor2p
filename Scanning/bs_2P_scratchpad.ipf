@@ -46,7 +46,8 @@ end
 
 
 function checkMirrors()
-	BS_2P_UpdateVariablesCreateScan()
+	BS_2P_UpdateVariables()
+	BS_2P_CreateScan()
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
 	variable correction 

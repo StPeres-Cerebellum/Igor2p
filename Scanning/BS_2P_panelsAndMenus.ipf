@@ -525,7 +525,8 @@ Function PixPerLinePopMenuProc(pa) : PopupMenuControl
 			Variable popNum = pa.popNum
 				String popStr = pa.popStr
 				pixelsPerLine = str2num(popStr)
-				BS_2P_UpdateVariablesCreateScan()
+				BS_2P_UpdateVariables()
+				BS_2P_CreateScan()
 			break
 		case -1: // control being killed
 			break
@@ -561,7 +562,8 @@ Function BS_2P_KineticSeriesButton(ba) : ButtonControl
 	wave dum  = root:Packages:BS2P:CurrentScanVariables:dum
 	switch( ba.eventCode )
 		case 2: // mouse up
-			BS_2P_updateVariablesCreateScan()
+			BS_2P_updateVariables()
+			BS_2P_CreateScan()
 			BS_2P_Scan("kinetic")
 		case -1: // control being killed
 			break
@@ -659,7 +661,8 @@ Function BS_2P_SetFramesProc(sva) : SetVariableControl
 		case 3: // Live update
 			Variable dval = sva.dval
 			String sval = sva.sval
-			BS_2P_UpdateVariablesCreateScan()
+			BS_2P_UpdateVariables()
+			BS_2P_CreateScan()
 			break
 		case -1: // control being killed
 			break
@@ -704,7 +707,8 @@ Function SetDwellProc(sva) : SetVariableControl
 		case -1: // control being killed
 			break
 	endswitch
-	BS_2P_UpdateVariablesCreateScan()
+	BS_2P_UpdateVariables()
+	BS_2P_CreateScan()
 	return 0
 End
 
@@ -767,7 +771,8 @@ Function BS_2P_FullFieldProc(ba) : ButtonControl
 			scaledY = scanLimit * scaleFactor * 2//; print "scaled Y", scaledY
 			X_offset = 0 - (scanLimit * scaleFactor) //; print "X_offset",X_offset
 			Y_offset = 0  - (scanLimit * scaleFactor)//; print "Y_offset",Y_offset; print "---------------------------"
-			BS_2P_updateVariablesCreateScan()
+			BS_2P_updateVariables()
+			BS_2P_CreateScan()
 			BS_2P_Scan("snapshot")
 			
 			break
@@ -833,7 +838,8 @@ Function SetobjectiveMagProc(sva) : SetVariableControl
 			Variable dval = sva.dval
 			String sval = sva.sval
 			scaleFactor = (2220 * (180/dval) * (1/200))	//f scanlens * tg (2/0,785) = 50 * tg (2/0,785) = 2,22 mm / V
-			BS_2P_UpdateVariablesCreateScan()		//pour 1 V, déplacement du faisceau de 2,22 * f objectif / f tubelens = 2220 (µm) * 180/60 * 1/200
+			BS_2P_UpdateVariables()
+			BS_2P_CreateScan()		//pour 1 V, déplacement du faisceau de 2,22 * f objectif / f tubelens = 2220 (µm) * 180/60 * 1/200
 			break
 		case -1: // control being killed
 			break
@@ -857,7 +863,8 @@ Function fixDwellTime(cba) : CheckBoxControl
 		case -1: // control being killed
 			break
 	endswitch
-	BS_2P_UpdateVariablesCreateScan()
+	BS_2P_UpdateVariables()
+	BS_2P_CreateScan()
 	return 0
 End
 
@@ -897,7 +904,8 @@ Function ZoomOutProc_2(ba) : ButtonControl
 			Y_Offset -= ((zoomFactor * 1e-6) / 2)
 			scaledX += (zoomFactor * 1e-6)
 			scaledY += (zoomFactor * 1e-6)
-			BS_2P_updateVariablesCreateScan()
+			BS_2P_updateVariables()
+			BS_2P_CreateScan()
 			BS_2P_Scan("snapshot")
 			break
 		case -1: // control being killed
@@ -922,7 +930,8 @@ Function ZoomInProc_2(ba) : ButtonControl
 			Y_Offset += ((zoomFactor * 1e-6) / 2)
 			scaledX -= (zoomFactor * 1e-6)
 			scaledY -= (zoomFactor * 1e-6)
-			BS_2P_updateVariablesCreateScan()
+			BS_2P_updateVariables()
+			BS_2P_CreateScan()
 			BS_2P_Scan("snapshot")
 			break
 		case -1: // control being killed
@@ -1336,7 +1345,8 @@ Function BS2P_setFreqPopMenuProc(pa) : PopupMenuControl
 			digFreq = 5e-8 * (round(digFreq/5e-8))
 
 			lineTime = (pixelsPerLine)*digFreq 	//seconds
-			BS_2P_UpdateVariablesCreateScan()
+			BS_2P_UpdateVariables()
+			BS_2P_CreateScan()
 			break
 		case -1: // control being killed
 			break
@@ -1362,7 +1372,8 @@ Function doStack(ba) : ButtonControl
 	frames = ceil(stackDepth / stackResolution)
 	switch( ba.eventCode )
 		case 2: // mouse up
-			BS_2P_updateVariablesCreateScan()
+			BS_2P_updateVariables()
+			BS_2P_CreateScan()
 			BS_2P_Scan("stack")
 			if(saveemall)
 				BS_2P_saveDum()
@@ -1384,7 +1395,8 @@ Function BS_2P_VideoButton(ba) : ButtonControl
 
 	switch( ba.eventCode )
 		case 2: // mouse up
-			BS_2P_updateVariablesCreateScan()
+			BS_2P_updateVariables()
+			BS_2P_CreateScan()
 			BS_2P_Scan("video")
 
 		case -1: // control being killed
