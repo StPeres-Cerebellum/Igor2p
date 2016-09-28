@@ -499,7 +499,7 @@ function testCounter()
 	make/o/n=10 inputCounter = 10
 	wave runx, runy
 	SetScale/P x 0,0.01,"", inputCounter
-	variable i = 0, frames = 3, pixelClock = (1/(dimdelta(inputCounter, 0))), pixelsPerFrame = (numpnts(inputCOunter)
+	variable i = 0, frames = 3, pixelClock = (1/(dimdelta(inputCounter, 0))), pixelsPerFrame = (numpnts(inputCOunter))
 	variable/g frameCounter = 0
 	string imageMode = "kinetic"
 	string countHookString ="countHook("+num2str(frameCounter)+","+num2str(frames)+","+num2str(50)+","+num2str(50)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(inputCounter)+","+"\""+imageMode+"\""+")"
