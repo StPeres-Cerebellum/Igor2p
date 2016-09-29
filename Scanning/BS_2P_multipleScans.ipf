@@ -65,7 +65,7 @@ function moreScansHook(s)    //This is a hook for the mousewheel movement in Mat
 			string cursorInfo = csrInfo(A)
 			wave imageName = CsrWaveRef(A)
 
-			variable maxSlopeBetweenRegions =  5  //      um / sec
+			variable maxSlopeBetweenRegions =  3000 // Volts / ms
 			
 			variable xpoint = numberByKey("POINT", cursorInfo)
 			variable ypoint = numberByKey("YPOINT", cursorInfo)
@@ -77,28 +77,41 @@ function moreScansHook(s)    //This is a hook for the mousewheel movement in Mat
 			SetDrawLayer userfront
 			SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (65280,65280,0),fillpat= 0
 			DrawRect X_offset,yImage + (scaledY/2),xImage + (scaledX/2), Y_offset
-			wave runy = makeUnscaledXRaster(lines, pixelsPerLine, lineTime)
-			wave runx = makeUnscaledYRaster(lines, pixelsPerLine, lineTime)
+			makeUnscaledXRaster(lines, pixelsPerLine, lineTime)
+			makeUnscaledYRaster(lines, pixelsPerLine, lineTime)
 			scaleRunX()
 			scaleRunY()
+			wave runx = root:Packages:BS2P:CurrentScanVariables:runx
+			wave runy = root:Packages:BS2P:CurrentScanVariables:runy
 			variable lastXPos = multiX[numpnts(multiX)-1]
 			variable lastYPos = multiy[numpnts(multiY)-1]
 			variable nextXpos = runx[0]
 			variable nextYpos = runy[0]
 			
-			variable dY = nextXpos - lastXpos
-			variable dX = nextYpos - lastYpos
+			variable dX = nextXpos- lastXpos
+			variable dY = nextYpos- lastYpos
 			variable dtX = dimDelta(multiX,0)
-			variable dtY = dimDelta(multiX,0)
+			variable dtY = dimDelta(multiY,0)
 			
-			variable numPntsToAddToX = abs(dx / (maxSlopeBetweenRegions * dtX))
-			variable numPntsToAddToY = dy / (maxSlopeBetweenRegions * dtY)
-			if(dx < 0)
-				maxSlopeBetweenRegions *= -1
+			variable xTransitionTime = abs(dx / maxSlopeBetweenRegions)
+			variable yTransitionTime = abs(dy / maxSlopeBetweenRegions)
+			variable transitionTime
+			if(xTransitionTime > yTransitionTime)
+				transitionTime = xTransitionTime
+			else
+				transitionTime = yTransitionTime
 			endif
-			make/free/o/n=(numPntsToAddToX) xTransition = (p*dtX*maxSlopeBetweenRegions)+lastXPos
-			concatenate/NP {xTransition}, multiX
-			concatenate/NP {runx}, multiX
+			
+			variable numPntsToAddToX = ceil(transitionTime / dtX)
+			variable numPntsToAddToY = ceil(transitionTime / dtY)
+			
+			
+			make/o/n=(numPntsToAddToX) xTransition = ( p*dtX*(dX / transitionTime) )+lastXPos
+			make/o/n=(numPntsToAddToY) yTransition = ( p*dtY*(dY / transitionTime) )+lastYPos
+//			copyScales runx, xTransition
+//			copyScales runx, multiX
+			concatenate/NP {xTransition, runx}, multiX
+			concatenate/NP {yTransition, runy}, multiY
 			
 //			print xImage, yImage
 //			print "-----------------"
