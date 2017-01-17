@@ -241,5 +241,11 @@ function updateConfig()
 		setDimLabel 0, 24, UsePythonPI,boardCOnfig
 		boardConfig[24][1] = "Constant"
 		boardConfig[24][2] = "NO"
-	endif															
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,25),"PI_ZxisControl")))	
+		setDimLabel 0, 25, PI_ZxisControl,boardCOnfig
+		boardConfig[25][1] = "Constant"
+		boardConfig[25][2] = "NO"
+	endif																
 end

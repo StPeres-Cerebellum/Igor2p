@@ -142,6 +142,7 @@ Window Control2P() : Panel
 	SetVariable dwellTime,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:dwellTime
 
 
+
 EndMacro
 
 
@@ -283,9 +284,11 @@ function BS_2P_makeKineticWindow()
 	ModifyGraph minor=1
 
 	ControlBar 80
-	SetVariable BS_2P_pixelShifter,pos={5,47},size={112,16},noproc,title="Pixel Shift"
+
+	SetVariable BS_2P_pixelShifter,pos={5,33},size={112,16},title="Pixel Shift"
 	SetVariable BS_2P_pixelShifter,frame=0,valueBackColor=(60928,60928,60928)
 	SetVariable BS_2P_pixelShifter,limits={0,0.0002,5e-07},value= root:Packages:BS2P:CalibrationVariables:pixelShift
+
 	
 //	SetVariable SetPixelSize,pos={4,31},size={90,16},proc=BS_2P_setPixelSizeProc,title="Binning (µm):"
 //	SetVariable SetPixelSize,frame=0,valueColor=(65280,0,0)
@@ -389,12 +392,29 @@ function BS_2P_makeKineticWindow()
 		SetVariable setMoveStep,pos={496,46},size={22,16},title=" ",frame=0
 		SetVariable setMoveStep,valueBackColor=(65535,65535,65535)
 		SetVariable setMoveStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:moveStep
+
+		ValDisplay stageX,pos={107,100},size={70,14},title="X:"
+		ValDisplay stageX,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
+		ValDisplay stageX,valueBackColor=(65280,65280,32768)
+		ValDisplay stageX,limits={0,0,0},barmisc={0,1000}
+		ValDisplay stageX,value= #"root:Packages:PI_xPos"
+		ValDisplay stageX,barBackColor= (65280,65280,32768)
+		
+		ValDisplay stageY,pos={172,100},size={68,14},bodyWidth=54,title="Y:"
+		ValDisplay stageY,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
+		ValDisplay stageY,valueBackColor=(65280,65280,32768)
+		ValDisplay stageY,limits={0,0,0},barmisc={0,1000}
+		ValDisplay stageY,value= #"root:Packages:PI_yPos"
+		ValDisplay stageY,barBackColor= (65280,65280,32768)
+
+		PI_tellAllPositions()
+
 	
 	endif
 	//----------------------------------------------------------------------------------------
 	
 	//Z Control ----------------------------------------------------------------
-	if((stringMatch((boardConfig[15][2]), "YES")) || (stringMatch((boardConfig[24][2]), "YES")))
+	if((stringMatch((boardConfig[15][2]), "YES")) || (stringMatch((boardConfig[24][2]), "YES")) || (stringMatch((boardConfig[25][2]), "YES")))
 		Button FocusUP,pos={313,22},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
 		Button FocusUP,fSize=8
 //		Button FocusDown,pos={381,2},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
@@ -406,7 +426,7 @@ function BS_2P_makeKineticWindow()
 		SetVariable focusStep,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
 		GroupBox stackBox,pos={370,24},size={103,53}
 
-		Button doStack,pos={402,27},size={34,20},proc=doStack,title="stack",fSize=8
+		Button doStack,pos={373,27},size={34,20},proc=doStack,title="stack",fSize=8
 		Button doStack,fColor=(61440,61440,61440)
 
 		SetVariable stackDepth,pos={381,46},size={86,16},title="depth (µm)",frame=0
@@ -415,12 +435,22 @@ function BS_2P_makeKineticWindow()
 		SetVariable stackResolution,pos={375,61},size={95,16},title="resolution (µm)"
 		SetVariable stackResolution,frame=0
 		SetVariable stackResolution,limits={0,20,0},value= root:Packages:BS2P:CurrentScanVariables:stackResolution
+		
+		ValDisplay stageZ,pos={239,100},size={65,14},title="Z:"
+		ValDisplay stageZ,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
+		ValDisplay stageZ,valueBackColor=(65280,65280,32768)
+		ValDisplay stageZ,limits={0,0,0},barmisc={0,1000}
+		ValDisplay stageZ,value= #"root:Packages:PI_zPos"
+		ValDisplay stageZ,barBackColor= (65280,65280,32768)
+
+
+
 	endif
 	//----------------------------------------------------------------------------------------
 	
 	
 
-	ValDisplay pixSize,pos={5,30},size={90,14},title="Pixel Size"
+	ValDisplay pixSize,pos={5,18},size={90,14},title="Pixel Size"
 	ValDisplay pixSize,labelBack=(60928,60928,60928),format="%.W1Pm",frame=0
 	ValDisplay pixSize,valueBackColor=(60928,60928,60928)
 	ValDisplay pixSize,limits={0,0,0},barmisc={0,1000}
@@ -485,11 +515,11 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				 break
 				 
 				 case 11: // page Up
-				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep)
+//				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep)
 				 break
 				 
 				 case 12: // page Down
-				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -focusStep) 
+//				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -focusStep) 
 				 break
 				 				
 			endswitch
@@ -587,6 +617,8 @@ Function BS_2P_focusUpButtonProc(ba) : ButtonControl
 				LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
 				pythonMoveRelative(-1* focusStep, "z")
+			elseif(stringMatch((boardConfig[25][2]), "YES"))	//PI_Focus
+				PI_moveMicrons("z", -focusStep)
 			endif
 			//	scan ONE frame using current settings
 			//	draw image from dum
@@ -617,6 +649,8 @@ Function BS_2P_focusDownButtonProc(ba) : ButtonControl
 				LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -focusStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
 				pythonMoveRelative(focusStep, "z")
+			elseif(stringMatch((boardConfig[25][2]), "YES"))	//PI_Focus
+				PI_moveMicrons("z", 1* focusStep)
 			endif
 			break
 		case -1: // control being killed
@@ -879,6 +913,7 @@ Function BS_2P_abortButtonProc_2(ba) : ButtonControl
 			BS_2P_Pockels("close")
 			BS_2P_PMTShutter("close")
 			bs_2p_zeroscanners("offset")
+			PI_abortSmoothly()
 			///////////////////// Don't forget to add this ---->  close Pockels
 			break
 		case -1: // control being killed

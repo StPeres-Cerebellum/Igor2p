@@ -245,10 +245,15 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		duplicate/o kineticSeries $sliceName
 		if(stringMatch((boardConfig[15][2]), "YES")) //Luigs
 			LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -stackResolution)
+			sleep/s 0.100
 		elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
 			pythonMoveRelative(stackResolution, "z")
+			sleep/s 0.100
+		elseif(stringMatch((boardConfig[25][2]), "YES"))	//PI_Focus
+			PI_moveMicrons("z",  stackResolution)
+			sleep/s 0.500
+			PI_tellPosition("z")
 		endif
-		sleep/s 0.100
 		BS_2P_Pockels("open")
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_stackHook 0
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frameAvg) galvoChannels
@@ -263,6 +268,7 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		BS_2P_PMTShutter("close")
 		bs_2P_zeroscanners("offset")
 		sampleDiodeVoltage()
+		
 
 		imageTransform/k stackImages slice_1; wave m_stack
 //		rotateImage(m_stack)
@@ -283,6 +289,10 @@ function stackHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 			LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, stackDepth)
 		elseif(stringMatch((boardConfig[24][2]), "YES"))	//Python
 			pythonMoveRelative(-stackDepth, "z")
+		 elseif(stringMatch((boardConfig[25][2]), "YES"))	//PI_Focus
+			PI_moveMicrons("z",  -stackDepth)
+			sleep/s 0.500
+			PI_tellAllPositions()
 		endif
 		
 		setdatafolder currentFolder
