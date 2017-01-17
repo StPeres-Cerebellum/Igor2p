@@ -871,18 +871,38 @@ Function MoveThroughPrefixes(s)	//This is a hook for the mousewheel movement in 
 		return hookResult	// If non-zero, we handled event and Igor will ignore it.
 end
 
-Window Panel0() : Panel
-	NewPanel /W=(519,137,819,337)
-	SetWindow Panel0, hook(key)=MyHook, hookevents=0
+Window CheckWindowHooks() : Panel
+	make/o/n=(100,100) testImage = sin(p)*cos(q)
+	newImage/F/N=CheckWindowHook/k=1 testImage
+	SetWindow CheckWindowHook, hook(key)=checkHook//, hookevents=7
+	
 EndMacro
  
-Function MyHook(s)
+Function checkHook(s)
 	STRUCT WMWinHookStruct &s
 	Variable hookResult = 0
+	Variable unclick = 0
+	if(s.eventCode == 5)
+			unclick = 1
+		endif
 	switch(s.eventCode)
-		case 11:				// Keyboard
-			print s.keycode
+		
+		case 11: //keyboard
+			print "keyboard", s.keycode
+			break
+		Case 5:
+				print "mouse button up", s.eventcode
+			break
+		Case 3:
+			print "mouse button down", s.eventcode
+			break
+		Case 7:
+			if(unClick)
+				print "cursor moving", s.eventcode
+			endif
 			break
 	endswitch
+	
+	
 	return hookResult		// 0 if nothing done, else 1
 End

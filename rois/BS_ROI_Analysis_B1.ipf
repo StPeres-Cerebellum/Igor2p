@@ -4,8 +4,8 @@
 #include "BS_BatchAnalyze_B1"
 #include "InsertSkippedImages"
 #include "BS_Utilities"
-#include "bs_Acq4"
-#include "bs_2p_quickRois"
+//#include "bs_Acq4"
+//#include "bs_2p_quickRois"
 
 
 Menu "ROIs"

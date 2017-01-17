@@ -105,6 +105,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	setdatafolder root:Packages:BS2P:CurrentScanVariables
 	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+	NVAR dwellTime = root:Packages:BS2P:CurrentScanVariables:dwellTime
 	
 	variable frameDuration = dimsize(runy,0) * dimdelta(runy,0)
 	
