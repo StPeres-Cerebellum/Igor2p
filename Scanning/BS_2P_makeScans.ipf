@@ -171,7 +171,7 @@ Function/wave BS_2P_UpdateVariables()
 		variable xPixels = ceil(scaledX/displayPixelSize)
 end		
 
-function BS_2P_CreateScan()
+function/wave BS_2P_CreateScan()
 		NVAR lineTime = root:Packages:BS2P:CurrentScanVariables:lineTime
 		NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
 		NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
