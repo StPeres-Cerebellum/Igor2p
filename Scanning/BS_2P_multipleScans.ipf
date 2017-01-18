@@ -142,7 +142,7 @@ function CreateMultiScan()
 	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
 	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
 	
-	variable maxSlopeBetweenRegions =  3000 // Volts / ms
+	variable maxSlopeBetweenRegions =  3000	// Volts / ms
 
 	X_offset = multiScanOffsets[0][0]
 	Y_offset = multiScanOffsets[0][1]
@@ -154,10 +154,12 @@ function CreateMultiScan()
 	duplicate/o runy root:Packages:BS2P:CurrentScanVariables:multiY
 	wave multiX = root:Packages:BS2P:CurrentScanVariables:multiX
 	wave multiY = root:Packages:BS2P:CurrentScanVariables:multiY	
-	Note/K multiX, "frameTime="+num2str(dimDelta(runx,0) * dimSize(runx,0))+","
-	Note/K multiY, "frameTime="+num2str(dimDelta(runy,0) * dimSize(runy,0))+","
-	Note/NOCR multiX, "transitionTimes="
-	Note/NOCR multiY, "transitionTimes="
+	Note/K multiX, "frameTime="+num2str(dimDelta(runx,0) * dimSize(runx,0))+";"
+	Note/K multiY, "frameTime="+num2str(dimDelta(runy,0) * dimSize(runy,0))+";"
+	Note/NOCR multiX, "framePixels="+num2str(lines*pixelsPerLine)+";"
+	Note/NOCR multiY, "framePixels="+num2str(lines*pixelsPerLine)+";"
+//	Note/NOCR multiX, "transitionTimes="
+//	Note/NOCR multiY, "transitionTimes="
 	variable i
 	for(i=1; i<dimsize(multiScanOffsets,0); i += 1)
 		X_offset = multiScanOffsets[i][0]
@@ -172,7 +174,7 @@ function CreateMultiScan()
 		variable nextXpos = runx[0]
 		variable nextYpos = runy[0]
 		
-		addMultiTransition(lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetweenRegions)
+		addMultiTransition(i,lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetweenRegions)
 		concatenate/NP {runx}, multiX
 		concatenate/NP {runy}, multiY
 	endfor
@@ -181,10 +183,11 @@ function CreateMultiScan()
 	nextXpos = multiX[0]
 	lastYPos = multiY[numpnts(multiY)-1]
 	nextYpos = multiY[0]
-	addMultiTransition(lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetweenRegions)
+	addMultiTransition(i,lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetweenRegions)
 	
 	variable totalScanTime = dimDelta(multiX,0) * dimSize(multiX, 0) * frames
-	
+	Note/NOCR multiX, "subFrames="+num2str(i)+";"
+	Note/NOCR multiY, "subFrames="+num2str(i)+";"
 	redimension/n=( totalScanTime/dwellTime )  dum
 //	SetScale/I x 0,totalScanTime,"s", dum
 		
@@ -212,9 +215,10 @@ function displayMultiDums(kineticSeries,multiOffsets, foldedDum, xWidth, yHeight
 	endfor
 end
 
-function addMultiTransition(lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetweenRegions)
-	variable maxSlopeBetweenRegions
+function addMultiTransition(transNumber,lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetweenRegions)
+	variable transNumber, maxSlopeBetweenRegions
 	variable lastXPos,lastYPos, nextXpos, nextYpos
+	NVAR dwellTime = root:Packages:BS2P:CurrentScanVariables:dwellTime
 	
 	wave multiX = root:Packages:BS2P:CurrentScanVariables:multiX
 	wave multiY = root:Packages:BS2P:CurrentScanVariables:multiY
@@ -223,8 +227,8 @@ function addMultiTransition(lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetw
 	variable dtX = dimDelta(multiX,0)
 	variable dtY = dimDelta(multiY,0)
 	
-	variable xTransitionTime = abs(dx / maxSlopeBetweenRegions)
-	variable yTransitionTime = abs(dy / maxSlopeBetweenRegions)
+	variable xTransitionTime = abs(dx / maxSlopeBetweenRegions)	//make transition time constant (0.5 ms)
+	variable yTransitionTime = abs(dy / maxSlopeBetweenRegions)	//in order to simplify image construction?
 	variable transitionTime
 	
 	if(xTransitionTime > yTransitionTime)
@@ -232,6 +236,10 @@ function addMultiTransition(lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetw
 	else
 		transitionTime = yTransitionTime
 	endif
+	
+//	print "dwellTime =",dwellTime
+	
+	transitionTime = ceil(transitionTime / dwellTime) * dwellTime
 	
 	variable numPntsToAddToX = ceil(transitionTime / dtX)
 	variable numPntsToAddToY = ceil(transitionTime / dtY)
@@ -245,9 +253,11 @@ function addMultiTransition(lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetw
 	concatenate/NP {xTransition}, multiX
 	concatenate/NP {yTransition}, multiY
 	
-	Note/NOCR multiX, num2str(dimDelta(xTransition,0) * dimSize(xTransition,0))+";"
-	Note/NOCR multiY, num2str(dimDelta(yTransition,0) * dimSize(yTransition,0))+";"
-
+	Note/NOCR multiX, "transTime"+num2str(transNumber)+":"+num2str(dimDelta(xTransition,0) * dimSize(xTransition,0))+";"
+	Note/NOCR multiY, "transTime"+num2str(transNumber)+":"+num2str(dimDelta(yTransition,0) * dimSize(yTransition,0))+";"
+	
+	Note/NOCR multiX, "transPixels"+num2str(transNumber)+"="+num2str(numPntsToAddToX)+";"
+	Note/NOCR multiY, "transPixels"+num2str(transNumber)+"="+num2str(numPntsToAddToY)+";"
 end
 
 
@@ -256,40 +266,41 @@ function clipTransitionsFromMultiDum(multiDum)
 	wave multiX = root:Packages:BS2P:CurrentScanVariables:multiX
 	wave multiY = root:Packages:BS2P:CurrentScanVariables:multiY
 	
-	string transitionTimes = stringByKey("transitionTimes",note(multiX), "=", ",")
-	variable frameTime = numberByKey("frameTime",note(multiX), "=", ",")
+	variable framePixels = numberByKey("framePixels",note(multiX), "=", ";")
+	variable subFrames = numberByKey("subFrames",note(multiX), "=", ";")
 	variable i
-	for(i=0; i<itemsInList(transitionTimes); i+=1)
-		variable transitionTime = str2num(stringFromList(i, transitionTimes))
-		variable transitionStart = x2pnt(multiDum, i * frameTime) + 1
-		variable pointsToRemove = ceil(transitionTime / DimDelta(multiDum,0))
-		deletePoints transitionStart, pointsToRemove, multiDum
+	for(i=1; i<=subFrames; i+=1)
+		variable transPixels = numberByKey("transPixels"+num2str(i),note(multiX), "=", ";")
+		deletePoints (i*framePixels), transPixels, multiDum
 	endfor
 end
 
-function clipTransitionsUnfoldedMultiDum(multiDum)
-	wave multiDum
+function clipTransitionsUnfoldedMultiDum(multiDum, testCutter)
+	wave multiDum, testCutter
 	wave multiX = root:Packages:BS2P:CurrentScanVariables:multiX
 	wave multiY = root:Packages:BS2P:CurrentScanVariables:multiY
 	NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
 	
 	
-	string transitionTimes = stringByKey("transitionTimes",note(multiX), "=", ",")
-	variable totalTransitions = itemsInList(transitionTimes)
-	Make/O/N=(totalTransitions) transitionTimesWave = str2num(StringFromList(p,transitionTimes))
-	
-	variable subWindowTime = numberByKey("frameTime",note(multiX), "=", ",")
-	make/o/n=(totalTransitions * frames) frameTimer = transitionTimesWave[(mod(p,totalTransitions))]
-	variable cumulateTransitions = 0
+	variable framePixels = numberByKey("framePixels",note(multiX), "=", ";")
+	variable subFrames = numberByKey("subFrames",note(multiX), "=", ";")
+	Make/O/N=(subFrames) transitionPixelsWave = nan
 	variable i
-	for(i=0; i<(numpnts(frametimer)); i+=1)
-		variable transitionTime = frameTimer[i] //str2num(stringFromList(i, transitionTimes))
-		variable transitionStart = x2pnt(multiDum, ((i+1) * subWindowTime) + cumulateTransitions)// + 1
-		variable pointsToRemove = ceil(transitionTime / DimDelta(multiDum,0))
-		multiDum[transitionStart, transitionStart+pointsToRemove] = -1; print transitionTime, transitionStart, transitionStart+pointsToRemove
-		cumulateTransitions += transitionTime
+	for(i=1; i<=subFrames; i+=1)
+		transitionPixelsWave[i-1] = numberByKey("transPixels"+num2str(i),note(multiX), "=", ";")
 	endfor
-//	wavetransform zapnans multiDum
+	
+	make/o/n=(subFrames * frames) frameTimer = transitionPixelsWave[(mod(p,subFrames))]
+
+	for(i=0; i<(numpnts(frametimer)); i+=1)
+		variable pointsToRemove = frameTimer[i] //str2num(stringFromList(i, transitionTimes))
+		variable subFrame = ((mod(i,subFrames))+1)
+		variable frame = floor(i/subFrames)
+		variable transitionStart = (((frame * subFrames) + subFrame) * framePixels)+1
+		deletePoints transitionStart, pointsToRemove, testCutter 
+		multiDum[transitionStart, transitionStart+pointsToRemove] = -1//; print pointsToRemove, transitionStart, transitionStart+pointsToRemove
+		print Frame, subFrame, transitionStart, pointsToRemove
+	endfor
 end
 
 
