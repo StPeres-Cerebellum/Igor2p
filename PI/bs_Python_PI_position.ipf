@@ -34,7 +34,7 @@ Function connectPythonPositionServer()
 		
 	variable/g root:Packages:pythonPositions:acq4Sock; NVAR acq4Sock = root:Packages:pythonPositions:acq4Sock
 	make/o/t/n=1 root:Packages:pythonPositions:bufferwave; wave bufferWave = root:Packages:pythonPositions:bufferWave
-//	sockitopenconnection/q/proc=pythonGetPosition acq4Sock,serverIP,portNum,bufferwave
+	sockitopenconnection/q/proc=pythonGetPosition acq4Sock,serverIP,portNum,bufferwave
 end
 
 Function pythonGetPosition(textWave,entry)
@@ -51,12 +51,12 @@ function pythonMoveRelative(microns, axis)
 	string axis
 	string send = "relativeMoveTo,"+axis+","+num2str(microns)
 	NVAR acq4Sock = root:Packages:pythonPositions:acq4Sock
-//	sockitsendmsg/time=30 acq4Sock, send
+	sockitsendmsg/time=30 acq4Sock, send
 end
 
 function pythonReadPosition()
 	NVAR acq4Sock = root:Packages:pythonPositions:acq4Sock		
-//	sockitsendmsg/time=30 acq4Sock, "getPos"
+	sockitsendmsg/time=30 acq4Sock, "getPos"
 	
 	NVAR xPos = root:Packages:pythonPositions:xPos
 	NVAR yPos = root:Packages:pythonPositions:yPos
@@ -67,5 +67,5 @@ end
 
 Function closePythonServer()
 	NVAR acq4Sock = root:Packages:pythonPositions:acq4Sock
-//	SOCKITcloseCOnnection(acq4Sock)
+	SOCKITcloseCOnnection(acq4Sock)
 end
