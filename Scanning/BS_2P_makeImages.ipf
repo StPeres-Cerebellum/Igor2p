@@ -263,7 +263,7 @@ function makeProjections(imageStack)
 	SetScale/P x 0,(xScale),"m", m_zprojection;SetScale/P y 0,(yScale),"m", m_zProjection
 	
 	
-	
+	doWindow/k projectionBrowser
 	display/k=1/n=projectionBrowser
 	appendimage/w=projectionBrowser m_zprojection
 	appendimage/w=projectionBrowser m_xprojection

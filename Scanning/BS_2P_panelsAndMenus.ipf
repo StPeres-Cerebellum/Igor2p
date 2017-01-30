@@ -11,6 +11,7 @@
 #include "bs_2P_config"
 #include "bs_python_pi_position"
 #include "BS_Utilities"
+#include "BS_2P_multipleScans"
 #include <all ip procedures>
 
 Menu "2P"
@@ -38,9 +39,11 @@ Menu "2P"
 			"Center", /q, bs_2P_zeroscanners("center")
 			"Offset", /q, bs_2P_zeroscanners("offset")
 		end
-		subMenu "Configure BNCs"
+	//	subMenu "Configure BNCs"
 			"Edit Configuration", /q, bs_2P_editConfig()
-		end
+	//	end
+		
+		"Multi Scan", /q, makeMultiPanel()
 	End
 	"-"
 	"Measure laser Power", /q, readLaserPower()
@@ -111,7 +114,7 @@ Window Control2P() : Panel
 	SetVariable DisplayPockelsPercent,valueBackColor=(60928,60928,60928)
 	SetVariable DisplayPockelsPercent,limits={0,2,0.01},value= root:Packages:BS2P:CurrentScanVariables:pockelValue
 	PopupMenu galvoFreq,pos={9,49},size={133,21},proc=BS2P_setFreqPopMenuProc,title="Line Speed (KHz):"
-	PopupMenu galvoFreq,mode=3,popvalue="1.0",value= #"\"0.25;0.5;1.0;1.5;2.0;2.5;3.0\""
+	PopupMenu galvoFreq,mode=3,popvalue="0.25",value= #"\"0.25;0.5;1.0;1.5;2.0;2.5;3.0\""
 	SetVariable lineSpacing,pos={85,22},size={65,16},proc=BS_2P_SetScanVarProc,title=" "
 	SetVariable lineSpacing,labelBack=(60928,60928,60928),fSize=10,format="%.1W1Pm"
 	SetVariable lineSpacing,frame=0,fStyle=1,valueColor=(0,0,52224)
@@ -187,7 +190,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:scaledY = 0	//Distance of Y-axis scan in m
 		variable/g root:Packages:BS2P:CurrentScanVariables:X_Offset = 0	//Where to start the X-axis scan in µm from center
 		variable/g root:Packages:BS2P:CurrentScanVariables:Y_Offset = 0	//Where to start the Y-axis scan in µm from center
-		variable/g root:Packages:BS2P:CurrentScanVariables:lineTime = 0.5e-3	//ms / line
+		variable/g root:Packages:BS2P:CurrentScanVariables:lineTime = 2e-3	//ms / line
 		variable/g root:Packages:BS2P:CurrentScanVariables:scanOutFreq = 100e3	//kHz resolution to send to galcos
 		variable/g root:Packages:BS2P:CurrentScanVariables:KCT = 100e-3	//Time between frames of a kinetic series
 		variable/g root:Packages:BS2P:CurrentScanVariables:frames = 1	//Number of frames in a kinetic series
@@ -247,6 +250,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayPixelSize
 		
 		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {(str2num(boardConfig[17][2])),(str2num(boardConfig[17][3])),(str2num(boardConfig[17][4]))}
+		
 	endif
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
@@ -503,11 +507,11 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				 break
 				 	
 				 case 30:	// up arrow
-				 	PI_moveMicrons("x", -moveStep)
+				 	PI_moveMicrons("x", moveStep)
 				 break
 				 
 				 case 31:	// down arrow
-				 	PI_moveMicrons("x", moveStep)
+				 	PI_moveMicrons("x", -moveStep)
 				 break
 				 
 				 case 115:	// s
@@ -515,11 +519,11 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				 break
 				 
 				 case 11: // page Up
-//				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, focusStep)
+				 	PI_moveMicrons("z", -focusStep)
 				 break
 				 
 				 case 12: // page Down
-//				 	LN_moveMicrons(luigsFocusDevice, luigsFocusAxis, -focusStep) 
+				 	PI_moveMicrons("z", focusStep)
 				 break
 				 				
 			endswitch
@@ -1026,7 +1030,7 @@ Function MoveUProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", -1* moveStep)
+				PI_moveMicrons("x", 1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "y")
 			endif
@@ -1047,7 +1051,7 @@ Function MoveDProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", moveStep)
+				PI_moveMicrons("x", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "y")
 			endif

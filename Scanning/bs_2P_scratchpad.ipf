@@ -92,6 +92,14 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	variable frames, trigger
 	string imageMode
 	
+	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
+	wave multiX = root:Packages:BS2P:CurrentScanVariables:multiX
+	wave multiY = root:Packages:BS2P:CurrentScanVariables:multiY
+	string offsetNote = note(multiScanOffsets)
+	variable multiLines =  numberByKey("lines", offsetNote, "=", ";")
+	variable multiPixels =  numberByKey("Pixels", offsetNote, "=", ";")
+	
+	
 	variable drawPause = 50e-3 //seconds to draw the frame  --try to make this as short as possible
 	variable userPause = 0	//seconds to wait between frames
 	
@@ -142,6 +150,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string S_stackHook = "stackHook("+num2str(frameCounter)+","+num2str(stackSlices)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 	string S_kineticTest = "kineticTest("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 	string S_scanString = nameofwave(runx)+", 0; "+nameofwave(runy)+", 1"
+	string S_multiVideoHook = "multiVideoHook("+num2str(frameCounter)+","+num2str(10000)+","+num2str(multiLines)+","+num2str(multiPixels)+","+nameofWave(multiX)+","+nameofWave(multiY)+","+nameofWave(dum)+")"
 //	print S_kineticHook2
 	
 	BS_2P_PMTShutter("open")
@@ -180,6 +189,13 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/trig={frameClock}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 		DAQmx_CTR_OutputPulse/trig={startTrigChannel, trigger}/DEV=pmtDev/SEC={10e-6, (frameDuration+drawPause+userPause)}/NPLS=(frames) 1 ///FRAME CLOCK
+	elseif(stringmatch(imageMode, "multiVideo"))
+		galvoChannels = "multiX, "+ xGalvoChannel+"; multiY, "+yGalvoChannel
+		duplicate/o multiX dum; dum = nan
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelClock/wave=dum/EOSH=S_multiVideoHook 0
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	endif
 	
 
@@ -366,6 +382,84 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frameAvg) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+	endif
+
+end
+
+function multiVideoHook(frame, frames, lines, pixelsPerLine multiX, multiY, multiDum)//, imageMode)
+	variable frame, frames, lines, pixelsPerLine
+	wave multiX, multiY, multiDum
+	
+	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
+	variable subFrames = dimSize(multiScanOffsets,0)
+//	String offsetNote = note(multiScanOffsets)
+//	variable multiLines =  numberByKey("lines", offsetNote, "=", ";")
+	
+	//BS_2P_Pockels("close")
+	NVAR frameCounter
+	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
+	NVAR frameAvg = root:Packages:BS2P:CurrentScanVariables:frameAvg
+	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
+	frameCounter += 1
+	variable pixelsPerFrame = pixelsPerLine * lines
+	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:KineticSeries
+	string S_multiVideoHook = "multiVideoHook("+num2str(frameCounter)+","+num2str(frames)+","+num2str(lines)+","+num2str(pixelsPerLine)+","+nameofWave(multiX)+","+nameofWave(multiY)+","+nameofWave(multiDum)+")"
+
+	duplicate/o multiDum lastFrame//; print "multiDum Pnts=",numpnts(multiDum)
+	multiDum = 0
+	
+	differentiate/meth=2/ep=1/p lastFrame//; print "differentiated Pnts=",numpnts(lastFrame)
+//	If(frameAvg == 1)
+//		print "pixels, lines=",pixelsPerline,lines
+		clipTransitionsUnfoldedMultiDum(lastFrame)//; print "clipped=",numpnts(lastFrame) / (pixelsPerline* lines)
+		redimension/n=(pixelsPerline, lines, subFrames) lastFrame
+//		duplicate/free lastFrame flipped
+//		lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
+		wave multiKinetic = splitmultiDum(lastFrame)
+//	else
+//		redimension/n=(pixelsPerline, lines, frameAvg) lastFrame
+//		duplicate/o/free lastFrame avgHolder
+//		matrixop/o lastFrame = sumBeams(avgHolder)  / frameAvg
+//	endif
+//	
+////	duplicate/free multiKinetic flipped
+//	
+//	rotateImage(lastFrame)
+//	checkXYSwitch(lastFrame,1)
+	duplicate/o multiKinetic root:Packages:BS2P:CurrentScanVariables:kineticSeries
+//	scaleKineticSeries()
+
+	
+	// make these into variables in the init and config procedures
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
+	string galvoDev = boardConfig[0][0]
+	string pmtDev = boardConfig[3][0]
+	string startTrigDev = boardConfig[5][0]
+	string startTrigChannel = "/"+startTrigDev+"/"+"pfi"+boardConfig[5][2]
+	string xGalvoChannel = boardConfig[0][2]
+	string yGalvoChannel = boardConfig[1][2]
+	
+	string pmtSource = "/"+pmtDev+"/"+"pfi"+boardConfig[3][2]
+	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
+	string scanClock = "/"+pmtDev+"/Ctr3InternalOutput"
+	string scanOutTrigger = "/"+galvoDev+"/ao/starttrigger"
+	string galvoChannels = "multiX, "+ xGalvoChannel+"; multiY, "+yGalvoChannel
+	
+	
+	if(frameCounter == frames)	//shut it down
+		BS_2P_writeScanParamsInWave(kineticSeries)
+		sampleDiodeVoltage()
+		BS_2P_PMTShutter("close")
+		bs_2P_zeroscanners("offset")
+		setdatafolder currentFolder
+	elseif(frameCounter < frames)	//otherwise set up another one
+		print frameCounter
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=multiDum/EOSH=S_multiVideoHook 0
+//		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
+//		DAQmx_WaveformGen/DEV="dev1"/NPRD=1/EOSH=S_videoHook "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(multiDum, 0))),0.5}/NPLS=(numpnts(multiDum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(multiDum, 0))),0.5}/NPLS=(numpnts(multiDum)+1) 3 ///Scanning CLOCK
 	endif
 
 end
