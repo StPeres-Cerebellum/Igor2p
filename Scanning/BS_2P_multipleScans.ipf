@@ -15,11 +15,26 @@ function makeMultiPanel()
 		if (!waveExists(multiScanOffsets))
 			make/n=0/o root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
 		endif
-	variable/g root:Packages:BS2P:CurrentScanVariables:multiPixelSize
-	DrawText 1, 132, "pixel size"
-	ValDisplay multiPixelDisplay,pos={1,137},size={50,14},format="%.W1Pm",frame=0,limits={0,0,0},barmisc={0,1000}
+	variable/g root:Packages:BS2P:currentScanVariables:multiPixelSize
+	variable/g root:Packages:BS2P:currentScanVariables:multiPixelDwell
+	variable/g root:Packages:BS2P:currentScanVariables:multiPixelFrameRate
+	variable/g root:Packages:BS2P:currentScanVariables:multiPixelSubRate
+
+	DrawText 1, 132, "Pixel"
+	ValDisplay multiPixelDisplay,pos={1,133},size={50,14},format="%.W1Pm",frame=0,limits={0,0,0},barmisc={0,1000}
 	ValDisplay multiPixelDisplay, value= #"root:Packages:BS2P:currentScanVariables:multiPixelSize"
 	
+	DrawText 1, 172, "Dwell"
+	ValDisplay multiDwellDisplay,pos={1,173},size={50,14},format="%.W1Ps",frame=0,limits={0,0,0},barmisc={0,1000}
+	ValDisplay multiDwellDisplay, value= #"root:Packages:BS2P:currentScanVariables:multiPixelDwell"
+	
+	DrawText 1, 212, "Rate"
+	ValDisplay multiRateDisplay,pos={1,213},size={50,14},format="%.W1Ps",frame=0,limits={0,0,0},barmisc={0,1000}
+	ValDisplay multiRateDisplay, value= #"root:Packages:BS2P:currentScanVariables:multiPixelFrameRate"
+	
+	DrawText 1, 252, "Sub Rate"
+	ValDisplay multiSubRateDisplay,pos={1,253},size={50,14},format="%.W1Ps",frame=0,limits={0,0,0},barmisc={0,1000}
+	ValDisplay multiSubRateDisplay, value= #"root:Packages:BS2P:currentScanVariables:multiPixelSubRate"
 
 //	Button BS_2P_multiVideo title="Hide", fColor=(52224,52224,52224), fstyle=1, proc=BS_2P_hideMultiPanelButton
 
@@ -201,16 +216,18 @@ function CreateMultiScan()
 	
 //	NVAR Lines = ceil(ScaledY/lineSpacing)
 	NVAR dwellTime = root:Packages:BS2P:CurrentScanVariables:dwellTime
-	NVAR multiPixelSize = root:Packages:BS2P:currentScanVariables:multiPixelSize
-	
+	wave dum = root:Packages:BS2P:CurrentScanVariables:dum
+	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
+	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
 	
 	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
 	string offsetNote = note(multiScanOffsets)
 //	variable totalLines =  numberByKey("lines", offsetNote, "=", ";")
 	variable subFrames = dimsize(multiScanOffsets,0)
-	wave dum = root:Packages:BS2P:CurrentScanVariables:dum
-	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
-	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
+	NVAR multiPixelSize = root:Packages:BS2P:currentScanVariables:multiPixelSize
+	NVAR multiPixelDwell = root:Packages:BS2P:currentScanVariables:multiPixelDwell
+	NVAR multiPixelFrameRate = root:Packages:BS2P:currentScanVariables:multiPixelFrameRate
+	NVAR multiPixelSubRate = root:Packages:BS2P:currentScanVariables:multiPixelSubRate
 	
 	variable scaledX = numberByKey("scaledX", offsetNote, "=", ";")
 	variable scaledY = numberByKey("scaledY", offsetNote, "=", ";") 
@@ -223,15 +240,15 @@ function CreateMultiScan()
 	Y_offset = multiScanOffsets[0][1]
 	makeUnscaledXRaster(multiLines, pixelsPerLine, lineTime)
 	makeUnscaledYRaster(multiLines, pixelsPerLine, lineTime)
-	scaleRunX()
-	scaleRunY()
+	wave tempRunX = scaleRunX(runx, x_offset, scaledX)
+	wave tempRunY = scaleRunY(runy, y_offset, scaledY, multiPixelSize)
 	
 	SetDrawLayer/W=kineticWindow/K userfront
 	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,65280,0),fillpat= 0
 	DrawRect/W=kineticWindow X_offset,Y_offset + scaledY,X_offset + scaledX, Y_offset
 	
-	duplicate/o runx root:Packages:BS2P:CurrentScanVariables:multiX
-	duplicate/o runy root:Packages:BS2P:CurrentScanVariables:multiY
+	duplicate/o tempRunX root:Packages:BS2P:CurrentScanVariables:multiX
+	duplicate/o tempRunY root:Packages:BS2P:CurrentScanVariables:multiY
 	wave multiX = root:Packages:BS2P:CurrentScanVariables:multiX
 	wave multiY = root:Packages:BS2P:CurrentScanVariables:multiY	
 	Note/K multiX, "frameTime="+num2str(dimDelta(runx,0) * dimSize(runx,0))+";"
@@ -246,20 +263,20 @@ function CreateMultiScan()
 		Y_offset = multiScanOffsets[i][1]
 		makeUnscaledXRaster(multiLines, pixelsPerLine, lineTime)
 		makeUnscaledYRaster(multiLines, pixelsPerLine, lineTime)
-		scaleRunX()
-		scaleRunY()
+		wave nextRunX = scaleRunX(runx, x_offset, scaledX)
+		wave nextRunY = scaleRunY(runy, y_offset, scaledY, multiPixelSize)
 		
 		SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (65280,65280,0),fillpat= 0
 		DrawRect X_offset,Y_offset + scaledY,X_offset + scaledX, Y_offset
 		
 		variable lastXPos = multiX[numpnts(multiX)-1]
 		variable lastYPos = multiy[numpnts(multiY)-1]
-		variable nextXpos = runx[0]
-		variable nextYpos = runy[0]
+		variable nextXpos = nextRunX[0]
+		variable nextYpos = nextRunY[0]
 		
 		addMultiTransition(i,lastXPos, lastYPos, nextXpos, nextYpos, maxSlopeBetweenRegions)
-		concatenate/NP {runx}, multiX
-		concatenate/NP {runy}, multiY
+		concatenate/NP {nextRunX}, multiX
+		concatenate/NP {nextRunY}, multiY
 	endfor
 
 	lastXPos = multiX[numpnts(multiX)-1]
@@ -275,9 +292,10 @@ function CreateMultiScan()
 	Note/NOCR multiScanOffsets, "lines="+num2str(multiLines)+";"
 	Note/NOCR multiScanOffsets, "scaledX="+num2str(scaledX)+";"
 	Note/NOCR multiScanOffsets, "scaledY="+num2str(scaledY)+";"
-//	variable newDumSize = numpnts(dum)*subFrames
-//	redimension/n=( numpnts(multiX) )  dum
-//	SetScale/I x 0,totalScanTime,"s", dum
+	
+	multiPixelDwell = dwellTIme
+	multiPixelFrameRate = dimdelta(multiX,0) * dimsize(multiX,0)
+	multiPixelSubRate = multiPixelFrameRate / i
 		
 end
 
@@ -391,6 +409,7 @@ function clipTransitionsUnfoldedMultiDum(multiDum)//, testCutter)
 //		multiDum[transitionStart, transitionStart+pointsToRemove] = -1//; print pointsToRemove, transitionStart, transitionStart+pointsToRemove
 //		print Frame, subFrame, transitionStart, pointsToRemove
 	endfor
+//	print "clipTransitions:", numpnts(multiDum)/framePixels
 end
 
 function/wave splitmultiDum(foldedDum)
@@ -429,7 +448,7 @@ function/wave splitmultiDum(foldedDum)
 	variable kineticPixelWidth = ceil(kineticWidth / displayPixelSize)
 	variable kineticPixelHeight = ceil(kineticHeight / displayPixelSize)
 	
-	make/o/n=(kineticPixelWidth, kineticPixelHeight) multiKinetic = 0
+	make/free/o/n=(kineticPixelWidth, kineticPixelHeight) multiKinetic = 0
 	
 	setScale/P x, kineticMinX, displayPixelSize, "m", multiKinetic
 	setScale/P y, kineticMinY, displayPixelSize, "m", multiKinetic
@@ -441,7 +460,7 @@ function/wave splitmultiDum(foldedDum)
 		
 		variable rightPoint = leftPoint + (pixelsPerLine-1) //; print "rightPoint =", rightPoint
 		variable topPoint =  bottomPoint + (lines-1) // ceil(scaledY/DimDelta(multiKinetic,1))+bottomPoint//; print "topPoint =", topPoint
-		make/free/o/n=(subRows,subCols,subFrames) subWindow = foldedDum[p][q][((r*subWIndows)+i)]
+		make/o/n=(subRows,subCols,subFrames) subWindow = foldedDum[p][q][((r*subWIndows)+i)]
 		multiKinetic[leftPoint,rightPoint][bottomPoint,topPoint][] = subWIndow[p-leftPoint][q-bottomPoint][r]	
 	endfor
 	

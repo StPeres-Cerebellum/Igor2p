@@ -369,8 +369,8 @@ function makeRasters(lineTime,frames)//, pixelShift)
 		makeRunXReturnHome()
 		makeRunYReturnHome()
 		
-		scaleRunX()
-		scaleRunY()
+		scaleRunX(runx, x_offset, scaledX)
+		scaleRunY(runy, y_offset, scaledY, lineSpacing)
 		
 		XYswapped = 0
 	endif
@@ -383,11 +383,14 @@ function makeRasters(lineTime,frames)//, pixelShift)
 //	totalLines = lines
 end
 
-function/wave scaleRunX()
-	NVAR X_offset = root:Packages:BS2P:CurrentScanVariables:X_offset
-	NVAR scaledX = root:Packages:BS2P:CurrentScanVariables:scaledX
+function/wave scaleRunX(runx, x_offset, scaledX)
+	wave runx
+	variable x_offset, scaledX
+
+//	NVAR X_offset = root:Packages:BS2P:CurrentScanVariables:X_offset
+//	NVAR scaledX = root:Packages:BS2P:CurrentScanVariables:scaledX
 	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor
-	wave runx =   root:Packages:BS2P:CurrentScanVariables:runx
+//	wave runx =   root:Packages:BS2P:CurrentScanVariables:runx
 
 	/////////////////////Scale it to Microns 
 	runx *= ScaledX; runx += x_offset
@@ -397,12 +400,14 @@ function/wave scaleRunX()
 	return runx
 end
 
-function/wave scaleRunY()
-	NVAR Y_offset = root:Packages:BS2P:CurrentScanVariables:Y_offset
-	NVAR scaledY = root:Packages:BS2P:CurrentScanVariables:scaledY
+function/wave scaleRunY(runy, y_offset, scaledY, lineSpacing)
+	wave runy
+	variable y_offset, scaledY, lineSpacing
+//	NVAR Y_offset = root:Packages:BS2P:CurrentScanVariables:Y_offset
+//	NVAR scaledY = root:Packages:BS2P:CurrentScanVariables:scaledY
 	NVAR scaleFactor = root:Packages:BS2P:CalibrationVariables:scaleFactor
-	NVAR lineSpacing = root:Packages:BS2P:CurrentScanVariables:lineSpacing
-	wave runy =   root:Packages:BS2P:CurrentScanVariables:runy
+//	NVAR lineSpacing = root:Packages:BS2P:CurrentScanVariables:lineSpacing
+//	wave runy =   root:Packages:BS2P:CurrentScanVariables:runy
 	/////////////////////Scale it to Microns 
 	runy *= lineSpacing; runy += y_offset
 	

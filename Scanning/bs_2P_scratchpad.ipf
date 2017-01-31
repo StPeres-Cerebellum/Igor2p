@@ -98,8 +98,6 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string offsetNote = note(multiScanOffsets)
 	variable multiLines =  numberByKey("lines", offsetNote, "=", ";")
 	variable multiPixels =  numberByKey("Pixels", offsetNote, "=", ";")
-	
-	
 	variable drawPause = 50e-3 //seconds to draw the frame  --try to make this as short as possible
 	variable userPause = 0	//seconds to wait between frames
 	
@@ -453,7 +451,7 @@ function multiVideoHook(frame, frames, lines, pixelsPerLine multiX, multiY, mult
 		bs_2P_zeroscanners("offset")
 		setdatafolder currentFolder
 	elseif(frameCounter < frames)	//otherwise set up another one
-		print frameCounter
+//		print frameCounter
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=multiDum/EOSH=S_multiVideoHook 0
 //		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
 //		DAQmx_WaveformGen/DEV="dev1"/NPRD=1/EOSH=S_videoHook "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V

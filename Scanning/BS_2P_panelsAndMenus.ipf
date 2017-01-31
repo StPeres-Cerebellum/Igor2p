@@ -248,7 +248,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayTotalTime = 0
 		Variable/g root:Packages:BS2P:CurrentScanVariables:displaySpeed = 1	//display speed
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayPixelSize
-		
+		make/n=0/o root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
 		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {(str2num(boardConfig[17][2])),(str2num(boardConfig[17][3])),(str2num(boardConfig[17][4]))}
 		
 	endif
