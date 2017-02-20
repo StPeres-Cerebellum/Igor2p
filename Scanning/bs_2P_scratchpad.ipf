@@ -149,6 +149,9 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string S_kineticTest = "kineticTest("+num2str(frameCounter)+","+num2str(frames)+","+num2str(totalLines)+","+num2str(pixelsPerLine)+","+nameofWave(runx)+","+nameofWave(runy)+","+nameofWave(dum)+")"
 	string S_scanString = nameofwave(runx)+", 0; "+nameofwave(runy)+", 1"
 	string S_multiVideoHook = "multiVideoHook("+num2str(frameCounter)+","+num2str(10000)+","+num2str(multiLines)+","+num2str(multiPixels)+","+nameofWave(multiX)+","+nameofWave(multiY)+","+nameofWave(dum)+")"
+//	
+	string S_multiKineticHook2 = "multiKineticHook2("+nameofWave(Dum)+","+num2str(frames)+")"
+
 //	print S_kineticHook2
 	
 	BS_2P_PMTShutter("open")
@@ -194,6 +197,18 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
+	elseif(stringmatch(imageMode, "multiKinetic"))
+		galvoChannels = "multiX, "+ xGalvoChannel+"; multiY, "+yGalvoChannel
+		duplicate/o multiX dum
+		redimension/n=((numpnts(multiX) * frames) + 1) dum; dum = nan
+		//try scaling dum to 40 Mz to make sure it catches all pulses (hamamatsu photon counter = 25 ns pulse pair resolution) 
+		if(ePhysRec)
+			DAQmx_Scan/BKG/DEV=ePhysDev/TRIG={scanClock}Waves=ePhysConfig
+		endif
+		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_multiKineticHook2 0
+		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(frames) galvoChannels
+		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
+		DAQmx_CTR_OutputPulse/trig={startTrigChannel, trigger}/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	endif
 	
 
@@ -390,10 +405,8 @@ function multiVideoHook(frame, frames, lines, pixelsPerLine multiX, multiY, mult
 	
 	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
 	variable subFrames = dimSize(multiScanOffsets,0)
-//	String offsetNote = note(multiScanOffsets)
-//	variable multiLines =  numberByKey("lines", offsetNote, "=", ";")
 	
-	//BS_2P_Pockels("close")
+	NVAR testShift = root:testShift
 	NVAR frameCounter
 	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
 	NVAR frameAvg = root:Packages:BS2P:CurrentScanVariables:frameAvg
@@ -403,29 +416,16 @@ function multiVideoHook(frame, frames, lines, pixelsPerLine multiX, multiY, mult
 	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:KineticSeries
 	string S_multiVideoHook = "multiVideoHook("+num2str(frameCounter)+","+num2str(frames)+","+num2str(lines)+","+num2str(pixelsPerLine)+","+nameofWave(multiX)+","+nameofWave(multiY)+","+nameofWave(multiDum)+")"
 
-	duplicate/o multiDum lastFrame//; print "multiDum Pnts=",numpnts(multiDum)
-	multiDum = 0
 	
+	duplicate/o multiDum lastFrame//; print "multiDum Pnts=",numpnts(multiDum)
+//	deletePoints 0, testShift, lastFrame
+//	insertPoints (numpnts(lastFrame)), testShift, lastFrame
+	multiDum = 0
 	differentiate/meth=2/ep=1/p lastFrame//; print "differentiated Pnts=",numpnts(lastFrame)
-//	If(frameAvg == 1)
-//		print "pixels, lines=",pixelsPerline,lines
-		clipTransitionsUnfoldedMultiDum(lastFrame)//; print "clipped=",numpnts(lastFrame) / (pixelsPerline* lines)
-		redimension/n=(pixelsPerline, lines, subFrames) lastFrame
-//		duplicate/free lastFrame flipped
-//		lastFrame[][1,(lines-1);2][] = flipped[(pixelsPerLine - 1) - p][q][r]
-		wave multiKinetic = splitmultiDum(lastFrame)
-//	else
-//		redimension/n=(pixelsPerline, lines, frameAvg) lastFrame
-//		duplicate/o/free lastFrame avgHolder
-//		matrixop/o lastFrame = sumBeams(avgHolder)  / frameAvg
-//	endif
-//	
-////	duplicate/free multiKinetic flipped
-//	
-//	rotateImage(lastFrame)
-//	checkXYSwitch(lastFrame,1)
+	clipTransitionsUnfoldedMultiDum(lastFrame)//; print "clipped=",numpnts(lastFrame) / (pixelsPerline* lines)
+	redimension/n=(pixelsPerline, lines, subFrames) lastFrame
+	wave multiKinetic = splitmultiDum(lastFrame)
 	duplicate/o multiKinetic root:Packages:BS2P:CurrentScanVariables:kineticSeries
-//	scaleKineticSeries()
 
 	
 	// make these into variables in the init and config procedures
@@ -453,8 +453,6 @@ function multiVideoHook(frame, frames, lines, pixelsPerLine multiX, multiY, mult
 	elseif(frameCounter < frames)	//otherwise set up another one
 //		print frameCounter
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=multiDum/EOSH=S_multiVideoHook 0
-//		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
-//		DAQmx_WaveformGen/DEV="dev1"/NPRD=1/EOSH=S_videoHook "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 		DAQmx_WaveformGen/clk=scanClock/DEV=galvoDev/NPRD=(1) galvoChannels
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(multiDum, 0))),0.5}/NPLS=(numpnts(multiDum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(multiDum, 0))),0.5}/NPLS=(numpnts(multiDum)+1) 3 ///Scanning CLOCK
@@ -520,6 +518,75 @@ function kineticHook2(dum, frames)
 	NVAR trigLoop = root:Packages:BS2P:CurrentScanVariables:trigLoop
 	if(trigLoop)
 		BS_2P_Scan("kinetic")
+	endif
+end
+
+function multiKineticHook2(multidum, frames)
+	wave multidum
+	variable frames
+		
+	wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
+	NVAR ePhysRec = root:Packages:BS2P:CurrentScanVariables:ePhysRec
+	sampleDiodeVoltage()
+	BS_2P_Pockels("close")
+	BS_2P_PMTShutter("close")
+	bs_2P_zeroscanners("offset")
+	
+
+	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
+	variable subFrames = dimSize(multiScanOffsets,0)
+	variable lines = numberByKey("lines",note(multiScanOffsets), "=", ";")
+	variable pixelsPerLine = numberByKey("pixels",note(multiScanOffsets), "=", ";")
+	
+	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
+	NVAR frameAvg = root:Packages:BS2P:CurrentScanVariables:frameAvg
+	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
+//	NVAR pixelsPerLine = root:Packages:BS2P:currentScanVariables:
+
+	variable pixelsPerFrame = pixelsPerLine * lines
+
+	duplicate/o multiDum lastFrame//; print "multiDum Pnts=",numpnts(multiDum)
+	multiDum = 0
+	
+	differentiate/meth=2/ep=1/p lastFrame//; print "differentiated Pnts=",numpnts(lastFrame)
+	clipTransitionsUnfoldedMultiDum(lastFrame)//; print "clipped=",numpnts(lastFrame) / (pixelsPerline* lines)
+	redimension/n=(pixelsPerline, lines, (subFrames*frames)) lastFrame
+	wave multiKinetic = splitmultiDum(lastFrame)
+	duplicate/o multiKinetic root:Packages:BS2P:CurrentScanVariables:kineticSeries
+	
+	//rotate image
+	checkXYSwitch(multiDum,frames)
+//	rotateImage(dum)
+//	duplicate/o multiDum root:Packages:BS2P:CurrentScanVariables:kineticSeries
+	wave kineticSeries =  root:Packages:BS2P:CurrentScanVariables:kineticSeries
+//	scaleKineticSeries()
+	
+	BS_2P_Append3DImageSlider()
+	BS_2P_writeScanParamsInWave(kineticSeries)
+//	readLaserPower()
+//	BS_2P_writeScanParamsInWave(dum)
+	if(datafolderexists ("root:currentrois") == 1)
+		NewUpdate(kineticSeries)
+	endif
+
+	if(ePhysRec)
+		dowindow ePhysWIn
+		if(!v_flag)
+			display/k=1/n=ephysWin ePhysDum
+		endif
+	endif
+	
+	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
+	if(saveemall)
+		BS_2P_saveDum()
+	endif
+
+	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
+	setdatafolder currentFolder
+	
+	NVAR trigLoop = root:Packages:BS2P:CurrentScanVariables:trigLoop
+	if(trigLoop)
+		BS_2P_Scan("multiKinetic")
 	endif
 end
 

@@ -6,7 +6,7 @@ function makeMultiPanel()
 	
 	Button BS_2P_recalcMulti title="Recalc",fColor=(0,0,65535), fstyle=1,proc=BS_2P_createMultiButton, valueColor=(65535,65535,65535)
 	
-	Button BS_2P_multiKineticSeries title="Kinetic", fColor=(2,39321,1), fstyle=1
+	Button BS_2P_multiKineticSeries title="Kinetic", fColor=(2,39321,1), fstyle=1, proc=BS_2P_multiKineticButton
 
 	Button BS_2P_multiAbort title="Abort",fColor=(65535,16385,16385), fstyle=1,proc=BS_2P_abortButtonProc_2
 	
@@ -49,6 +49,21 @@ Function BS_2P_multiVideoButton(ba) : ButtonControl
 		case 2: // mouse up
 
 			BS_2P_Scan("multiVideo")
+
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
+
+Function BS_2P_multiKineticButton(ba) : ButtonControl
+	STRUCT WMButtonAction &ba
+
+	switch( ba.eventCode )
+		case 2: // mouse up
+
+			BS_2P_Scan("multiKinetic")
 
 		case -1: // control being killed
 			break
@@ -231,7 +246,7 @@ function CreateMultiScan()
 	
 	variable scaledX = numberByKey("scaledX", offsetNote, "=", ";")
 	variable scaledY = numberByKey("scaledY", offsetNote, "=", ";") 
-	variable maxSlopeBetweenRegions =  3000	// Volts / ms
+	variable maxSlopeBetweenRegions =  5000	// Volts / ms
 	
 	multiPixelSize = scaledX / pixelsPerLine
 	variable multiLines =  ceil(scaledY / multiPixelSize)
@@ -318,7 +333,8 @@ function displayMultiDums(kineticSeries,multiOffsets, foldedDum)
 		variable rightPoint = ceil(scaledX/DimDelta(kineticSeries,0))+leftPoint//; print "rightPoint =", rightPoint
 		variable topPoint =  ceil(scaledY/DimDelta(kineticSeries,1))+bottomPoint//; print "topPoint =", topPoint
 		make/o/free/n=(subRows,subCols,subFrames) subWindow = foldedDum[p][q][((r*subWIndows)+i)]
-		kineticSeries[leftPoint,rightPoint][bottomPoint,topPoint][] = subWIndow[p-leftPoint][q-bottomPoint][r]	
+//		kineticSeries[leftPoint,rightPoint][bottomPoint,topPoint][] = subWIndow[p-leftPoint][q-bottomPoint][r]
+		kineticSeries[leftPoint,rightPoint][bottomPoint,topPoint][] = subWIndow[p][q][r]		
 	endfor
 end
 
@@ -422,14 +438,7 @@ function/wave splitmultiDum(foldedDum)
 	variable scaledY = numberByKey("scaledY", offsetNote, "=", ";")
 	variable pixelsPerLine = numberByKey("pixels", offsetNote, "=", ";")
 	variable lines = numberByKey("lines", offsetNote, "=", ";")
-//	NVAR scaledX = root:Packages:BS2P:CurrentScanVariables:scaledX
-//	NVAR scaledY = root:Packages:BS2P:CurrentScanVariables:scaledY
-//	NVAR pixelsPerLine = root:Packages:BS2P:CurrentScanVariables:pixelsPerLine
-//	NVAR totalLines =  root:Packages:BS2P:CurrentScanVariables:totalLines 
-//	NVAR displayPixelSize = root:packages:bs2p:currentScanVariables:displayPixelSize
-	
 	variable displayPixelSize = scaledX / pixelsPerLine
-
 	variable subWindows = dimsize(multiScanOffsets,0)//; print "subWIndows = ", subWindows
 	variable subRows = dimsize(foldedDum,0)//; print "subRows = ", subRows
 	variable subCols = dimsize(foldedDum,1)//;print "subCols = ", subCOls
@@ -448,7 +457,7 @@ function/wave splitmultiDum(foldedDum)
 	variable kineticPixelWidth = ceil(kineticWidth / displayPixelSize)
 	variable kineticPixelHeight = ceil(kineticHeight / displayPixelSize)
 	
-	make/free/o/n=(kineticPixelWidth, kineticPixelHeight) multiKinetic = 0
+	make/free/o/n=(kineticPixelWidth, kineticPixelHeight,subFrames) multiKinetic = nan
 	
 	setScale/P x, kineticMinX, displayPixelSize, "m", multiKinetic
 	setScale/P y, kineticMinY, displayPixelSize, "m", multiKinetic
@@ -460,8 +469,13 @@ function/wave splitmultiDum(foldedDum)
 		
 		variable rightPoint = leftPoint + (pixelsPerLine-1) //; print "rightPoint =", rightPoint
 		variable topPoint =  bottomPoint + (lines-1) // ceil(scaledY/DimDelta(multiKinetic,1))+bottomPoint//; print "topPoint =", topPoint
-		make/o/n=(subRows,subCols,subFrames) subWindow = foldedDum[p][q][((r*subWIndows)+i)]
-		multiKinetic[leftPoint,rightPoint][bottomPoint,topPoint][] = subWIndow[p-leftPoint][q-bottomPoint][r]	
+		make/free/o/n=(subRows,subCols,subFrames) subWindow = foldedDum[p][q][((r*subWIndows)+i)]
+		duplicate/free/o subWindow flippedSubWindow
+		flippedSubWindow[][1,(lines-1);2][] = subWindow[(pixelsPerLine - 1) - p][q][r]
+		multiKinetic[leftPoint,rightPoint][bottomPoint,topPoint][] = flippedSubWindow[p-leftPoint][q-bottomPoint][r]	
+//		duplicate/o/free MultiKineticUnflipped multiKinetic
+//		multiKinetic[][1,(lines-1);2][] = MultiKineticUnflipped[(pixelsPerLine - 1) - p][q][r]
+//		multiKinetic[leftPoint,rightPoint][bottomPoint,topPoint][] = subWIndow[p][q][r]	
 	endfor
 	
 	return multiKinetic
