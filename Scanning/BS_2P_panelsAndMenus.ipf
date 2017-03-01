@@ -518,6 +518,10 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				 	arbitraryScan()
 				 break
 				 
+				  case 109:	// m
+				 	multipleScans()
+				 break
+				 
 				 case 11: // page Up
 				 	PI_moveMicrons("z", -focusStep)
 				 break

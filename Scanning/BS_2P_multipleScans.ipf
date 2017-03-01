@@ -385,26 +385,13 @@ function addMultiTransition(transNumber,lastXPos, lastYPos, nextXpos, nextYpos, 
 end
 
 
-function clipTransitionsFromMultiDum(multiDum)
-	wave multiDum
-	wave multiX = root:Packages:BS2P:CurrentScanVariables:multiX
-	wave multiY = root:Packages:BS2P:CurrentScanVariables:multiY
-	
-	variable framePixels = numberByKey("framePixels",note(multiX), "=", ";")
-	variable subFrames = numberByKey("subFrames",note(multiX), "=", ";")
-	variable i
-	for(i=1; i<=subFrames; i+=1)
-		variable transPixels = numberByKey("transPixels"+num2str(i),note(multiX), "=", ";")
-		deletePoints (i*framePixels), transPixels, multiDum
-	endfor
-end
 
 function clipTransitionsUnfoldedMultiDum(multiDum)//, testCutter)
 	wave multiDum//, testCutter
 	wave multiX = root:Packages:BS2P:CurrentScanVariables:multiX
 	wave multiY = root:Packages:BS2P:CurrentScanVariables:multiY
 	NVAR frames = root:Packages:BS2P:CurrentScanVariables:frames
-	
+	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
 	
 	variable framePixels = numberByKey("framePixels",note(multiX), "=", ";")
 	variable subFrames = numberByKey("subFrames",note(multiX), "=", ";")
@@ -416,39 +403,72 @@ function clipTransitionsUnfoldedMultiDum(multiDum)//, testCutter)
 	
 	make/o/n=(subFrames * frames) frameTimer = transitionPixelsWave[(mod(p,subFrames))]
 
-	for(i=0; i<(numpnts(frametimer)); i+=1)
+	for(i=0; i<(numpnts(frameTimer)); i+=1)
 		variable pointsToRemove = frameTimer[i] //str2num(stringFromList(i, transitionTimes))
 		variable subFrame = ((mod(i,subFrames))+1)
 		variable frame = floor(i/subFrames)
 		variable transitionStart = (((frame * subFrames) + subFrame) * framePixels)//+1
 		deletePoints transitionStart, pointsToRemove, multiDum 
-//		multiDum[transitionStart, transitionStart+pointsToRemove] = -1//; print pointsToRemove, transitionStart, transitionStart+pointsToRemove
-//		print Frame, subFrame, transitionStart, pointsToRemove
 	endfor
-//	print "clipTransitions:", numpnts(multiDum)/framePixels
+	string offsetNote = note(multiScanOffsets)
+	Note/NOCR multiDum, offsetNote
+	Note/NOCR multiDum, "xOffsets="+getScanOffsets("x", multiScanOffsets)+";"
+	Note/NOCR multiDum, "yOffsets="+getScanOffsets("y", multiScanOffsets)+";"
+	
+	
+end
+
+function/s getScanOffsets(XOrY, multiScanOffsets)
+	string XOrY
+	wave multiScanOffsets
+	
+	string Offsets = ""
+	variable i, totalOffsets = dimSize(multiScanOffsets,0)
+	for(i=0; i < totalOffsets; i+=1)
+		strSwitch(XOrY)
+			case "x":
+				offsets += num2str(multiScanOffsets[i][0])+","
+				break
+			case "y":
+				offsets += num2str(multiScanOffsets[i][1])+","
+				break
+		endSwitch
+	endfor
+	variable removecomma = strLen(offsets)-2
+	string outPut = offsets[0,removeComma]
+	return output
 end
 
 function/wave splitmultiDum(foldedDum)
 	wave foldedDum
 	
-	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
-	string offsetNote = note(multiScanOffsets)
+//	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
+	string offsetNote = note(foldedDum)
 	
 	variable scaledX = numberByKey("scaledX", offsetNote, "=", ";")
 	variable scaledY = numberByKey("scaledY", offsetNote, "=", ";")
 	variable pixelsPerLine = numberByKey("pixels", offsetNote, "=", ";")
 	variable lines = numberByKey("lines", offsetNote, "=", ";")
 	variable displayPixelSize = scaledX / pixelsPerLine
-	variable subWindows = dimsize(multiScanOffsets,0)//; print "subWIndows = ", subWindows
+	string xOffsetList = stringByKey("xOffsets", offsetNote, "=", ";")
+	string yOffsetList = stringByKey("yOffsets", offsetNote, "=", ";")
+	make/o/free/n=((itemsInList(xOffsetList)),2) tempOffsets
+	variable i
+	for(i=0; i<itemsInList(xOffsetList); i+=1)
+		tempOffsets[i][0] = str2num(stringFromList(i, xOffsetList))
+		tempOffsets[i][1] = str2num(stringFromList(i, yOffsetList))
+	endfor
+	
+	variable subWindows = itemsInList(xOffsetList)//; print "subWIndows = ", subWindows
 	variable subRows = dimsize(foldedDum,0)//; print "subRows = ", subRows
 	variable subCols = dimsize(foldedDum,1)//;print "subCols = ", subCOls
 	variable subFrames = dimsize(foldedDum,2) / subWindows//; print "subFrames = ", subFrames
 	
-	imagestats/g={0,(subWindows-1),0,0}/m=1 multiScanOffsets
+	imagestats/g={0,(subWindows-1),0,0}/m=1 tempOffsets
 	
 	variable kineticMinX = v_min
 	variable kineticMaxX = v_max
-	imagestats/g={0,(subWindows-1),1,1}/m=1 multiScanOffsets
+	imagestats/g={0,(subWindows-1),1,1}/m=1 tempOffsets
 	variable kineticMinY = v_min
 	variable kineticMaxY = v_max
 	
@@ -462,10 +482,10 @@ function/wave splitmultiDum(foldedDum)
 	setScale/P x, kineticMinX, displayPixelSize, "m", multiKinetic
 	setScale/P y, kineticMinY, displayPixelSize, "m", multiKinetic
 	
-	variable i
+//	variable i
 	for(i=0; i < subWindows; i += 1)
-		variable leftPoint = (multiScanOffsets[i][0] - DimOffset(multiKinetic, 0))/DimDelta(multiKinetic,0)//; print "leftPoint =", leftPoint
-		variable bottomPoint = (multiScanOffsets[i][1] - DimOffset(multiKinetic, 1))/DimDelta(multiKinetic,1)//; print "bottomPoint =", bottomPoint
+		variable leftPoint = (tempOffsets[i][0] - DimOffset(multiKinetic, 0))/DimDelta(multiKinetic,0)//; print "leftPoint =", leftPoint
+		variable bottomPoint = (tempOffsets[i][1] - DimOffset(multiKinetic, 1))/DimDelta(multiKinetic,1)//; print "bottomPoint =", bottomPoint
 		
 		variable rightPoint = leftPoint + (pixelsPerLine-1) //; print "rightPoint =", rightPoint
 		variable topPoint =  bottomPoint + (lines-1) // ceil(scaledY/DimDelta(multiKinetic,1))+bottomPoint//; print "topPoint =", topPoint

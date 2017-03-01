@@ -563,6 +563,7 @@ function multiKineticHook2(multidum, frames)
 	
 	BS_2P_Append3DImageSlider()
 	BS_2P_writeScanParamsInWave(kineticSeries)
+	BS_2P_writeScanParamsInWave(lastFrame)
 //	readLaserPower()
 //	BS_2P_writeScanParamsInWave(dum)
 	if(datafolderexists ("root:currentrois") == 1)

@@ -1,7 +1,7 @@
 #pragma rtGlobals=1		// Use modern global access method.
 				//
 
-
+#include <all ip procedures>
 
 
 Menu "ROIs"
