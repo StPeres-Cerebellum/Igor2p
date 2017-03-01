@@ -451,15 +451,15 @@ function/wave splitmultiDum(foldedDum)
 	variable lines = numberByKey("lines", offsetNote, "=", ";")
 	variable displayPixelSize = scaledX / pixelsPerLine
 	string xOffsetList = stringByKey("xOffsets", offsetNote, "=", ";")
-	string yOffsetList = stringByKey("yOffsets", offsetNote, "=", ";")
-	make/o/free/n=((itemsInList(xOffsetList)),2) tempOffsets
+	string yOffsetList = stringByKey("yOffsets", offsetNote, "=", ";")//;print itemsInList(xOffsetList, ",")
+	make/free/o/n=((itemsInList(xOffsetList, ",")),2) tempOffsets
 	variable i
-	for(i=0; i<itemsInList(xOffsetList); i+=1)
-		tempOffsets[i][0] = str2num(stringFromList(i, xOffsetList))
-		tempOffsets[i][1] = str2num(stringFromList(i, yOffsetList))
+	for(i=0; i<itemsInList(xOffsetList, ","); i+=1)
+		tempOffsets[i][0] = str2num(stringFromList(i, xOffsetList, ","))
+		tempOffsets[i][1] = str2num(stringFromList(i, yOffsetList, ","))
 	endfor
 	
-	variable subWindows = itemsInList(xOffsetList)//; print "subWIndows = ", subWindows
+	variable subWindows = itemsInList(xOffsetList, ",")//; print "subWIndows = ", subWindows
 	variable subRows = dimsize(foldedDum,0)//; print "subRows = ", subRows
 	variable subCols = dimsize(foldedDum,1)//;print "subCols = ", subCOls
 	variable subFrames = dimsize(foldedDum,2) / subWindows//; print "subFrames = ", subFrames
