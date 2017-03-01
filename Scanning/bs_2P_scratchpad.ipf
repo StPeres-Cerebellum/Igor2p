@@ -418,12 +418,12 @@ function multiVideoHook(frame, frames, lines, pixelsPerLine multiX, multiY, mult
 
 	
 	duplicate/o multiDum lastFrame//; print "multiDum Pnts=",numpnts(multiDum)
-//	deletePoints 0, testShift, lastFrame
-//	insertPoints (numpnts(lastFrame)), testShift, lastFrame
+
 	multiDum = 0
-	differentiate/meth=2/ep=1/p lastFrame//; print "differentiated Pnts=",numpnts(lastFrame)
+	differentiate/meth=2/ep=1/p lastFrame//; print "differentiated Pnts=",numpnts(lastFrame)	
+	BS_2P_writeScanParamsInWave(lastFrame)
 	clipTransitionsUnfoldedMultiDum(lastFrame)//; print "clipped=",numpnts(lastFrame) / (pixelsPerline* lines)
-	redimension/n=(pixelsPerline, lines, subFrames) lastFrame
+
 	wave multiKinetic = splitmultiDum(lastFrame)
 	duplicate/o multiKinetic root:Packages:BS2P:CurrentScanVariables:kineticSeries
 
@@ -547,10 +547,10 @@ function multiKineticHook2(multidum, frames)
 
 	duplicate/o multiDum lastFrame//; print "multiDum Pnts=",numpnts(multiDum)
 	multiDum = 0
-	
+	BS_2P_writeScanParamsInWave(lastFrame)
 	differentiate/meth=2/ep=1/p lastFrame//; print "differentiated Pnts=",numpnts(lastFrame)
 	clipTransitionsUnfoldedMultiDum(lastFrame)//; print "clipped=",numpnts(lastFrame) / (pixelsPerline* lines)
-	redimension/n=(pixelsPerline, lines, (subFrames*frames)) lastFrame
+//	redimension/n=(pixelsPerline, lines, (subFrames*frames)) lastFrame
 	wave multiKinetic = splitmultiDum(lastFrame)
 	duplicate/o multiKinetic root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	
@@ -563,7 +563,6 @@ function multiKineticHook2(multidum, frames)
 	
 	BS_2P_Append3DImageSlider()
 	BS_2P_writeScanParamsInWave(kineticSeries)
-	BS_2P_writeScanParamsInWave(lastFrame)
 //	readLaserPower()
 //	BS_2P_writeScanParamsInWave(dum)
 	if(datafolderexists ("root:currentrois") == 1)

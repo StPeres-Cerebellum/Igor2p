@@ -209,7 +209,7 @@ function multiScansHook(s)    //This is a hook for the mousewheel movement in Ma
 
 				case 13:	//	Enter
 					cursor/k a
-					Note/NOCR multiScanOffsets, "scaledX="+num2str(scaledX)+";scaledY="+num2str(scaledY)+";"
+					Note/NOCR multiScanOffsets, "scaledSubX="+num2str(scaledX)+";scaledSubY="+num2str(scaledY)+";"
 //					Note/NOCR multiScanOffsets, "lines="+num2str(totalLines)+";"
 					CreateMultiScan()
 				break
@@ -244,8 +244,8 @@ function CreateMultiScan()
 	NVAR multiPixelFrameRate = root:Packages:BS2P:currentScanVariables:multiPixelFrameRate
 	NVAR multiPixelSubRate = root:Packages:BS2P:currentScanVariables:multiPixelSubRate
 	
-	variable scaledX = numberByKey("scaledX", offsetNote, "=", ";")
-	variable scaledY = numberByKey("scaledY", offsetNote, "=", ";") 
+	variable scaledX = numberByKey("scaledSubX", offsetNote, "=", ";")
+	variable scaledY = numberByKey("scaledSubY", offsetNote, "=", ";") 
 	variable maxSlopeBetweenRegions =  5000	// Volts / ms
 	
 	multiPixelSize = scaledX / pixelsPerLine
@@ -303,10 +303,10 @@ function CreateMultiScan()
 	variable totalScanTime = dimDelta(multiX,0) * dimSize(multiX, 0) * frames
 	Note/NOCR multiX, "subFrames="+num2str(i)+";"
 	Note/NOCR multiY, "subFrames="+num2str(i)+";"
-	Note/K multiScanOffsets, "pixels="+num2str(pixelsPerLine)+";"
-	Note/NOCR multiScanOffsets, "lines="+num2str(multiLines)+";"
-	Note/NOCR multiScanOffsets, "scaledX="+num2str(scaledX)+";"
-	Note/NOCR multiScanOffsets, "scaledY="+num2str(scaledY)+";"
+	Note/K multiScanOffsets, "multiPixels="+num2str(pixelsPerLine)+";"
+	Note/NOCR multiScanOffsets, "multiLines="+num2str(multiLines)+";"
+	Note/NOCR multiScanOffsets, "scaledSubX="+num2str(scaledX)+";"
+	Note/NOCR multiScanOffsets, "scaledSubY="+num2str(scaledY)+";"
 	
 	multiPixelDwell = dwellTIme
 	multiPixelFrameRate = dimdelta(multiX,0) * dimsize(multiX,0)
@@ -415,6 +415,9 @@ function clipTransitionsUnfoldedMultiDum(multiDum)//, testCutter)
 	Note/NOCR multiDum, "xOffsets="+getScanOffsets("x", multiScanOffsets)+";"
 	Note/NOCR multiDum, "yOffsets="+getScanOffsets("y", multiScanOffsets)+";"
 	
+	variable pixelsPerLine = numberByKey("multiPixels",note(multiDum), "=", ";")//; print pixelsPerLine
+	variable lines = numberByKey("multiLines",note(multiDum), "=", ";")//; print lines
+	redimension/n=(pixelsPerline, lines, (subFrames*Frames)) multiDum
 	
 end
 
@@ -442,13 +445,12 @@ end
 function/wave splitmultiDum(foldedDum)
 	wave foldedDum
 	
-//	wave multiScanOffsets = root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
 	string offsetNote = note(foldedDum)
 	
-	variable scaledX = numberByKey("scaledX", offsetNote, "=", ";")
-	variable scaledY = numberByKey("scaledY", offsetNote, "=", ";")
-	variable pixelsPerLine = numberByKey("pixels", offsetNote, "=", ";")
-	variable lines = numberByKey("lines", offsetNote, "=", ";")
+	variable scaledX = numberByKey("scaledSubX", offsetNote, "=", ";")
+	variable scaledY = numberByKey("scaledSubY", offsetNote, "=", ";")
+	variable pixelsPerLine = numberByKey("multiPixels", offsetNote, "=", ";")
+	variable lines = numberByKey("multiLines", offsetNote, "=", ";")
 	variable displayPixelSize = scaledX / pixelsPerLine
 	string xOffsetList = stringByKey("xOffsets", offsetNote, "=", ";")
 	string yOffsetList = stringByKey("yOffsets", offsetNote, "=", ";")//;print itemsInList(xOffsetList, ",")
@@ -476,13 +478,11 @@ function/wave splitmultiDum(foldedDum)
 	variable kineticHeight = ((kineticMaxY+scaledY) - kineticMinY)
 	variable kineticPixelWidth = ceil(kineticWidth / displayPixelSize)
 	variable kineticPixelHeight = ceil(kineticHeight / displayPixelSize)
-	
 	make/free/o/n=(kineticPixelWidth, kineticPixelHeight,subFrames) multiKinetic = nan
 	
 	setScale/P x, kineticMinX, displayPixelSize, "m", multiKinetic
 	setScale/P y, kineticMinY, displayPixelSize, "m", multiKinetic
 	
-//	variable i
 	for(i=0; i < subWindows; i += 1)
 		variable leftPoint = (tempOffsets[i][0] - DimOffset(multiKinetic, 0))/DimDelta(multiKinetic,0)//; print "leftPoint =", leftPoint
 		variable bottomPoint = (tempOffsets[i][1] - DimOffset(multiKinetic, 1))/DimDelta(multiKinetic,1)//; print "bottomPoint =", bottomPoint
@@ -493,9 +493,6 @@ function/wave splitmultiDum(foldedDum)
 		duplicate/free/o subWindow flippedSubWindow
 		flippedSubWindow[][1,(lines-1);2][] = subWindow[(pixelsPerLine - 1) - p][q][r]
 		multiKinetic[leftPoint,rightPoint][bottomPoint,topPoint][] = flippedSubWindow[p-leftPoint][q-bottomPoint][r]	
-//		duplicate/o/free MultiKineticUnflipped multiKinetic
-//		multiKinetic[][1,(lines-1);2][] = MultiKineticUnflipped[(pixelsPerLine - 1) - p][q][r]
-//		multiKinetic[leftPoint,rightPoint][bottomPoint,topPoint][] = subWIndow[p][q][r]	
 	endfor
 	
 	return multiKinetic
