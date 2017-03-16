@@ -203,6 +203,8 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		redimension/n=((numpnts(multiX) * frames) + 1) dum; dum = nan
 		//try scaling dum to 40 Mz to make sure it catches all pulses (hamamatsu photon counter = 25 ns pulse pair resolution) 
 		if(ePhysRec)
+			variable recordingTime = dimDelta(runx,0)*dimSize(runx,0)*frames
+			redimension/n=(ceil(recordingTime/dimDelta(ephysDum,0))) ephysDum
 			DAQmx_Scan/BKG/DEV=ePhysDev/TRIG={scanClock}Waves=ePhysConfig
 		endif
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_multiKineticHook2 0
