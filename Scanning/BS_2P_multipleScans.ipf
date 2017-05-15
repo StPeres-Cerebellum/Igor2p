@@ -308,9 +308,11 @@ function CreateMultiScan()
 	Note/NOCR multiScanOffsets, "scaledSubX="+num2str(scaledX)+";"
 	Note/NOCR multiScanOffsets, "scaledSubY="+num2str(scaledY)+";"
 	
+	
 	multiPixelDwell = dwellTIme
 	multiPixelFrameRate = dimdelta(multiX,0) * dimsize(multiX,0)
 	multiPixelSubRate = multiPixelFrameRate / i
+	Note/NOCR multiScanOffsets, "multiPixelFrameRate="+num2str(multiPixelFrameRate)+";"
 		
 end
 
@@ -494,7 +496,7 @@ function/wave splitmultiDum(foldedDum)
 		flippedSubWindow[][1,(lines-1);2][] = subWindow[(pixelsPerLine - 1) - p][q][r]
 		multiKinetic[leftPoint,rightPoint][bottomPoint,topPoint][] = flippedSubWindow[p-leftPoint][q-bottomPoint][r]	
 	endfor
-	NVAR multiPixelFrameRate =root:Packages:BS2P:currentScanVariables:multiPixelFrameRate
+	variable multiPixelFrameRate =  numberByKey("multiPixelFrameRate", offsetNote, "=", ";")
 	setScale/P z, 0, multiPixelFrameRate, "s"
 	
 	return multiKinetic

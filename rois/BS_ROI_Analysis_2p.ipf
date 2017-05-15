@@ -44,6 +44,8 @@ Menu "GraphMarquee"
 		"Make Projections", /q,  imageSubProjections()
 		"Average stack", /q, averageStack()
 		"Max Stack", /q, projectStack()
+		"Print Image Notes", /q, printImageNotes()
+
 		SubMenu "Colors"
 				ChoosePalette(), /q, ChangeColors()
 		End
@@ -55,6 +57,20 @@ Menu "GraphMarquee"
 
 	
 End
+
+function printImageNotes()
+	getmarquee/K
+	string ImageName=ImageNameList(S_MarqueeWin, ";")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave Image = ImageNameToWaveRef(S_MarqueeWin,ImageName)
+
+	string waveNotes = note(Image)
+	
+	variable i
+	for(i=0 ; i< itemsinList(waveNotes); i += 1)
+		print stringFromList(i, waveNotes)
+	endfor
+end
 
 function imageProjection()
 	
