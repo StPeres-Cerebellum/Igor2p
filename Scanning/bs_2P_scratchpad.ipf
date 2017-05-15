@@ -3,20 +3,6 @@
 
 
 
-
-function testCounting()
-
-	make/o/n=10 buffer
-//	fDAQmx_CTR_Finished("dev2", 0)
-//	fDAQmx_CTR_Finished("dev2", 1)
-	DAQmx_CTR_CountEdges/DEV="dev2"/EDGE=1/SRC="/dev2/pfi8"/INIT=0/DIR=1/clk="/Dev2/Ctr2InternalOutput"/wave=buffer/EOSH="DoneCounting(buffer)" 0
-	DAQmx_CTR_OutputPulse/DEV="dev2" /sec={1,1} /NPLS=10 2
-	
-end
-
-
-
-
 function BS_2P_Pockels(openOrClose)
 	string openOrClose
 	NVAR pockelValue = root:Packages:BS2P:CurrentScanVariables:pockelValue
@@ -169,6 +155,7 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
+		BS_2P_StartSignal()
 		//try scaling dum to 40 Mz to make sure it catches all pulses (hamamatsu photon counter = 25 ns pulse pair resolution) 
 		if(ePhysRec)
 			DAQmx_Scan/BKG/DEV=ePhysDev/TRIG={scanClock}Waves=ePhysConfig
@@ -198,13 +185,12 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV=pmtDev/TRIG={scanClock}/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 2 ///PIXEL CLOCK
 		DAQmx_CTR_OutputPulse/DEV=pmtDev/FREQ={(1/(dimdelta(dum, 0))),0.5}/NPLS=(numpnts(dum)+1) 3 ///Scanning CLOCK
 	elseif(stringmatch(imageMode, "multiKinetic"))
+		BS_2P_StartSignal()
 		galvoChannels = "multiX, "+ xGalvoChannel+"; multiY, "+yGalvoChannel
 		duplicate/o multiX dum
 		redimension/n=((numpnts(multiX) * frames) + 1) dum; dum = nan
 		//try scaling dum to 40 Mz to make sure it catches all pulses (hamamatsu photon counter = 25 ns pulse pair resolution) 
 		if(ePhysRec)
-			variable recordingTime = dimDelta(runx,0)*dimSize(runx,0)*frames
-			redimension/n=(ceil(recordingTime/dimDelta(ephysDum,0))) ephysDum
 			DAQmx_Scan/BKG/DEV=ePhysDev/TRIG={scanClock}Waves=ePhysConfig
 		endif
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/eosh = s_multiKineticHook2 0

@@ -1087,13 +1087,16 @@ end
 
 function BS_2P_PMTShutter(openOrClose)
 	string openOrClose
-	NVAR/Z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
-	if(!NVAR_exists(shutterIOtaskNumber))
-		bs_2p_initShutter()
-	endif
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	string devNum = boardConfig[4][0]
-		
+	string port = boardConfig[4][1]
+	string line = boardConfig[4][2]
+	NVAR/Z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
+	if(!NVAR_exists(shutterIOtaskNumber))
+		variable/g root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber = bs_2P_initDIO(devNum, port, line)
+		NVAR/Z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
+	endif
+			
 	if(stringmatch(openOrCLose, "open"))
 		fdaqmx_dio_write(devNum, shutterIOtaskNumber, 5)
 //		fDAQmx_WriteChan("DEV2", 1, 5, -5, 5 )	//open external shutter before PMT
@@ -1104,21 +1107,40 @@ function BS_2P_PMTShutter(openOrClose)
 	
 end
 
-function bs_2p_initShutter()
+function BS_2P_StartSignal()
+	
+	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
+	string openOrClose
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	string devNum = boardConfig[26][0]
+	string port = boardConfig[26][1]
+	string line = boardConfig[26][2]
+	string pmtDev = boardConfig[3][0]
+	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
 	
-	string devNum = boardConfig[4][0]
-//	string pfiLine = boardConfig[4][1] + boardConfig[4][2]
-	
-	string pfiString = "/"+devNum+"/port"+ boardConfig[4][1] + "/line" + boardConfig[4][2]
-	NVAR/z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
-	if(NVAR_exists(shutterIOtaskNumber))
-		 fdaqmx_dio_finished(devNum,shutterIOtaskNumber)
+	NVAR startIOtaskNumber = root:Packages:BS2P:CurrentScanVariables:startIOtaskNumber
+	if(NVAR_exists(startIOtaskNumber))
+		fDAQmx_DIO_Finished(devNum, startIOtaskNumber)
 	endif
+	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0;
+	wave startSig = root:Packages:BS2P:CurrentScanVariables:startSig
+	startSig = p < ((50e-3/dwellTime)/2) ? 5 : 0
+	setScale/p x, 0, (dwellTime*100), "s" startSig
+	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
+	daqmx_dio_config/dir=1/dev=devNum/wave={startSig}/CLK={pixelCLock,1} pfiString ///CLK={pixelCLock,1}
+	variable/g  root:Packages:BS2P:CurrentScanVariables:startIOtaskNumber = V_DAQmx_DIO_TaskNumber
+end
+
+
+
+function bs_2P_initDIO(devNum, port, line)
+	string devNum, port, line
+	
+	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
 	daqmx_dio_config/dir=1/dev=devNum pfiString
-	variable/g root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber = V_DAQmx_DIO_TaskNumber
-	fdaqmx_dio_write(devNum, shutterIOtaskNumber, 0)	//close shutter if open
-	return shutterIOtaskNumber
+	variable DIOTaskNumber = V_DAQmx_DIO_TaskNumber
+//	fdaqmx_dio_write(devNum, DIOTaskNumber, 0)
+	return DIOTaskNumber
 end
 
 function readLaserPower()
@@ -1258,7 +1280,7 @@ function calibratePower()
 	bs_2P_zeroscanners("center")
 	
 	variable minPockels = 0.15
-	variable maxPockels = 0.2
+	variable maxPockels = 0.7
 	variable meterReading
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), w_diodeReadings
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), mW
@@ -1281,6 +1303,8 @@ function calibratePower()
 	bs_2P_zeroscanners("offset")
 	
 	display/k=1 mW vs w_diodeReadings
+	Label left "Power Meter (mW)"
+	Label bottom "Diode (V)"
 	CurveFit/X=1/NTHR=0 line  mW /X=w_diodeReadings /D
 	ModifyGraph mode(mW)=3,marker(mW)=19,rgb(mW)=(0,0,0)
 	
@@ -1301,7 +1325,14 @@ function calibratePower()
 //	boardConfig[17][3] = num2str(w_coef[1])
 //	boardConfig[17][4] = num2str(w_coef[2])
 	
-	display/k=1 w_diodeReadings 
+	display/k=1 w_diodeReadings
+	Label left "Diode (V)"
+	Label bottom "Pockels (V)"
+	
+	display/k=1 mW
+	Label left "PowerMeter (mW)"
+	Label bottom "Pockels (V)"
+	ModifyGraph grid=1,minor(left)=1,sep(bottom)=2
 end
 
 
