@@ -12,6 +12,7 @@
 #include "bs_python_pi_position"
 #include "BS_Utilities"
 #include "BS_2P_multipleScans"
+#include "maiTaiControl"
 #include <all ip procedures>
 
 Menu "2P"
