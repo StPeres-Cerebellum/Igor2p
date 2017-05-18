@@ -496,11 +496,10 @@ function/wave splitmultiDum(foldedDum)
 		flippedSubWindow[][1,(lines-1);2][] = subWindow[(pixelsPerLine - 1) - p][q][r]
 		multiKinetic[leftPoint,rightPoint][bottomPoint,topPoint][] = flippedSubWindow[p-leftPoint][q-bottomPoint][r]	
 	endfor
-<<<<<<< HEAD
+
 	variable multiPixelFrameRate =  numberByKey("multiPixelFrameRate", offsetNote, "=", ";")
 	setScale/P z, 0, multiPixelFrameRate, "s"
-=======
->>>>>>> origin/master
+
 	
 	return multiKinetic
 end
