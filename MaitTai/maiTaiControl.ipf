@@ -106,8 +106,8 @@ Function connectMaiTaiServer()
 		variable/g root:Packages:laserControl:pulsing
 		variable/g root:Packages:laserControl:humidity
 		variable/g root:Packages:laserControl:newWavelength
-		string/g root:Packages:laserControl:error
-		string/g root:Packages:laserControl:pumpError
+		string/g root:Packages:laserControl:error; svar error = root:Packages:laserControl:error
+		string/g root:Packages:laserControl:pumpError; svar pumpError = root:Packages:laserControl:pumpError
 	endif
 	
 	variable/g root:Packages:laserControl:laserSock; NVAR laserSock = root:Packages:laserControl:laserSock
@@ -118,15 +118,20 @@ Function connectMaiTaiServer()
 		laserSock=sockitopenconnectionF(serverIP,portNum,11)
 	endif
 	if(sockitisitopen(laserSock)!=1)
-		print "ERROR couldn't open conenction to MaiTai"
+		doalert 0, "Can't open connection to MaiTai Computer"
+		return 0
 	else
 		string testConnection = SOCKITsendnrecvF(laserSock, "isLaserOn", 1, 1)
 		if(strlen(testConnection))
 //			updateMaiTaiVariables()
 //			createLaserPanel()
 			print "Connected to laser at "+serverIP
+			return 1
 		else
-			print "NO CONNECTION -- Is Mai Tai Server Listening for Connections?"
+			error = "NO CONNECTION -- Is Mai Tai Server Listening for Connections?"
+			pumpError = "NO CONNECTION -- Is Mai Tai Server Listening for Connections?"
+			doalert 0, "NO CONNECTION -- Is Mai Tai Server Listening for Connections?"
+			return 0
 		endif
 	endif
 end
@@ -164,12 +169,13 @@ Function createLaserPanel()
 	endif
 	dowindow/F laserControl
 	if(!V_Flag)
-		connectMaiTaiServer()
-		updateMaiTaiVariables()
-			
-		newWavelength = waveLength * 1e9
-		execute "laserControl()"
-		setWindow laserControl hook(myHook)=LaserPanelHook
+		if(connectMaiTaiServer())
+			updateMaiTaiVariables()
+				
+			newWavelength = waveLength * 1e9
+			execute "laserControl()"
+			setWindow laserControl hook(myHook)=LaserPanelHook
+		endif
 	endif
 end
 
@@ -311,7 +317,7 @@ End
 
 Window laserControl() : Panel
 	PauseUpdate; Silent 1		// building window...
-	NewPanel /W=(799,59,1103,284)
+	NewPanel /W=(799,59,1103,284)/k=1
 	Button powerSwitch,pos={23,4},size={90,20},proc=PowerButtonProc,title="Switch ON laser"
 	Button shutterSwitch,pos={158,3},size={90,20},proc=ShutterButtonProc,title="OPEN shutter"
 	ValDisplay humidity,pos={5,126},size={150,14},title="Relative Humidity"
