@@ -500,19 +500,19 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				break
 				
 				 case 29:	// right arrow
-				 	PI_moveMicrons("y", -moveStep)
+				 	PI_moveMicrons("x", -moveStep)
 				 break
 				 
 				 case 28:	// left arrow
-					PI_moveMicrons("y", moveStep)
+					PI_moveMicrons("x", moveStep)
 				 break
 				 	
 				 case 30:	// up arrow
-				 	PI_moveMicrons("x", moveStep)
+				 	PI_moveMicrons("y", moveStep)
 				 break
 				 
 				 case 31:	// down arrow
-				 	PI_moveMicrons("x", -moveStep)
+				 	PI_moveMicrons("y", -moveStep)
 				 break
 				 
 				 case 115:	// s
