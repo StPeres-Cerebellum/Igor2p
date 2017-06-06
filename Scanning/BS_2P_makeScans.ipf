@@ -420,7 +420,7 @@ end
 function/wave makeUnscaledYRaster(lines, pixelsPerLine, lineTime)	//creates steps of Voltage -- amplitdue from 0 to 1
 	variable lines, pixelsPerLine, lineTime
 	NVAR dwellTime = root:Packages:BS2P:CurrentScanVariables:dwellTime
-	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(pixelsPerLine))*(lines))
+	make/d/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runy = floor(p/(lines*(pixelsPerLine))*(lines))
 	wave runy = root:Packages:BS2P:CurrentScanVariables:runy
 	SetScale/P x 0,dwellTime,"s", runy
 	return runy
@@ -429,7 +429,7 @@ end
 function/wave makeUnscaledXRaster(lines, pixelsPerLine, lineTime)		//creates a sawtooth of Voltage -- amplitude 0 to 1
 	variable lines, pixelsPerLine, lineTime
 	NVAR dwellTime = root:Packages:BS2P:CurrentScanVariables:dwellTime
-	make/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(pixelsPerLine)*pi)-0.5)*(-2)+1
+	make/d/n=(lines*(pixelsPerLine))/o root:Packages:BS2P:CurrentScanVariables:runx = abs(sawtooth(p/(pixelsPerLine)*pi)-0.5)*(-2)+1
 	wave runx = root:Packages:BS2P:CurrentScanVariables:runx
 	SetScale/P x 0,dwellTime,"s", runx
 	return runx
