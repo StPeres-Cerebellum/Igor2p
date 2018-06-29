@@ -906,3 +906,17 @@ Function checkHook(s)
 	
 	return hookResult		// 0 if nothing done, else 1
 End
+
+function/s dimlabels2List(inputWave, dim)
+	wave inputWave
+	variable dim		//dimension number
+	variable labels = dimsize(inputWave,dim)
+	
+	string outputList = ""
+	variable i
+	for(i=0; i < labels; i +=1)
+		outputList += getDimLabel(inputWave, dim, i)+";"
+	endFor
+	
+	return outPutList
+end

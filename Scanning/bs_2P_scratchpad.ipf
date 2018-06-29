@@ -323,7 +323,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	wave runx, runy, dum
 	
 
-	BS_2P_Pockels("close")
+//	BS_2P_Pockels("close")
 	NVAR frameCounter
 	NVAR pixelShift = root:Packages:BS2P:CalibrationVariables:pixelShift
 	NVAR frameAvg = root:Packages:BS2P:CurrentScanVariables:frameAvg
@@ -351,7 +351,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 	checkXYSwitch(lastFrame,1)
 	duplicate/o lastFrame root:Packages:BS2P:CurrentScanVariables:kineticSeries
 	scaleKineticSeries()
-
+//	sampleDiodeVoltage()
 	
 	// make these into variables in the init and config procedures
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
@@ -376,7 +376,7 @@ function videoHook(frame, frames, lines, pixelsPerLine runx, runy, dum)//, image
 		bs_2P_zeroscanners("offset")
 		setdatafolder currentFolder
 	elseif(frameCounter < frames)	//otherwise set up another one
-		BS_2P_Pockels("open")
+//		BS_2P_Pockels("open")
 		DAQmx_CTR_CountEdges/DEV=pmtDev/EDGE=1/SRC=pmtSource/INIT=0/DIR=1/clk=pixelCLock/wave=dum/EOSH=S_videoHook 0
 //		DAQmx_CTR_OutputPulse/dely=(pixelShift)/DEV="dev2" /FREQ={(1/(dimdelta(dum, 0))),0.5}/TRIG={"/dev1/ao/starttrigger"} /NPLS=(numpnts(dum)) 2 ///dely=(pixelShift) 2	
 //		DAQmx_WaveformGen/DEV="dev1"/NPRD=1/EOSH=S_videoHook "runx, 0; runy, 1"		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V

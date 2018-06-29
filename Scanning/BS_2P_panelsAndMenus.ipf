@@ -402,14 +402,14 @@ function BS_2P_makeKineticWindow()
 		ValDisplay stageX,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
 		ValDisplay stageX,valueBackColor=(65280,65280,32768)
 		ValDisplay stageX,limits={0,0,0},barmisc={0,1000}
-		ValDisplay stageX,value= #"root:Packages:PI_xPos"
+		ValDisplay stageX,value= #"root:Packages:P_I:PI_xPos"
 		ValDisplay stageX,barBackColor= (65280,65280,32768)
 		
 		ValDisplay stageY,pos={172,100},size={68,14},bodyWidth=54,title="Y:"
 		ValDisplay stageY,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
 		ValDisplay stageY,valueBackColor=(65280,65280,32768)
 		ValDisplay stageY,limits={0,0,0},barmisc={0,1000}
-		ValDisplay stageY,value= #"root:Packages:PI_yPos"
+		ValDisplay stageY,value= #"root:Packages:P_I:PI_yPos"
 		ValDisplay stageY,barBackColor= (65280,65280,32768)
 
 		PI_tellAllPositions()
@@ -445,7 +445,7 @@ function BS_2P_makeKineticWindow()
 		ValDisplay stageZ,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
 		ValDisplay stageZ,valueBackColor=(65280,65280,32768)
 		ValDisplay stageZ,limits={0,0,0},barmisc={0,1000}
-		ValDisplay stageZ,value= #"root:Packages:PI_zPos"
+		ValDisplay stageZ,value= #"root:Packages:P_I:PI_zPos"
 		ValDisplay stageZ,barBackColor= (65280,65280,32768)
 
 
@@ -995,7 +995,7 @@ Function MoveLProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("y", moveStep)
+				PI_moveMicrons("x", moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "x")
 			endif
@@ -1015,7 +1015,7 @@ Function MoveRProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("y", -1* moveStep)
+				PI_moveMicrons("x", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "x")
 			endif
@@ -1035,7 +1035,7 @@ Function MoveUProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", 1* moveStep)
+				PI_moveMicrons("y", 1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "y")
 			endif
@@ -1056,7 +1056,7 @@ Function MoveDProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", -1* moveStep)
+				PI_moveMicrons("y", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "y")
 			endif
@@ -1164,13 +1164,13 @@ function sampleDiodeVoltage()
 	variable mWPerVolt = str2num(boardConfig[10][2])
 	variable mWPerVolt_offset = str2num(boardConfig[10][3])
 	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
-	make/d/n=10000/o sampleDiode
+	make/d/n=200/o sampleDiode
 	setscale/p x, 0, 0.0001, sampleDiode
 	
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
 	variable voltage 
 	fDAQmx_ScanStop(diodeDevNum)
-	DAQmx_Scan/DEV=diodeDevNum waves=diodeWaves
+	DAQmx_Scan/DEV=diodeDevNum/bkg waves=diodeWaves
 	voltage = mean(sampleDiode)
 	laserPower = (voltage * mWPerVolt) + mWPerVolt_offset
 	
@@ -1281,7 +1281,7 @@ function calibratePower()
 	bs_2P_zeroscanners("center")
 	
 	variable minPockels = 0.15
-	variable maxPockels = 0.7
+	variable maxPockels = 1.2
 	variable meterReading
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), w_diodeReadings
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), mW
@@ -1512,3 +1512,56 @@ Function saveALLCheckProc(cba) : CheckBoxControl
 
 	return 0
 End
+
+function BS_2P_LickSolenoid(start, width, trigger)
+	variable start, width // in ms
+	string trigger
+	if(datafolderexists("root:Packages") == 0)
+		newdatafolder/o root:Packages
+		newdatafolder/o root:Packages:Licking
+	endif
+	if(datafolderexists("root:Packages:licking") == 0)
+		newdatafolder/o root:Packages:Licking
+	endif
+	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
+	start /= 1000; start /= dwellTime
+	width /= 1000; width /= dwellTime
+	variable ending = 0.01 / dwellTime
+	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0;
+	make/o/n=(start+width+ending) lickSchedule = 0
+	lickSchedule[start,start+width] =1
+	setscale/P x, 0, dwellTime, "s", lickSchedule
+	
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	string pmtDev = boardConfig[3][0]
+	string devNum = boardConfig[27][0]
+	string port = boardConfig[27][1]
+	string line = boardConfig[27][2]
+	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
+	NVAR/Z lickIOtaskNumber =  root:Packages:Licking:lickIOtaskNumber:shutterIOtaskNumber
+	if(NVAR_exists(lickIOtaskNumber))
+		fDAQmx_DIO_Finished(devNum, lickIOtaskNumber)
+	endif
+	
+	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
+	
+	strSwitch(trigger)
+		case "none":
+			daqmx_dio_config/dir=1/dev=devNum/lgrp=1/wave={lickSchedule} pfiString
+			break
+		case "scanning":
+			
+			daqmx_dio_config/dir=1/dev=devNum/lgrp=1/wave={lickSchedule}/CLK={pixelCLock,1} pfiString
+			break
+	endSwitch
+	variable/g root:Packages:Licking:lickIOtaskNumber = V_DAQmx_DIO_TaskNumber
+end
+
+
+
+	
+
+	
+	wave startSig = root:Packages:BS2P:CurrentScanVariables:startSig
+	startSig = p < ((50e-3/dwellTime)/2) ? 5 : 0
+	setScale/p x, 0, (dwellTime*100), "s" startSig
