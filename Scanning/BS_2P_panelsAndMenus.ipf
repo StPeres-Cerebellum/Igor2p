@@ -13,6 +13,7 @@
 #include "BS_Utilities"
 #include "BS_2P_multipleScans"
 #include "maiTaiControl"
+#include "BS_2P_PMTPowerControl"
 #include <all ip procedures>
 
 Menu "2P"
@@ -144,8 +145,9 @@ Window Control2P() : Panel
 	SetVariable dwellTime,pos={297,36},size={92,16},proc=SetDwellProc,title="Dwell time"
 	SetVariable dwellTime,format="%.0W1Ps"
 	SetVariable dwellTime,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:dwellTime
-
-
+	
+	updatePMTStatus()
+	setWindow Control2P hook(myHook)=ShutdownHook
 
 EndMacro
 
@@ -251,7 +253,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayPixelSize
 		make/n=0/o root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
 		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {(str2num(boardConfig[17][2])),(str2num(boardConfig[17][3])),(str2num(boardConfig[17][4]))}
-		
+		variable/g root:Packages:BS2P:CurrentScanVariables:pmtStatus = 0
 	endif
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
@@ -1557,7 +1559,23 @@ function BS_2P_LickSolenoid(start, width, trigger)
 	variable/g root:Packages:Licking:lickIOtaskNumber = V_DAQmx_DIO_TaskNumber
 end
 
+Function shutdownHook(s)
+	STRUCT WMWinHookStruct &s
+	
+	Variable hookResult = 0
 
+	switch(s.eventCode)
+		case 2:				// Kill WIndow
+			StopUpdatingMaiTaiVariables()
+			pmtControl("off")
+			StopUpdatingPMTStatus()
+			
+			break
+
+	endswitch
+
+	return hookResult
+end
 
 	
 
