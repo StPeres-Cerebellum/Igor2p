@@ -110,7 +110,7 @@ function/S PI_moveMicrons(axisLetter, microns)		//postive numbers move left/towa
 			endif
 			 break
 		case "z":
-			if((microns + PI_zPos) > 14000 || (microns + PI_zPos) < -6000)
+			if((microns + PI_zPos) > 14000 || (microns + PI_zPos) < -14000)
 				doalert 0, "Can't move that far"
 				 return ""
 			endif
@@ -135,6 +135,7 @@ function/S PI_moveMicrons(axisLetter, microns)		//postive numbers move left/towa
 		while(PI_moving)
 
 	PI_tellTarget(axisLetter)
+	
 	return piSend	
 end
 

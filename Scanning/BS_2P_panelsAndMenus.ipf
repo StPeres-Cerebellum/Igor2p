@@ -91,9 +91,12 @@ Window Control2P() : Panel
 	DrawText 308,37,"in:"
 	SetDrawEnv fsize= 10
 	DrawText 151.263356125897,38.189810026163,"Lines:"
-	Button BS_FullFrame,pos={705,10},size={49,21},proc=BS_2P_FullFieldProc,title="Full-field"
+	
+	Button BS_FullFrame,pos={705.00,10.00},size={54.00,21.00},proc=BS_2P_FullFieldProc,title="Full-field"
 	Button BS_FullFrame,help={")ne fram of the entire field of view"},fSize=11
 	Button BS_FullFrame,fColor=(0,12800,52224)
+
+	
 	SetVariable BS_2P_framerate,pos={21,156},size={167,16},bodyWidth=48,proc=SetKCTProc,title="Time between frames (s)"
 	SetVariable BS_2P_framerate,fSize=11,format="%.3f"
 	SetVariable BS_2P_framerate,limits={0,inf,0},value= root:Packages:BS2P:CurrentScanVariables:KCT,noedit= 1
@@ -146,7 +149,13 @@ Window Control2P() : Panel
 	SetVariable dwellTime,format="%.0W1Ps"
 	SetVariable dwellTime,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:dwellTime
 	
-	updatePMTStatus()
+	initializePMTControl()
+	Button PMTPower,pos={649.00,10.00},size={54.00,21.00},proc=ButtonProcPMTON,title="PMT (is off)"
+	Button PMTPower,help={"switch on PMT"},fSize=9
+	Button PMTPower,fColor=(65535,49151,49151)
+
+	
+//	updatePMTStatus()
 	setWindow Control2P hook(myHook)=ShutdownHook
 
 EndMacro
@@ -292,11 +301,10 @@ function BS_2P_makeKineticWindow()
 
 	ControlBar 80
 
-	SetVariable BS_2P_pixelShifter,pos={5,33},size={112,16},title="Pixel Shift"
+	SetVariable BS_2P_pixelShifter,pos={5,33},size={115,16},title="Pixel Shift"
 	SetVariable BS_2P_pixelShifter,frame=0,valueBackColor=(60928,60928,60928)
 	SetVariable BS_2P_pixelShifter,limits={0,0.0002,5e-07},value= root:Packages:BS2P:CalibrationVariables:pixelShift
 
-	
 //	SetVariable SetPixelSize,pos={4,31},size={90,16},proc=BS_2P_setPixelSizeProc,title="Binning (µm):"
 //	SetVariable SetPixelSize,frame=0,valueColor=(65280,0,0)
 //	SetVariable SetPixelSize,valueBackColor=(60928,60928,60928)
@@ -310,11 +318,13 @@ function BS_2P_makeKineticWindow()
 	Slider WM3DAxis,limits={0,49,1},variable= root:Packages:WM3DImageSlider:kineticWindow:gLayer,side= 0,vert= 0,ticks= 0
 	
 	Button SaveThisStack,pos={460,2},size={107,21},proc=saveStackProc_2,title="Save this movie as:"
-	Button BS_2P_kineticSeries,pos={120,2},size={71,20},proc=BS_2P_KineticSeriesButton,title="Kinetic Series"
+	
+	Button BS_2P_kineticSeries,pos={120.00,2.00},size={76.00,20.00},proc=BS_2P_KineticSeriesButton,title="Kinetic Series"
 	Button BS_2P_kineticSeries,fSize=11,fColor=(0,13056,0)
-	Button BS_2P_AbortImaging,pos={119,23},size={71,20},proc=BS_2P_abortButtonProc_2,title="Abort"
+
+	Button BS_2P_AbortImaging,pos={119,23},size={76,20},proc=BS_2P_abortButtonProc_2,title="Abort"
 	Button BS_2P_AbortImaging,fSize=11,fColor=(39168,0,0)
-	Button BS_2P_videoSeries,pos={119,44},size={71,20},proc=BS_2P_VideoButton,title="Video"
+	Button BS_2P_videoSeries,pos={119,44},size={76,20},proc=BS_2P_VideoButton,title="Video"
 	Button BS_2P_videoSeries,fSize=11,fColor=(0,13056,0)
 
 	CheckBox AxesConstrain,pos={8,3},size={88,14},proc=BS_2P_constrainAxes,title="Constrain Axes"
@@ -324,11 +334,10 @@ function BS_2P_makeKineticWindow()
 	SetVariable setFrames,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setFrames,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frames
 	
-	SetVariable setAvg,pos={197,20},size={66,16},title="Avg",frame=0
+	SetVariable setAvg,pos={197,20},size={41,16},title="Avg",frame=0
 	SetVariable setAvg,valueBackColor=(65535,65535,65535)
 	SetVariable setAvg,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frameAvg
-
-	
+		
 	CheckBox BS_2P_ExternalTrigger,pos={269,4},size={92,14},title="External Trigger"
 	CheckBox BS_2P_ExternalTrigger,variable= root:Packages:BS2P:CurrentScanVariables:externalTrigger
 	
@@ -357,12 +366,15 @@ function BS_2P_makeKineticWindow()
 	SetVariable SaveAs,value= root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
 
 	
-	PopupMenu BS_2P_SaveWhere,pos={571,2},size={43,21},bodyWidth=43,proc=BS_2P_pathSelectionPopMenuProc,title="Path"
+	PopupMenu BS_2P_SaveWhere,pos={571,2},size={46,21},bodyWidth=46,proc=BS_2P_pathSelectionPopMenuProc,title="Path"
 	PopupMenu BS_2P_SaveWhere,mode=0,value= #"root:Packages:BS2P:CurrentScanVariables:pathDetailsListing"
-	SetVariable BS_2P_SavePrefix,pos={618,7},size={87,16},bodyWidth=57,proc=BS_2P_ChangeSavePrefix,title="Prefix"
+	
+	SetVariable BS_2P_SavePrefix,pos={620,4},size={90,18},bodyWidth=57,proc=BS_2P_ChangeSavePrefix,title="Prefix"
 	SetVariable BS_2P_SavePrefix,value= root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
-	SetVariable Increment,pos={710,7},size={46,16},bodyWidth=24,proc=SetPrefixIncrementProc,title="Inc:"
+
+	SetVariable Increment,pos={714,4},size={47,18},bodyWidth=24,proc=SetPrefixIncrementProc,title="Inc:"
 	SetVariable Increment,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:prefixIncrement
+
 //	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=CheckProcSaveAll,title="Save All"
 //	CheckBox BS_2P_SaveEverything,value= 0,side= 1
 	
@@ -431,7 +443,7 @@ function BS_2P_makeKineticWindow()
 		SetVariable focusStep,pos={310,41},size={50,16},title="µm",frame=0
 		SetVariable focusStep,valueBackColor=(60928,60928,60928)
 		SetVariable focusStep,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
-		GroupBox stackBox,pos={370,24},size={103,53}
+		GroupBox stackBox,pos={370,24},size={108.00,56.00}
 
 		Button doStack,pos={373,27},size={34,20},proc=doStack,title="stack",fSize=8
 		Button doStack,fColor=(61440,61440,61440)
@@ -463,9 +475,10 @@ function BS_2P_makeKineticWindow()
 	ValDisplay pixSize,limits={0,0,0},barmisc={0,1000}
 	ValDisplay pixSize,value= #"root:packages:bs2p:currentScanVariables:displayPixelSize"
 	
-	CheckBox BS_2P_TrigLoop,pos={364,4},size={75,14},title="LoopTrigger"
+	CheckBox BS_2P_TrigLoop,pos={370,4},size={81,15},title="LoopTrigger"
 	CheckBox BS_2P_TrigLoop,variable= root:Packages:BS2P:CurrentScanVariables:trigLoop
-	GroupBox stackBox1,pos={265,1},size={179,20}
+
+//	GroupBox stackBox1,pos={265,1},size={179,20}
 
 	
 	rotatekineticWin()
@@ -536,6 +549,7 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 			endswitch
 		break
 	endswitch
+	dowindow kineticWindow
 end
 
 
