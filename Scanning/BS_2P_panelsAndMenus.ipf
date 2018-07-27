@@ -515,19 +515,19 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				break
 				
 				 case 29:	// right arrow
-				 	PI_moveMicrons("x", -moveStep)
+				 	PI_moveMicrons("y", -moveStep)
 				 break
 				 
 				 case 28:	// left arrow
-					PI_moveMicrons("x", moveStep)
+					PI_moveMicrons("y", moveStep)
 				 break
 				 	
 				 case 30:	// up arrow
-				 	PI_moveMicrons("y", moveStep)
+				 	PI_moveMicrons("x", moveStep)
 				 break
 				 
 				 case 31:	// down arrow
-				 	PI_moveMicrons("y", -moveStep)
+				 	PI_moveMicrons("x", -moveStep)
 				 break
 				 
 				 case 115:	// s
@@ -1011,7 +1011,7 @@ Function MoveLProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", moveStep)
+				PI_moveMicrons("y", moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "x")
 			endif
@@ -1031,7 +1031,7 @@ Function MoveRProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", -1* moveStep)
+				PI_moveMicrons("y", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "x")
 			endif
@@ -1051,7 +1051,7 @@ Function MoveUProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("y", 1* moveStep)
+				PI_moveMicrons("x", 1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "y")
 			endif
@@ -1072,7 +1072,7 @@ Function MoveDProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("y", -1* moveStep)
+				PI_moveMicrons("x", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "y")
 			endif
@@ -1573,23 +1573,23 @@ function BS_2P_LickSolenoid(start, width, trigger)
 	variable/g root:Packages:Licking:lickIOtaskNumber = V_DAQmx_DIO_TaskNumber
 end
 
-Function shutdownHook(s)
-	STRUCT WMWinHookStruct &s
-	
-	Variable hookResult = 0
-
-	switch(s.eventCode)
-		case 2:				// Kill WIndow
-			StopUpdatingMaiTaiVariables()
-			pmtControl("off")
-			StopUpdatingPMTStatus()
-			
-			break
-
-	endswitch
-
-	return hookResult
-end
+//Function shutdownHook(s)
+//	STRUCT WMWinHookStruct &s
+//	
+//	Variable hookResult = 0
+//
+//	switch(s.eventCode)
+//		case 2:				// Kill WIndow
+//			StopUpdatingMaiTaiVariables()
+//			pmtControl("off")
+//			StopUpdatingPMTStatus()
+//			
+//			break
+//
+//	endswitch
+//
+//	return hookResult
+//end
 
 	
 
