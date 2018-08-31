@@ -240,7 +240,8 @@ function BS_2P_updateKineticWindow(scaledX, displayPixelSize, scaledY, frames, X
 end
 
 function BS_2P_saveDum()
-	NVAR  prefixIncrement = root:Packages:BS2P:CurrentScanVariables:prefixIncrement
+	NVAR prefixIncrement = root:Packages:BS2P:CurrentScanVariables:prefixIncrement
+	NVAR saveWheelData = root:Packages:BS2P:CurrentScanVariables:saveWheelData
 	SVAR currentPath = root:Packages:BS2P:CurrentScanVariables:currentPath
 	SVAR SaveAsPrefix = root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
 	wave dum  = root:Packages:BS2P:CurrentScanVariables:dum
@@ -250,9 +251,15 @@ function BS_2P_saveDum()
 	SVAR currentPathDetails = root:Packages:BS2P:CurrentScanVariables:currentPathDetails
 	string filename2Write = saveAsPrefix+num2str(prefixIncrement)+".ibw"
 	string ePhysName2Write = saveAsPrefix+num2str(prefixIncrement)+"_ephys"+".ibw"
+	string encoderName2Write = saveAsPrefix+num2str(prefixIncrement)+"_encoders"+".ibw"
+	
 	
 	save/c/o/p=$currentPath kineticSeries as filename2Write
 	save/c/o/p=$currentPath ePhysDum as ePhysName2Write
+	if(saveWheelData)
+		wave encoderBinary = root:Packages:BS2P:CurrentScanVariables:EncoderBinary
+		save/c/o/p=$currentPath encoderBinary as encoderName2Write
+	endif
 	pathInfo $currentPath
 	currentPathDetails = s_path
 	prefixIncrement += 1

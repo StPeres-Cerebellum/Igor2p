@@ -107,6 +107,8 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	
 	NVAR frameAvg = root:Packages:BS2P:CurrentScanVariables:frameAvg
 	
+	NVAR acquireWheelData = root:Packages:BS2P:CurrentScanVariables:acquireWheelData
+	
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig 
 
 	string galvoDev = boardConfig[0][0]
@@ -155,7 +157,10 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
-		BS_2P_StartSignal()
+		if(acquireWheelData)
+			readEncoder()
+		endif
+		//BS_2P_StartSignal()
 		//try scaling dum to 40 Mz to make sure it catches all pulses (hamamatsu photon counter = 25 ns pulse pair resolution) 
 		if(ePhysRec)
 			DAQmx_Scan/BKG/DEV=ePhysDev/TRIG={scanClock}Waves=ePhysConfig
@@ -458,6 +463,7 @@ function kineticHook2(dum, frames)
 	BS_2P_Pockels("close")
 	BS_2P_PMTShutter("close")
 	bs_2P_zeroscanners("offset")
+//	stopReadingArduino()
 	
 //	duplicate/o dum dum_bkp
 	differentiate/meth=2/ep=1/p dum
@@ -671,3 +677,188 @@ function stopCounter()
 	fDAQmx_CTR_Finished("dev2", 0)
 end
 
+function readEncoder()
+	
+	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
+	NVAR lineTIme = root:Packages:BS2P:CurrentScanVariables:lineTIme
+	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+	NVAR Frames = root:Packages:BS2P:CurrentScanVariables:Frames
+//	string openOrClose
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	string devNum = boardConfig[3][0]
+	string port = "0"//boardConfig[26][1]
+	string line = "0:5"//boardConfig[26][2]
+
+	string pixelCLock = "/"+devNum+"/Ctr2InternalOutput"
+	
+	NVAR encoderIOtaskNumber = root:Packages:BS2P:CurrentScanVariables:encoderIOtaskNumber
+	if(NVAR_exists(encoderIOtaskNumber))
+		fDAQmx_DIO_Finished(devNum, encoderIOtaskNumber)
+	endif
+	make/b/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:Packages:BS2P:CurrentScanVariables:EncoderBinary = 0
+	wave EncoderBinary = root:Packages:BS2P:CurrentScanVariables:EncoderBinary
+	setScale/p x, 0, (dwellTime), "s" EncoderBinary//,Encoder1B,Encoder2A,Encoder2B,Encoder3A,Encoder3B
+	
+	string EndOfScanHookStr = "encoderRecordingDone()"
+	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
+	
+	daqmx_dio_config/dir=0/LGRP=0/dev=devNum/wave={EncoderBinary}/CLK={pixelCLock,1}/EOSH=EndOfScanHookStr pfiString
+	variable/g  root:Packages:BS2P:CurrentScanVariables:encoderIOtaskNumber = V_DAQmx_DIO_TaskNumber
+end
+
+
+
+function encoderRecordingDone()
+
+	wave EncoderBinary = root:Packages:BS2P:CurrentScanVariables:EncoderBinary
+	calculateEncodersBINARY(EncoderBinary)
+end
+
+function calculateEncoders(encoderData)
+	wave encoderData
+	
+	variable wheelDiameter = 20 	//in cm
+	variable encoderTicks = 2^12
+	variable wheelCircumference = pi*wheelDiameter
+	variable subSampleBin = 20e-3	// secs to bin speeds for downsampling
+	
+	 
+	
+	duplicate/o/r=[][0] encoderData encoderDistance
+	redimension/n=(-1,3) encoderDistance
+	setDimLabel 1, 0, Encoder1, encoderDistance
+	setDimLabel 1, 1, Encoder2, encoderDistance
+	setDimLabel 1, 2, Encoder3, encoderDistance
+// bitwise magic to convert encodersignals to binary steps forward and backward
+	encoderDistance[][0] = (encoderData[p][0] ^ encoderData[p][1] ) | encoderData[p][1] << 1
+	encoderDistance[][1] = (encoderData[p][2] ^ encoderData[p][3] ) | encoderData[p][3] << 1
+	encoderDistance[][2] = (encoderData[p][4] ^ encoderData[p][5] ) | encoderData[p][5] << 1
+	differentiate/dim=0/meth=2/p root:Packages:BS2P:CurrentScanVariables:encoderDistance
+	encoderDistance = mod(encoderDistance,2)
+		
+//distance calculation	
+
+	encoderDistance *= (wheelCircumference / encoderTicks)	// wheel circumference = 20 cm; 2^12 ticks per encoder turn
+	integrate/P encoderDistance
+	
+//speed calculation (requires downsampling data)
+	duplicate/o encoderDistance wheelSpeed
+	variable subSamplefactor = subSampleBin / dimdelta(encoderDistance,0)
+	make/free/o/n=((dimsize(encoderDistance,0) / subSamplefactor),3) subSample
+	copyscales/i encoderDistance, subsample
+	subsample = sum(encoderDistance,((pnt2x(encoderDistance,p))*subSamplefactor),((pnt2x(encoderDistance,(p*subSamplefactor)+subSamplefactor))))
+	subsample /= subSamplefactor
+	differentiate/dim=0/meth=2 subsample /d=root:Packages:BS2P:CurrentScanVariables:encoderSpeed
+	
+//	killwaves Encoder1A, Encoder1B, Encoder2A, Encoder2B, Encoder3A, Encoder3B
+end
+
+function calculateEncodersBinary(encoderBinary)
+	wave encoderBinary
+	variable encoderTicks, wheelDiameter, speedbinning
+	
+	wheelDiameter = 20 	//in cm
+	encoderTicks = 2^12
+	variable wheelCircumference = pi*wheelDiameter
+	variable subSampleBin = 20e-3	// secs to bin speeds for downsampling
+	
+			//encoder signal comes in as aingle binary wave for all channels
+																									//eg. 35 = 100011 (3 are high and 3 are low)
+	//determine how many channels/encoders were recorded
+	string allDIOChannels
+	sprintf allDIOChannels, "%b", wavemax(EncoderBinary)
+	variable totalDIOChannels = strlen(allDIOChannels)
+	
+	//make a new matrix to hold distances from all encoders
+	duplicate/o encoderBinary encoderDistances
+	redimension/n=(-1,(totalDIOChannels/2)) encoderdistances
+	
+	//process channels in pairs of two
+	variable i = 0
+	for(i=0; i< (totalDIOChannels/2); i+=1 )
+		string encoderNames = "Encoder_"+num2str(i)
+		setDimLabel 1, i, $encoderNames, encoderDistances
+		
+		variable encoderAbit = 2^(i*2)						//using the example above for 35 if when i = 1 encoderAbit is 100[0]11
+		variable encoderBbit = 2^((i*2)+1)					//and encoderBbit is 10[0]011
+		
+		// (encoderAbit %^ encoderBbit) | encoderBbit << 1 is bitwise to turn all the 3s to 2s and 2s to 3s (converts encoder digital signals to 4 states) 
+		encoderDistances[][i] = (((encoderBinary[p] & encoderAbit) && 1) %^ ((encoderBinary[p] & encoderBbit) && 1) ) | ((encoderBinary[p] & encoderBbit) && 1) << 1
+	endfor
+	
+	//now that the encoder signals are converted to states they can be differentiated to get steps in forward backward directions
+	differentiate/dim=0/p/meth=2 encoderDistances
+	//but we are left with the steps of 3 which we need to convert into single steps
+	encoderDistances = encoderDistances == -3 ? -1 : encoderDistances
+	encoderDistances = encoderDistances == 3 ? 1 : encoderDistances
+
+	//Distance calculation
+	encoderDistances *= (wheelCircumference / encoderTicks)	// wheel circumference = 20 cm; 2^12 ticks per encoder turn
+	integrate/dim=0/P encoderDistances
+	SetScale d 0,0,"cm", encoderDistances
+	
+	//speed calculation (requires downsampling data)
+	variable subSamplefactor = subSampleBin / dimdelta(encoderDistances,0)
+	make/o/n=((dimsize(encoderDistances,0) / subSamplefactor),(totalDIOChannels/2))  root:encoderSpeeds
+	wave encoderSpeeds = root:encoderSpeeds
+	
+	for(i=0; i< (totalDIOChannels/2); i+=1 )
+		duplicate/o/free/r=[][i] encoderDistances encoderDistance 
+		make/free/o/n=((dimsize(encoderDistance,0) / subSamplefactor),3) subSample
+		copyscales/i encoderDistance, subsample
+		subsample = sum(encoderDistance,((pnt2x(encoderDistance,p))*subSamplefactor),((pnt2x(encoderDistance,(p*subSamplefactor)+subSamplefactor))))
+		subsample /= subSamplefactor
+		differentiate/dim=0/meth=2 subsample
+		encoderSpeeds[][i] = subsample[p]
+	endfor
+	copyscales/i encoderDistance, encoderSpeeds
+	SetScale d 0,0,"cm/s", encoderSpeeds
+	
+	wave encoderDistances = root:encoderDistances
+	wave encoderSpeeds = root:encoderSpeeds
+	
+	dowindow/f wheeldistanceWindow
+	if(!v_flag)
+		display/k=1/n=wheeldistanceWindow encoderDistances[][0] encoderDistances[][1] encoderDistances[][2]
+		ModifyGraph rgb(encoderDistances#1)=(0,0,65535),rgb(encoderDistances#2)=(1,39321,19939)
+	endif
+	
+	dowindow/f wheelspeedWindow
+		if(!v_flag)
+		display/k=1/n=wheelSPEEDWindow encoderSpeeds[][0] encoderSpeeds[][1] encoderSpeeds[][2]
+		ModifyGraph rgb(encoderSpeeds#1)=(0,0,65535),rgb(encoderSpeeds#2)=(1,39321,19939)
+	endif
+
+end
+
+function testcalculateEncodersBinary()
+	variable encoderTicks, wheelDiameter, speedbinning
+	
+	wheelDiameter = 20 	//in cm
+	encoderTicks = 2^12
+	variable wheelCircumference = pi*wheelDiameter
+	variable subSampleBin = 20e-3	// secs to bin speeds for downsampling
+	
+	wave EncoderBinary = root:Packages:BS2P:CurrentScanVariables:EncoderBinary		//encoder signal comes in as aingle binary wave for all channels
+																									//eg. 35 = 100011 (3 are high and 3 are low)
+	//determine how many channels/encoders were recorded
+	string allDIOChannels
+	sprintf allDIOChannels, "%b", wavemax(EncoderBinary)
+	variable totalDIOChannels = strlen(allDIOChannels)
+	
+	//make a new matrix to hold distances from all encoders
+	duplicate/o encoderBinary encoderDistances
+	redimension/n=(-1,(totalDIOChannels/2)) encoderdistances
+	
+	//process channels in pairs of two
+	variable i = 0
+	for(i=0; i< (totalDIOChannels/2); i+=1 )
+		string encoderNames = "Encoder_"+num2str(i)
+		setDimLabel 1, i, $encoderNames, encoderDistances
+	endfor
+	
+	encoderdistances = (encoderBinary[p][q] & (2^(q*2) + 2^((2*q)+1))) >> (q*2)
+	encoderDistances = encoderDistances == 3 ? 5 : encoderDistances
+	encoderDistances = encoderDistances == 2 ? 3 : encoderDistances
+	encoderDistances = encoderDistances == 5 ? 2 : encoderDistances
+end

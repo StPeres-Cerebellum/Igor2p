@@ -48,6 +48,8 @@ Menu "2P"
 		"Multi Scan", /q, makeMultiPanel()
 	End
 	"-"
+	"Running Wheel", /q, wheelPanel()
+	"-"
 	"Measure laser Power", /q, readLaserPower()
 	"-"
 	"Reset", /q, bs_2P_reset2P()
@@ -266,6 +268,10 @@ Function Init2PVariables()
 	endif
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
+	
+		variable/g root:Packages:BS2P:CurrentScanVariables:acquireWheelData = 0
+		variable/g root:Packages:BS2P:CurrentScanVariables:saveWheelData = 0
+	
 	
 End
 
@@ -1113,20 +1119,23 @@ function BS_2P_PMTShutter(openOrClose)
 		variable/g root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber = bs_2P_initDIO(devNum, port, line)
 		NVAR/Z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
 	endif
-			
+	
 	if(stringmatch(openOrCLose, "open"))
-		fdaqmx_dio_write(devNum, shutterIOtaskNumber, 5)
+		fdaqmx_dio_write(devNum, shutterIOtaskNumber, 1)
 //		fDAQmx_WriteChan("DEV2", 1, 5, -5, 5 )	//open external shutter before PMT
 	elseif(stringmatch(openOrCLose, "close"))
 		fdaqmx_dio_write(devNum, shutterIOtaskNumber, 0)
 //		fDAQmx_WriteChan("DEV2", 1, 0, -5, 5 )	//close external shutter before PMT
 	endif
-	
+//	 print openOrClose, port, line, devNum
 end
 
 function BS_2P_StartSignal()
 	
 	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
+	NVAR lineTIme = root:Packages:BS2P:CurrentScanVariables:lineTIme
+	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+	NVAR Frames = root:Packages:BS2P:CurrentScanVariables:Frames
 	string openOrClose
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	string devNum = boardConfig[26][0]
@@ -1139,10 +1148,14 @@ function BS_2P_StartSignal()
 	if(NVAR_exists(startIOtaskNumber))
 		fDAQmx_DIO_Finished(devNum, startIOtaskNumber)
 	endif
-	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0;
+	make/n=((lineTime*totalLines*frames)/dwelltime)/o startsig = 0
+//	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0
 	wave startSig = root:Packages:BS2P:CurrentScanVariables:startSig
-	startSig = p < ((50e-3/dwellTime)/2) ? 5 : 0
-	setScale/p x, 0, (dwellTime*100), "s" startSig
+	startSig[1,((50e-3/dwellTime))] = 5
+	startSig[(dimsize(startSig,0)-(50e-3/dwellTime)), dimsize(startSig,0)-2] = 5
+//	startSig = p < ((50e-3/dwellTime)) ? 5 : 0
+//	startSig = P > (dimsize(startSig,0)- ((50e-3/dwellTime))) ? 5 : 0
+	setScale/p x, 0, (dwellTime), "s" startSig
 	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
 	daqmx_dio_config/dir=1/dev=devNum/wave={startSig}/CLK={pixelCLock,1} pfiString ///CLK={pixelCLock,1}
 	variable/g  root:Packages:BS2P:CurrentScanVariables:startIOtaskNumber = V_DAQmx_DIO_TaskNumber
@@ -1154,7 +1167,7 @@ function bs_2P_initDIO(devNum, port, line)
 	string devNum, port, line
 	
 	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
-	daqmx_dio_config/dir=1/dev=devNum pfiString
+	daqmx_dio_config/dir=1/dev=devNum/LGRP=1 pfiString
 	variable DIOTaskNumber = V_DAQmx_DIO_TaskNumber
 //	fdaqmx_dio_write(devNum, DIOTaskNumber, 0)
 	return DIOTaskNumber
@@ -1529,48 +1542,48 @@ Function saveALLCheckProc(cba) : CheckBoxControl
 	return 0
 End
 
-function BS_2P_LickSolenoid(start, width, trigger)
-	variable start, width // in ms
-	string trigger
-	if(datafolderexists("root:Packages") == 0)
-		newdatafolder/o root:Packages
-		newdatafolder/o root:Packages:Licking
-	endif
-	if(datafolderexists("root:Packages:licking") == 0)
-		newdatafolder/o root:Packages:Licking
-	endif
-	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
-	start /= 1000; start /= dwellTime
-	width /= 1000; width /= dwellTime
-	variable ending = 0.01 / dwellTime
-	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0;
-	make/o/n=(start+width+ending) lickSchedule = 0
-	lickSchedule[start,start+width] =1
-	setscale/P x, 0, dwellTime, "s", lickSchedule
-	
-	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-	string pmtDev = boardConfig[3][0]
-	string devNum = boardConfig[27][0]
-	string port = boardConfig[27][1]
-	string line = boardConfig[27][2]
-	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
-	NVAR/Z lickIOtaskNumber =  root:Packages:Licking:lickIOtaskNumber:shutterIOtaskNumber
-	if(NVAR_exists(lickIOtaskNumber))
-		fDAQmx_DIO_Finished(devNum, lickIOtaskNumber)
-	endif
-	
-	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
-	
-	strSwitch(trigger)
-		case "none":
-			daqmx_dio_config/dir=1/dev=devNum/lgrp=1/wave={lickSchedule} pfiString
-			break
-		case "scanning":
-			
-			daqmx_dio_config/dir=1/dev=devNum/lgrp=1/wave={lickSchedule}/CLK={pixelCLock,1} pfiString
-			break
-	endSwitch
-	variable/g root:Packages:Licking:lickIOtaskNumber = V_DAQmx_DIO_TaskNumber
+//function BS_2P_LickSolenoid(start, width, trigger)
+//	variable start, width // in ms
+//	string trigger
+//	if(datafolderexists("root:Packages") == 0)
+//		newdatafolder/o root:Packages
+//		newdatafolder/o root:Packages:Licking
+//	endif
+//	if(datafolderexists("root:Packages:licking") == 0)
+//		newdatafolder/o root:Packages:Licking
+//	endif
+//	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
+//	start /= 1000; start /= dwellTime
+//	width /= 1000; width /= dwellTime
+//	variable ending = 0.01 / dwellTime
+//	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0;
+//	make/o/n=(start+width+ending) lickSchedule = 0
+//	lickSchedule[start,start+width] =1
+//	setscale/P x, 0, dwellTime, "s", lickSchedule
+//	
+//	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+//	string pmtDev = boardConfig[3][0]
+//	string devNum = boardConfig[27][0]
+//	string port = boardConfig[27][1]
+//	string line = boardConfig[27][2]
+//	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
+//	NVAR/Z lickIOtaskNumber =  root:Packages:Licking:lickIOtaskNumber:shutterIOtaskNumber
+//	if(NVAR_exists(lickIOtaskNumber))
+//		fDAQmx_DIO_Finished(devNum, lickIOtaskNumber)
+//	endif
+//	
+//	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
+//	
+//	strSwitch(trigger)
+//		case "none":
+//			daqmx_dio_config/dir=1/dev=devNum/lgrp=1/wave={lickSchedule} pfiString
+//			break
+//		case "scanning":
+//			
+//			daqmx_dio_config/dir=1/dev=devNum/lgrp=1/wave={lickSchedule}/CLK={pixelCLock,1} pfiString
+//			break
+//	endSwitch
+//	variable/g root:Packages:Licking:lickIOtaskNumber = V_DAQmx_DIO_TaskNumber
 end
 
 //Function shutdownHook(s)
@@ -1591,9 +1604,27 @@ end
 //	return hookResult
 //end
 
-	
+Window wheelPanel() : Panel
+	PauseUpdate; Silent 1		// building window...
+	NewPanel /W=(792,59,1046,111) as "Running Wheel"
+	SetDrawLayer UserBack
+	CheckBox SaveWheelData,pos={34.00,27.00},size={130.00,15.00},proc=saveWheelProc,title="Auto-save wheel data"
+	CheckBox SaveWheelData,variable= root:Packages:BS2P:CurrentScanVariables:saveWheelData
+	CheckBox AcquireWheelData,pos={34.00,7.00},size={159.00,15.00},title="Acquire data from wheel(s)"
+	CheckBox AcquireWheelData,variable= root:Packages:BS2P:CurrentScanVariables:acquireWheelData
+EndMacro
 
-	
-	wave startSig = root:Packages:BS2P:CurrentScanVariables:startSig
-	startSig = p < ((50e-3/dwellTime)/2) ? 5 : 0
-	setScale/p x, 0, (dwellTime*100), "s" startSig
+Function saveWheelProc(cba) : CheckBoxControl
+	STRUCT WMCheckboxAction &cba
+	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
+	switch( cba.eventCode )
+		case 2: // mouse up
+			Variable checked = cba.checked
+			saveEmAll = checked
+			break
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
