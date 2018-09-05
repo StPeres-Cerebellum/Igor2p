@@ -711,7 +711,7 @@ end
 function encoderRecordingDone()
 
 	wave EncoderBinary = root:Packages:BS2P:CurrentScanVariables:EncoderBinary
-	calculateEncodersBINARY(EncoderBinary)
+	calculateEncodersBINARY(EncoderBinary,1)
 end
 
 function calculateEncoders(encoderData)
@@ -753,11 +753,12 @@ function calculateEncoders(encoderData)
 //	killwaves Encoder1A, Encoder1B, Encoder2A, Encoder2B, Encoder3A, Encoder3B
 end
 
-function calculateEncodersBinary(encoderBinary)
+function calculateEncodersBinary(encoderBinary, getBinary)
 	wave encoderBinary
+	variable getBinary
 	variable encoderTicks, wheelDiameter, speedbinning
 	
-	wheelDiameter = 20 	//in cm
+	wheelDiameter = 19.8 	//in cm
 	encoderTicks = 2^12
 	variable wheelCircumference = pi*wheelDiameter
 	variable subSampleBin = 20e-3	// secs to bin speeds for downsampling
@@ -770,7 +771,8 @@ function calculateEncodersBinary(encoderBinary)
 	variable totalDIOChannels = strlen(allDIOChannels)
 	
 	//make a new matrix to hold distances from all encoders
-	duplicate/o encoderBinary encoderDistances
+	duplicate/o encoderBinary root:encoderDistances
+	wave encoderDistances = root:encoderDistances
 	redimension/n=(-1,(totalDIOChannels/2)) encoderdistances
 	
 	//process channels in pairs of two
@@ -785,12 +787,17 @@ function calculateEncodersBinary(encoderBinary)
 		// (encoderAbit %^ encoderBbit) | encoderBbit << 1 is bitwise to turn all the 3s to 2s and 2s to 3s (converts encoder digital signals to 4 states) 
 		encoderDistances[][i] = (((encoderBinary[p] & encoderAbit) && 1) %^ ((encoderBinary[p] & encoderBbit) && 1) ) | ((encoderBinary[p] & encoderBbit) && 1) << 1
 	endfor
+	if(getBinary)
+		duplicate/o encoderDistances root:encoderBinary
+		wave encoderBinary = root:encoderBinary
+	endif
 	
 	//now that the encoder signals are converted to states they can be differentiated to get steps in forward backward directions
 	differentiate/dim=0/p/meth=2 encoderDistances
 	//but we are left with the steps of 3 which we need to convert into single steps
 	encoderDistances = encoderDistances == -3 ? -1 : encoderDistances
 	encoderDistances = encoderDistances == 3 ? 1 : encoderDistances
+
 
 	//Distance calculation
 	encoderDistances *= (wheelCircumference / encoderTicks)	// wheel circumference = 20 cm; 2^12 ticks per encoder turn
@@ -814,9 +821,6 @@ function calculateEncodersBinary(encoderBinary)
 	copyscales/i encoderDistance, encoderSpeeds
 	SetScale d 0,0,"cm/s", encoderSpeeds
 	
-	wave encoderDistances = root:encoderDistances
-	wave encoderSpeeds = root:encoderSpeeds
-	
 	dowindow/f wheeldistanceWindow
 	if(!v_flag)
 		display/k=1/n=wheeldistanceWindow encoderDistances[][0] encoderDistances[][1] encoderDistances[][2]
@@ -824,18 +828,27 @@ function calculateEncodersBinary(encoderBinary)
 	endif
 	
 	dowindow/f wheelspeedWindow
-		if(!v_flag)
+	if(!v_flag)
 		display/k=1/n=wheelSPEEDWindow encoderSpeeds[][0] encoderSpeeds[][1] encoderSpeeds[][2]
 		ModifyGraph rgb(encoderSpeeds#1)=(0,0,65535),rgb(encoderSpeeds#2)=(1,39321,19939)
+		TextBox/C/N=text0/X=40.00/Y=-28.00/F=0/A=MC "\\s(encoderSpeeds)wheel\r\\s(encoderSpeeds#1)left\r\\s(encoderSpeeds#2)right"
 	endif
-
+	
+	if(getBinary)
+		dowindow/f wheelbinaryWindow
+		if(!v_flag)
+			display/k=1/n=wheelbinaryWindow encoderBinary[][0] encoderBinary[][1] encoderBinary[][2]
+			ModifyGraph rgb(encoderBinary#1)=(0,0,65535),rgb(encoderBinary#2)=(1,39321,19939)
+//			TextBox/C/N=text0/X=40.00/Y=-28.00/F=0/A=MC "\\s(encoderSpeeds)wheel\r\\s(encoderSpeeds#1)left\r\\s(encoderSpeeds#2)right"
+		endif
+	endif
 end
 
 function testcalculateEncodersBinary()
 	variable encoderTicks, wheelDiameter, speedbinning
 	
-	wheelDiameter = 20 	//in cm
-	encoderTicks = 2^12
+	wheelDiameter = 19.8 	//in cm
+	encoderTicks = 2^13
 	variable wheelCircumference = pi*wheelDiameter
 	variable subSampleBin = 20e-3	// secs to bin speeds for downsampling
 	
