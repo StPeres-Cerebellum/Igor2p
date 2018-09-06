@@ -759,7 +759,7 @@ function calculateEncodersBinary(encoderBinary, getBinary)
 	variable encoderTicks, wheelDiameter, speedbinning
 	
 	wheelDiameter = 19.8 	//in cm
-	encoderTicks = 2^12
+	encoderTicks = 2^10
 	variable wheelCircumference = pi*wheelDiameter
 	variable subSampleBin = 20e-3	// secs to bin speeds for downsampling
 	
@@ -831,7 +831,7 @@ function calculateEncodersBinary(encoderBinary, getBinary)
 	if(!v_flag)
 		display/k=1/n=wheelSPEEDWindow encoderSpeeds[][0] encoderSpeeds[][1] encoderSpeeds[][2]
 		ModifyGraph rgb(encoderSpeeds#1)=(0,0,65535),rgb(encoderSpeeds#2)=(1,39321,19939)
-		TextBox/C/N=text0/X=40.00/Y=-28.00/F=0/A=MC "\\s(encoderSpeeds)wheel\r\\s(encoderSpeeds#1)left\r\\s(encoderSpeeds#2)right"
+		TextBox/C/N=text0/X=40.00/Y=-28.00/F=0/A=MC "\\s(encoderSpeeds)wheel\r\\s(encoderSpeeds#1)right\r\\s(encoderSpeeds#2)left"
 	endif
 	
 	if(getBinary)
