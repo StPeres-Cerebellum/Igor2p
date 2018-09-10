@@ -695,8 +695,8 @@ function readEncoder()
 	if(NVAR_exists(encoderIOtaskNumber))
 		fDAQmx_DIO_Finished(devNum, encoderIOtaskNumber)
 	endif
-	make/b/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:Packages:BS2P:CurrentScanVariables:EncoderBinary = 0
-	wave EncoderBinary = root:Packages:BS2P:CurrentScanVariables:EncoderBinary
+	make/b/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:EncoderBinary = 0
+	wave EncoderBinary = root:EncoderBinary
 	setScale/p x, 0, (dwellTime), "s" EncoderBinary//,Encoder1B,Encoder2A,Encoder2B,Encoder3A,Encoder3B
 	
 	string EndOfScanHookStr = "encoderRecordingDone()"
@@ -710,8 +710,8 @@ end
 
 function encoderRecordingDone()
 
-	wave EncoderBinary = root:Packages:BS2P:CurrentScanVariables:EncoderBinary
-	calculateEncodersBINARY(EncoderBinary,1)
+	wave EncoderBinary = root:EncoderBinary
+	calculateEncodersBINARY(EncoderBinary,0)
 end
 
 function calculateEncoders(encoderData)
@@ -759,7 +759,7 @@ function calculateEncodersBinary(encoderBinary, getBinary)
 	variable encoderTicks, wheelDiameter, speedbinning
 	
 	wheelDiameter = 19.8 	//in cm
-	encoderTicks = 2^10
+	encoderTicks = 1000
 	variable wheelCircumference = pi*wheelDiameter
 	variable subSampleBin = 20e-3	// secs to bin speeds for downsampling
 	

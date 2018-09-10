@@ -1017,7 +1017,7 @@ Function MoveLProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("y", moveStep)
+				PI_moveMicrons("x", moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "x")
 			endif
@@ -1037,7 +1037,7 @@ Function MoveRProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("y", -1* moveStep)
+				PI_moveMicrons("x", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "x")
 			endif
@@ -1057,7 +1057,7 @@ Function MoveUProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", 1* moveStep)
+				PI_moveMicrons("y", 1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "y")
 			endif
@@ -1078,7 +1078,7 @@ Function MoveDProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", -1* moveStep)
+				PI_moveMicrons("y", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "y")
 			endif
