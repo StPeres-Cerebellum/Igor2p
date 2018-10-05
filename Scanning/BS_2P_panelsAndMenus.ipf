@@ -269,8 +269,11 @@ Function Init2PVariables()
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
 	
-		variable/g root:Packages:BS2P:CurrentScanVariables:acquireWheelData = 0
-		variable/g root:Packages:BS2P:CurrentScanVariables:saveWheelData = 0
+	variable/g root:Packages:BS2P:CurrentScanVariables:acquireWheelData = 0
+	variable/g root:Packages:BS2P:CurrentScanVariables:saveWheelData = 0
+	variable/g root:Packages:BS2P:CurrentScanVariables:whiskerGainUp = 0	//in sec
+	variable/g root:Packages:BS2P:CurrentScanVariables:whiskerGainDown = 0	//in sec
+	variable/g root:Packages:BS2P:CurrentScanVariables:changeWhiskerGain = 0
 	
 	
 End
@@ -1606,12 +1609,18 @@ end
 
 Window wheelPanel() : Panel
 	PauseUpdate; Silent 1		// building window...
-	NewPanel /W=(792,59,1046,111) as "Running Wheel"
+	NewPanel /W=(1033,63,1302,219) as "Running Wheel"
 	SetDrawLayer UserBack
 	CheckBox SaveWheelData,pos={34.00,27.00},size={130.00,15.00},proc=saveWheelProc,title="Auto-save wheel data"
 	CheckBox SaveWheelData,variable= root:Packages:BS2P:CurrentScanVariables:saveWheelData
 	CheckBox AcquireWheelData,pos={34.00,7.00},size={159.00,15.00},title="Acquire data from wheel(s)"
 	CheckBox AcquireWheelData,variable= root:Packages:BS2P:CurrentScanVariables:acquireWheelData
+	SetVariable wheelGainUpTime,pos={19.00,83.00},size={230.00,18.00},title="Time  of whisker gain increase (s)"
+	SetVariable wheelGainUpTime,value= root:Packages:BS2P:CurrentScanVariables:whiskerGainUp
+	SetVariable wheelGainDownTime,pos={15.00,104.00},size={230.00,18.00},title="Time  of whisker gain decrease (s)"
+	SetVariable wheelGainDownTime,value= root:Packages:BS2P:CurrentScanVariables:whiskerGainDown
+	CheckBox ChangeWhiskerGain,pos={53.00,66.00},size={126.00,15.00},title="Change whisker gain"
+	CheckBox ChangeWhiskerGain,variable= root:Packages:BS2P:CurrentScanVariables:changeWhiskerGain,side= 1
 EndMacro
 
 Function saveWheelProc(cba) : CheckBoxControl

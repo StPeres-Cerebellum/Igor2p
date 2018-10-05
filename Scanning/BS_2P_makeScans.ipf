@@ -214,7 +214,7 @@ Function arbitraryScan()
 end
 
 Function updateScanParamsFromMarquee()
-	getmarquee left, bottom
+	getmarquee/k left, bottom
 	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	variable hReflect = str2num(boardConfig[19][2])
 	variable XYswitch = str2num(boardConfig[21][2])
@@ -258,7 +258,7 @@ Function updateScanParamsFromMarquee()
 
 	displayPixelSize = scaledX / pixelsPerLine
 	totalLines = ceil(ScaledY / displayPixelSize)	
-	print scannerLeft, scannerBottom, scannerRight, scannerTop
+//	print scannerLeft, scannerBottom, scannerRight, scannerTop
 //	print scaledX, scaledY
 	
 	

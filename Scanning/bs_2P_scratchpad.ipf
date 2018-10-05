@@ -688,6 +688,9 @@ function readEncoder()
 	string devNum = boardConfig[3][0]
 	string port = "0"//boardConfig[26][1]
 	string line = "0:5"//boardConfig[26][2]
+	
+	string gainPort = "0"
+	string gainLines = "10:11"
 
 	string pixelCLock = "/"+devNum+"/Ctr2InternalOutput"
 	
@@ -695,15 +698,38 @@ function readEncoder()
 	if(NVAR_exists(encoderIOtaskNumber))
 		fDAQmx_DIO_Finished(devNum, encoderIOtaskNumber)
 	endif
-	make/b/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:EncoderBinary = 0
+	
+	make/w/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:EncoderBinary = 0
 	wave EncoderBinary = root:EncoderBinary
-	setScale/p x, 0, (dwellTime), "s" EncoderBinary//,Encoder1B,Encoder2A,Encoder2B,Encoder3A,Encoder3B
-	
-	string EndOfScanHookStr = "encoderRecordingDone()"
 	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
-	
+	string EndOfScanHookStr = "encoderRecordingDone()"
 	daqmx_dio_config/dir=0/LGRP=0/dev=devNum/wave={EncoderBinary}/CLK={pixelCLock,1}/EOSH=EndOfScanHookStr pfiString
 	variable/g  root:Packages:BS2P:CurrentScanVariables:encoderIOtaskNumber = V_DAQmx_DIO_TaskNumber
+
+
+	NVAR changeWhiskerGain = root:Packages:BS2P:CurrentScanVariables:changeWhiskerGain
+	if(changeWhiskerGain)
+		NVAR wheelGainIOtaskNumber = root:Packages:BS2P:CurrentScanVariables:wheelGainIOtaskNumber
+		if(NVAR_exists(wheelGainIOtaskNumber))
+			fDAQmx_DIO_Finished(devNum, wheelGainIOtaskNumber)
+		endif
+		NVAR whiskerGainUp = root:Packages:BS2P:CurrentScanVariables:whiskerGainUp
+		NVAR whiskerGainDown = root:Packages:BS2P:CurrentScanVariables:whiskerGainDown
+		
+		make/w/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:wheelGainBinary = 0
+		wave wheelGainBinary = root:wheelGainBinary
+		
+		setScale/p x, 0, (dwellTime), "s" EncoderBinary, wheelGainBinary
+		
+		wheelGainBinary[x2pnt(wheelGainBinary,whiskerGainUp),x2pnt(wheelGainBinary,(whiskerGainUp+0.01))] = (2^10)
+		wheelGainBinary[x2pnt(wheelGainBinary,whiskerGainDown),x2pnt(wheelGainBinary,(whiskerGainDown+0.01))] = (2^11)
+		
+		
+		string pfiGainString = "/"+devNum+"/port"+gainPort+ "/line" + gainLines
+		daqmx_dio_config/dir=1/LGRP=0/dev=devNum/wave={wheelGainBinary}/CLK={pixelCLock,1} pfiGainString
+		variable/g  root:Packages:BS2P:CurrentScanVariables:wheelGainIOtaskNumber = V_DAQmx_DIO_TaskNumber
+	endif
+
 end
 
 
