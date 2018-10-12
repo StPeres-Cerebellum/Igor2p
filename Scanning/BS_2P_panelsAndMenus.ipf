@@ -49,6 +49,7 @@ Menu "2P"
 	End
 	"-"
 	"Running Wheel", /q, wheelPanel()
+	"Calculate Wheel Speeds", /q, calculateEncodersBinary(root:encoderBinary, 0)
 	"-"
 	"Measure laser Power", /q, readLaserPower()
 	"-"

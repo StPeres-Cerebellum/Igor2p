@@ -259,11 +259,7 @@ function BS_2P_saveDum()
 		wave ePhysDum  = root:Packages:BS2P:CurrentScanVariables:ePhysDum
 		save/c/o/p=$currentPath ePhysDum as ePhysName2Write
 	endif
-		
-	if(saveWheelData)
-		wave encoderBinary = root:Packages:BS2P:CurrentScanVariables:EncoderBinary
-		save/c/o/p=$currentPath encoderBinary as encoderName2Write
-	endif
+
 	pathInfo $currentPath
 	currentPathDetails = s_path
 	prefixIncrement += 1
@@ -278,4 +274,28 @@ function BS_2P_saveDum()
 //		fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
 //	endif
 
+end
+
+function BS_2P_saveWheel()
+	NVAR prefixIncrement = root:Packages:BS2P:CurrentScanVariables:prefixIncrement
+	NVAR saveWheelData = root:Packages:BS2P:CurrentScanVariables:saveWheelData
+	NVAR saveEphys = root:Packages:BS2P:CurrentScanVariables:saveEphys
+	SVAR currentPath = root:Packages:BS2P:CurrentScanVariables:currentPath
+	SVAR SaveAsPrefix = root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
+	wave dum  = root:Packages:BS2P:CurrentScanVariables:dum
+	wave kineticSeries = root:Packages:BS2P:CurrentScanVariables:kineticSeries
+	SVAR fileName2bWritten = root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
+	SVAR currentPathDetails = root:Packages:BS2P:CurrentScanVariables:currentPathDetails
+	string filename2Write = saveAsPrefix+num2str(prefixIncrement)+".ibw"
+	string ePhysName2Write = saveAsPrefix+num2str(prefixIncrement)+"_ephys"+".ibw"
+	string encoderName2Write = saveAsPrefix+num2str(prefixIncrement)+"_encoders"+".ibw"
+		
+	if(saveWheelData)
+		wave encoderBinary = root:EncoderBinary
+		save/c/o/p=$currentPath encoderBinary as encoderName2Write
+	endif
+	pathInfo $currentPath
+	currentPathDetails = s_path
+	prefixIncrement += 1
+	fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
 end

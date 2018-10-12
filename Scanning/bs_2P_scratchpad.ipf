@@ -505,6 +505,11 @@ function kineticHook2(dum, frames)
 	if(saveemall)
 		BS_2P_saveDum()
 	endif
+	
+	NVAR saveWheelData = root:Packages:BS2P:CurrentScanVariables:saveWheelData
+	if(saveWheelData)
+		 BS_2P_saveWheel()
+	endif
 
 	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
 	setdatafolder currentFolder
@@ -688,10 +693,6 @@ function readEncoder()
 	string devNum = boardConfig[3][0]
 	string port = "0"//boardConfig[26][1]
 	string line = "0:5"//boardConfig[26][2]
-	
-	string gainPort = "0"
-	string gainLines = "10:11"
-
 	string pixelCLock = "/"+devNum+"/Ctr2InternalOutput"
 	
 	NVAR encoderIOtaskNumber = root:Packages:BS2P:CurrentScanVariables:encoderIOtaskNumber
@@ -699,8 +700,16 @@ function readEncoder()
 		fDAQmx_DIO_Finished(devNum, encoderIOtaskNumber)
 	endif
 	
+	NVAR wheelGainIOtaskNumber = root:Packages:BS2P:CurrentScanVariables:wheelGainIOtaskNumber
+	if(NVAR_exists(wheelGainIOtaskNumber))
+		fDAQmx_DIO_Finished(devNum, wheelGainIOtaskNumber)
+	endif
+	
 	make/w/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:EncoderBinary = 0
 	wave EncoderBinary = root:EncoderBinary
+	
+	setScale/p x, 0, (dwellTime), "s" EncoderBinary
+	
 	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
 	string EndOfScanHookStr = "encoderRecordingDone()"
 	daqmx_dio_config/dir=0/LGRP=0/dev=devNum/wave={EncoderBinary}/CLK={pixelCLock,1}/EOSH=EndOfScanHookStr pfiString
@@ -709,17 +718,15 @@ function readEncoder()
 
 	NVAR changeWhiskerGain = root:Packages:BS2P:CurrentScanVariables:changeWhiskerGain
 	if(changeWhiskerGain)
-		NVAR wheelGainIOtaskNumber = root:Packages:BS2P:CurrentScanVariables:wheelGainIOtaskNumber
-		if(NVAR_exists(wheelGainIOtaskNumber))
-			fDAQmx_DIO_Finished(devNum, wheelGainIOtaskNumber)
-		endif
+		string gainPort = "0"
+		string gainLines = "10:11"
 		NVAR whiskerGainUp = root:Packages:BS2P:CurrentScanVariables:whiskerGainUp
 		NVAR whiskerGainDown = root:Packages:BS2P:CurrentScanVariables:whiskerGainDown
 		
 		make/w/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:wheelGainBinary = 0
 		wave wheelGainBinary = root:wheelGainBinary
 		
-		setScale/p x, 0, (dwellTime), "s" EncoderBinary, wheelGainBinary
+		setScale/p x, 0, (dwellTime), "s" wheelGainBinary
 		
 		wheelGainBinary[x2pnt(wheelGainBinary,whiskerGainUp),x2pnt(wheelGainBinary,(whiskerGainUp+0.01))] = (2^10)
 		wheelGainBinary[x2pnt(wheelGainBinary,whiskerGainDown),x2pnt(wheelGainBinary,(whiskerGainDown+0.01))] = (2^11)
