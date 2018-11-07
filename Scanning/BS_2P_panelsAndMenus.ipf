@@ -1135,7 +1135,6 @@ function BS_2P_PMTShutter(openOrClose)
 end
 
 function BS_2P_StartSignal()
-	
 	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
 	NVAR lineTIme = root:Packages:BS2P:CurrentScanVariables:lineTIme
 	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
@@ -1152,17 +1151,33 @@ function BS_2P_StartSignal()
 	if(NVAR_exists(startIOtaskNumber))
 		fDAQmx_DIO_Finished(devNum, startIOtaskNumber)
 	endif
-	make/n=((lineTime*totalLines*frames)/dwelltime)/o startsig = 0
+	make/n=((lineTime*totalLines*frames)/dwelltime)/o root:Packages:BS2P:CurrentScanVariables:DIOLines = 0
 //	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0
-	wave startSig = root:Packages:BS2P:CurrentScanVariables:startSig
-	startSig[1,((50e-3/dwellTime))] = 5
-	startSig[(dimsize(startSig,0)-(50e-3/dwellTime)), dimsize(startSig,0)-2] = 5
+	wave DIOlines = root:Packages:BS2P:CurrentScanVariables:DIOLines
+	DIOLines[1,((50e-3/dwellTime))] = 2^10
+//	startSig[(dimsize(startSig,0)-(50e-3/dwellTime)), dimsize(startSig,0)-2] = 5
 //	startSig = p < ((50e-3/dwellTime)) ? 5 : 0
 //	startSig = P > (dimsize(startSig,0)- ((50e-3/dwellTime))) ? 5 : 0
-	setScale/p x, 0, (dwellTime), "s" startSig
+	setScale/p x, 0, (dwellTime), "s" DIOLines
 	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
-	daqmx_dio_config/dir=1/dev=devNum/wave={startSig}/CLK={pixelCLock,1} pfiString ///CLK={pixelCLock,1}
+	
+	NVAR changeWhiskerGain = root:Packages:BS2P:CurrentScanVariables:changeWhiskerGain
+	if(changeWhiskerGain)
+		string gainPort = "0"
+		string gainLines = "8:10"
+		NVAR whiskerGainUp = root:Packages:BS2P:CurrentScanVariables:whiskerGainUp
+		NVAR whiskerGainDown = root:Packages:BS2P:CurrentScanVariables:whiskerGainDown
+		
+		DIOLines[x2pnt(DIOLines,whiskerGainUp),x2pnt(DIOLines,(whiskerGainUp+0.01))] = (2^8)
+		DIOLines[x2pnt(DIOLines,whiskerGainDown),x2pnt(DIOLines,(whiskerGainDown+0.01))] = (2^9)
+		
+		
+		pfiString = "/"+devNum+"/port"+gainPort+ "/line" + gainLines
+	endif
+	
+	daqmx_dio_config/dir=1/LGRP=0/dev=devNum/wave={DIOLines}/CLK={pixelCLock,1} pfiString ///CLK={pixelCLock,1}
 	variable/g  root:Packages:BS2P:CurrentScanVariables:startIOtaskNumber = V_DAQmx_DIO_TaskNumber
+	print pfiString
 end
 
 

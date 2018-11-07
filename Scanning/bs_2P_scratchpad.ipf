@@ -157,10 +157,10 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
-		if(acquireWheelData)
-			readEncoder()
-		endif
-		//BS_2P_StartSignal()
+//		if(acquireWheelData)
+//			readEncoder()
+//		endif
+		BS_2P_StartSignal()
 		//try scaling dum to 40 Mz to make sure it catches all pulses (hamamatsu photon counter = 25 ns pulse pair resolution) 
 		if(ePhysRec)
 			DAQmx_Scan/BKG/DEV=ePhysDev/TRIG={scanClock}Waves=ePhysConfig
@@ -716,27 +716,6 @@ function readEncoder()
 	variable/g  root:Packages:BS2P:CurrentScanVariables:encoderIOtaskNumber = V_DAQmx_DIO_TaskNumber
 
 
-	NVAR changeWhiskerGain = root:Packages:BS2P:CurrentScanVariables:changeWhiskerGain
-	if(changeWhiskerGain)
-		string gainPort = "0"
-		string gainLines = "10:11"
-		NVAR whiskerGainUp = root:Packages:BS2P:CurrentScanVariables:whiskerGainUp
-		NVAR whiskerGainDown = root:Packages:BS2P:CurrentScanVariables:whiskerGainDown
-		
-		make/w/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:wheelGainBinary = 0
-		wave wheelGainBinary = root:wheelGainBinary
-		
-		setScale/p x, 0, (dwellTime), "s" wheelGainBinary
-		
-		wheelGainBinary[x2pnt(wheelGainBinary,whiskerGainUp),x2pnt(wheelGainBinary,(whiskerGainUp+0.01))] = (2^10)
-		wheelGainBinary[x2pnt(wheelGainBinary,whiskerGainDown),x2pnt(wheelGainBinary,(whiskerGainDown+0.01))] = (2^11)
-		
-		
-		string pfiGainString = "/"+devNum+"/port"+gainPort+ "/line" + gainLines
-		daqmx_dio_config/dir=1/LGRP=0/dev=devNum/wave={wheelGainBinary}/CLK={pixelCLock,1} pfiGainString
-		variable/g  root:Packages:BS2P:CurrentScanVariables:wheelGainIOtaskNumber = V_DAQmx_DIO_TaskNumber
-	endif
-
 end
 
 
@@ -907,4 +886,21 @@ function testcalculateEncodersBinary()
 	encoderDistances = encoderDistances == 3 ? 5 : encoderDistances
 	encoderDistances = encoderDistances == 2 ? 3 : encoderDistances
 	encoderDistances = encoderDistances == 5 ? 2 : encoderDistances
+end
+
+function testDIOWrite(devNum, port, line, Logic)
+	string devNum, port, line
+	variable logic
+	
+	NVAR IOTestTaskNumber = root:IOTestTaskNumber
+	if(NVAR_exists(IOTestTaskNumber))
+		fDAQmx_DIO_Finished(devNum, IOTestTaskNumber)
+	endif
+	
+	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
+	print pfiString
+	daqmx_dio_config/dir=1/LGRP=1/dev=devNum pfiString
+	variable/g  root:IOTestTaskNumber = V_DAQmx_DIO_TaskNumber
+	print fDAQmx_DIO_Write(devNum, IOTestTaskNumber, Logic)
+
 end
