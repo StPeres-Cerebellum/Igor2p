@@ -296,6 +296,10 @@ function averageStack()
 	string ImageName=ImageNameList("","")
 	Imagename = Replacestring(";", Imagename,"") 
 	wave ImageStack = ImageNameToWaveRef("",ImageName)
+	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	variable hReflect = str2num(boardConfig[19][2])
+	variable XYswitch = str2num(boardConfig[21][2])
+	variable vReflect = str2num(boardConfig[20][2])
 
 	variable xScale = dimdelta(imageStack,0)
 	variable yScale = dimdelta(ImageStack,1)
@@ -303,8 +307,27 @@ function averageStack()
 	imageTransform averageImage imageStack; wave m_aveImage
 	copyscales imageStack, m_aveImage
 //	SetScale/P x 0,(xScale),"m", m_aveImage;SetScale/P y 0,(yScale),"m", m_aveImage
+	dowindow/k average_image
+	newImage/k=1/f/N=average_image M_AveImage
+
+	if(XYswitch == 1)
+		ModifyGraph/w=average_image swapXY=1
+	else
+		ModifyGraph/w=average_image swapXY=0
+	endif
 	
-	newImage/f M_AveImage
+	if(hReflect == 1)
+		SetAxis/a/R/w=average_image bottom
+	else
+		SetAxis/a/w=average_image bottom
+	endif
+
+	if(vReflect == 1)
+		SetAxis/a/R/w=average_image left
+	else
+		SetAxis/a/w=average_image left
+	endif
+	
 	ModifyGraph width={Plan,1,bottom,left}
 	
 //	dowindow/F averagedStack

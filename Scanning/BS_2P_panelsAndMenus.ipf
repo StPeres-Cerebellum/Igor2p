@@ -293,7 +293,7 @@ function BS_2P_makeKineticWindow()
 	SetScale y (-1 * scanLimit * scaleFactor),(scanLimit * scaleFactor),"m", kineticSeries
 	
 	PauseUpdate; Silent 1		// building window...
-	Display /W=(9,133.25,582.75,463.25)/K=1  as "Kinetic Window"
+	Display /W=(9,125,2000,715)/K=1  as "Kinetic Window"
 	DoWindow/C kineticWindow
 	setWindow kineticWindow hook(myHook)=kineticWIndowHook
 
@@ -970,10 +970,10 @@ Function ZoomOutProc_2(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			
-			X_Offset -= ((zoomFactor * 1e-6) / 2)
-			Y_Offset -= ((zoomFactor * 1e-6) / 2)
-			scaledX += (zoomFactor * 1e-6)
-			scaledY += (zoomFactor * 1e-6)
+			X_Offset += ((zoomFactor * 1e-6) / 2)
+			Y_Offset += ((zoomFactor * 1e-6) / 2)
+			scaledX -= (zoomFactor * 1e-6)
+			scaledY -= (zoomFactor * 1e-6)
 			BS_2P_updateVariables()
 			BS_2P_CreateScan()
 			BS_2P_Scan("snapshot")
@@ -996,10 +996,10 @@ Function ZoomInProc_2(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			
-			X_Offset += ((zoomFactor * 1e-6) / 2)
-			Y_Offset += ((zoomFactor * 1e-6) / 2)
-			scaledX -= (zoomFactor * 1e-6)
-			scaledY -= (zoomFactor * 1e-6)
+			X_Offset -= ((zoomFactor * 1e-6) / 2)
+			Y_Offset -= ((zoomFactor * 1e-6) / 2)
+			scaledX += (zoomFactor * 1e-6)
+			scaledY += (zoomFactor * 1e-6)
 			BS_2P_updateVariables()
 			BS_2P_CreateScan()
 			BS_2P_Scan("snapshot")
