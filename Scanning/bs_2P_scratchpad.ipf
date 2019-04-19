@@ -26,11 +26,6 @@ function BS_2P_Pockels(openOrClose)
 	return pockelVoltage
 end
 
-
-
-
-
-
 function checkMirrors()
 	BS_2P_UpdateVariables()
 	BS_2P_CreateScan()
@@ -70,8 +65,6 @@ function checkMirrors()
 //	FFT/OUT=3/DEST=xpos_FFT xpos
 	
 end
-
-
 
 function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	wave runx, runy, dum
@@ -114,7 +107,9 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 	string galvoDev = boardConfig[0][0]
 	string pmtDev = boardConfig[3][0]
 	string startTrigDev = boardConfig[5][0]
+//	string startTrigChannel = "/"+startTrigDev+"/port"+boardConfig[5][1]+ "/line" + boardConfig[5][2]
 	string startTrigChannel = "/"+startTrigDev+"/"+"pfi"+boardConfig[5][2]
+//	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
 	string xGalvoChannel = boardConfig[0][2]
 	string yGalvoChannel = boardConfig[1][2]
 	
@@ -157,9 +152,9 @@ function BS_2P_NiDAQ_2(runx, runy, dum, frames, trigger, imageMode)
 		DAQmx_WaveformGen/DEV=galvoDev/NPRD=(frames) galvoChannels		/////Start sending volts to scanners (triggers acquistion) trig*2=analog level 5V
 	elseif(stringmatch(imageMode, "kinetic"))
 		redimension/n=((pixelsPerLine * totalLines * frames) + 1) dum
-//		if(acquireWheelData)
-//			readEncoder()
-//		endif
+		if(acquireWheelData)
+			readEncoder()
+		endif
 		BS_2P_StartSignal()
 		//try scaling dum to 40 Mz to make sure it catches all pulses (hamamatsu photon counter = 25 ns pulse pair resolution) 
 		if(ePhysRec)
@@ -459,9 +454,12 @@ function kineticHook2(dum, frames)
 		
 	wave ePhysDum = root:Packages:BS2P:CurrentScanVariables:ePhysDum
 	NVAR ePhysRec = root:Packages:BS2P:CurrentScanVariables:ePhysRec
+	NVAR trigLoop = root:Packages:BS2P:CurrentScanVariables:trigLoop
 	sampleDiodeVoltage()
 	BS_2P_Pockels("close")
-	BS_2P_PMTShutter("close")
+	if(!trigLoop)
+		BS_2P_PMTShutter("close")
+	endif
 	bs_2P_zeroscanners("offset")
 //	stopReadingArduino()
 	
@@ -510,11 +508,15 @@ function kineticHook2(dum, frames)
 	if(saveWheelData)
 		 BS_2P_saveWheel()
 	endif
-
+	
+	NVAR acquireWheelData = root:Packages:BS2P:CurrentScanVariables:acquireWheelData
+	if(acquireWheelData)
+		calculateEncodersBinary(root:encoderbinary, 0)
+	endif
+	
 	SVAR currentFolder = root:Packages:BS2P:currentScanVariables:currentFolder
 	setdatafolder currentFolder
 	
-	NVAR trigLoop = root:Packages:BS2P:CurrentScanVariables:trigLoop
 	if(trigLoop)
 		BS_2P_Scan("kinetic")
 	endif
@@ -692,7 +694,7 @@ function readEncoder()
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	string devNum = boardConfig[3][0]
 	string port = "0"//boardConfig[26][1]
-	string line = "0:5"//boardConfig[26][2]
+	string line = "0:6"//boardConfig[26][2]
 	string pixelCLock = "/"+devNum+"/Ctr2InternalOutput"
 	
 	NVAR encoderIOtaskNumber = root:Packages:BS2P:CurrentScanVariables:encoderIOtaskNumber
@@ -712,12 +714,37 @@ function readEncoder()
 	
 	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
 	string EndOfScanHookStr = "encoderRecordingDone()"
-	daqmx_dio_config/dir=0/LGRP=0/dev=devNum/wave={EncoderBinary}/CLK={pixelCLock,1}/EOSH=EndOfScanHookStr pfiString
+	daqmx_dio_config/dir=0/LGRP=0/dev=devNum/wave={EncoderBinary}/CLK={pixelCLock,1} pfiString // /EOSH=EndOfScanHookStr pfiString
 	variable/g  root:Packages:BS2P:CurrentScanVariables:encoderIOtaskNumber = V_DAQmx_DIO_TaskNumber
-
-
 end
 
+function readIOs()
+	
+	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
+	NVAR lineTIme = root:Packages:BS2P:CurrentScanVariables:lineTIme
+	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+	NVAR Frames = root:Packages:BS2P:CurrentScanVariables:Frames
+//	string openOrClose
+	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+	string devNum = boardConfig[3][0]
+	string port = "0"//boardConfig[26][1]
+	string line = "17"//boardConfig[26][2]
+	string pixelCLock = "/"+devNum+"/Ctr2InternalOutput"
+	
+	NVAR IOtaskNumber = root:Packages:BS2P:CurrentScanVariables:IOtaskNumber
+	if(NVAR_exists(IOtaskNumber))
+		fDAQmx_DIO_Finished(devNum, IOtaskNumber)
+	endif
+	
+	make/w/u/n=((lineTime*totalLines*frames)/dwelltime)/o root:IOsBinary = 0
+	wave IOsBinary = root:IOsBinary
+	
+	setScale/p x, 0, (dwellTime), "s" IOsBinary
+	
+	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
+	daqmx_dio_config/dir=0/LGRP=0/dev=devNum/wave={IOsBinary}/CLK={pixelCLock,1} pfiString
+	variable/g  root:Packages:BS2P:CurrentScanVariables:IOtaskNumber = V_DAQmx_DIO_TaskNumber
+end
 
 
 function encoderRecordingDone()
@@ -768,28 +795,29 @@ end
 function calculateEncodersBinary(encoderBinary, getBinary)
 	wave encoderBinary
 	variable getBinary
-	variable encoderTicks, wheelDiameter, speedbinning
+	variable encoderTicks, wheelDiameter, speedbinning, gearRatio
 	
-	wheelDiameter = 19.8 	//in cm
-	encoderTicks = 1000
+	gearRatio = 2.0
+	wheelDiameter = 20 	//in cm
+	encoderTicks = 1600
 	variable wheelCircumference = pi*wheelDiameter
-	variable subSampleBin = 20e-3	// secs to bin speeds for downsampling
+	variable subSampleBin = 5e-3	// secs to bin speeds for downsampling
 	
-			//encoder signal comes in as aingle binary wave for all channels
-																									//eg. 35 = 100011 (3 are high and 3 are low)
-	//determine how many channels/encoders were recorded
-	string allDIOChannels
-	sprintf allDIOChannels, "%b", wavemax(EncoderBinary)
-	variable totalDIOChannels = strlen(allDIOChannels)
+//																									//encoder signal comes in as single binary wave for all channels
+//																									//eg. 35 = 100011 (3 are high and 3 are low)
+//	//determine how many channels/encoders were recorded
+//	string allDIOChannels
+//	sprintf allDIOChannels, "%b", wavemax(EncoderBinary)
+//	variable totalDIOChannels = strlen(allDIOChannels)
 	
 	//make a new matrix to hold distances from all encoders
 	duplicate/o encoderBinary root:encoderDistances
 	wave encoderDistances = root:encoderDistances
-	redimension/n=(-1,(totalDIOChannels/2)) encoderdistances
+	redimension/n=(-1,3) encoderdistances
 	
 	//process channels in pairs of two
 	variable i = 0
-	for(i=0; i< (totalDIOChannels/2); i+=1 )
+	for(i=0; i< (3); i+=1 )
 		string encoderNames = "Encoder_"+num2str(i)
 		setDimLabel 1, i, $encoderNames, encoderDistances
 		
@@ -812,16 +840,18 @@ function calculateEncodersBinary(encoderBinary, getBinary)
 
 
 	//Distance calculation
-	encoderDistances *= (wheelCircumference / encoderTicks)	// wheel circumference = 20 cm; 2^12 ticks per encoder turn
+	encoderDistances *= (wheelCircumference / encoderTicks / 2)	// wheel circumference = 20 cm; 1600 ticks per encoder turn
+																				// not sure why it needs to be divided by 2 !!!
+	encoderDistances[][1,2] /= gearRatio
 	integrate/dim=0/P encoderDistances
 	SetScale d 0,0,"cm", encoderDistances
 	
 	//speed calculation (requires downsampling data)
 	variable subSamplefactor = subSampleBin / dimdelta(encoderDistances,0)
-	make/o/n=((dimsize(encoderDistances,0) / subSamplefactor),(totalDIOChannels/2))  root:encoderSpeeds
+	make/o/n=((dimsize(encoderDistances,0) / subSamplefactor),3)  root:encoderSpeeds
 	wave encoderSpeeds = root:encoderSpeeds
 	
-	for(i=0; i< (totalDIOChannels/2); i+=1 )
+	for(i=0; i< (3); i+=1 )
 		duplicate/o/free/r=[][i] encoderDistances encoderDistance 
 		make/free/o/n=((dimsize(encoderDistance,0) / subSamplefactor),3) subSample
 		copyscales/i encoderDistance, subsample
@@ -832,6 +862,12 @@ function calculateEncodersBinary(encoderBinary, getBinary)
 	endfor
 	copyscales/i encoderDistance, encoderSpeeds
 	SetScale d 0,0,"cm/s", encoderSpeeds
+	
+	make/o/n=(dimsize(encoderDistances,0))  root:gainReporter
+	wave gainReporter = root:gainReporter
+	gainReporter = (encoderBinary[p] & 2^6) && 1	//assumes gain is reporter in 7th channel
+	copyscales/i encoderDistance, gainReporter
+	SetScale d 0,0,"On | Off", gainReporter
 	
 	dowindow/f wheeldistanceWindow
 	if(!v_flag)
@@ -844,6 +880,11 @@ function calculateEncodersBinary(encoderBinary, getBinary)
 		display/k=1/n=wheelSPEEDWindow encoderSpeeds[][0] encoderSpeeds[][1] encoderSpeeds[][2]
 		ModifyGraph rgb(encoderSpeeds#1)=(0,0,65535),rgb(encoderSpeeds#2)=(1,39321,19939)
 		TextBox/C/N=text0/X=40.00/Y=-28.00/F=0/A=MC "\\s(encoderSpeeds)wheel\r\\s(encoderSpeeds#1)right\r\\s(encoderSpeeds#2)left"
+	endif
+	
+	dowindow/f gainWindow
+	if(!v_flag)
+		display/k=1/n=gainWindow gainReporter
 	endif
 	
 	if(getBinary)
