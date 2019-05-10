@@ -296,6 +296,6 @@ function BS_2P_saveWheel()
 	endif
 	pathInfo $currentPath
 	currentPathDetails = s_path
-	prefixIncrement += 1
+//	prefixIncrement += 1
 	fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
 end
