@@ -499,15 +499,17 @@ function kineticHook2(dum, frames)
 		endif
 	endif
 	
+	NVAR saveWheelData = root:Packages:BS2P:CurrentScanVariables:saveWheelData
+	if(saveWheelData)
+		 BS_2P_saveWheel()
+	endif
+	
 	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
 	if(saveemall)
 		BS_2P_saveDum()
 	endif
 	
-	NVAR saveWheelData = root:Packages:BS2P:CurrentScanVariables:saveWheelData
-	if(saveWheelData)
-		 BS_2P_saveWheel()
-	endif
+
 	
 	NVAR acquireWheelData = root:Packages:BS2P:CurrentScanVariables:acquireWheelData
 	if(acquireWheelData)

@@ -239,7 +239,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:lineSpacing = 0.6e-6	// (meters)
 		variable/g root:Packages:BS2P:CurrentScanVariables:scanFrameTime = 0	//ms
 		variable/g  root:Packages:BS2P:CalibrationVariables:spotSize = 0.6e-6	//smallest theoretical spot from Bruno (m)
-		variable/g  root:Packages:BS2P:CalibrationVariables:pixelShift = 87.5e-6	// s  ---measure this by giving voltages to scanners
+		variable/g  root:Packages:BS2P:CalibrationVariables:pixelShift = 82.0e-6	// s  ---measure this by giving voltages to scanners
 		variable/g  root:Packages:BS2P:CurrentScanVariables:focusStep = 20		// µm
 		variable/g root:Packages:BS2P:CurrentScanVariables:fullField = 250e-6	//m to scan for a full field
 		variable/g root:Packages:BS2P:CurrentScanVariables:objectiveMag = 60
