@@ -906,3 +906,37 @@ Function checkHook(s)
 	
 	return hookResult		// 0 if nothing done, else 1
 End
+
+function/s dimlabels2List(inputWave, dim)
+	wave inputWave
+	variable dim		//dimension number
+	variable labels = dimsize(inputWave,dim)
+	
+	string outputList = ""
+	variable i
+	for(i=0; i < labels; i +=1)
+		outputList += getDimLabel(inputWave, dim, i)+";"
+	endFor
+	
+	return outPutList
+end
+
+function/wave convertBinaryToMatrix(binaryWave)
+	wave binaryWave	
+	
+	//determine how many channels
+	string allChannels
+	sprintf allChannels, "%b", wavemax(binaryWave)
+	variable totalChannels = strlen(allChannels)
+	
+	duplicate/o binaryWave binaryAsChannels
+//	wave encoderDistances = root:encoderDistances
+	redimension/n=(-1,totalChannels) binaryAsChannels
+	
+	variable i
+	for(i=0; i<totalChannels; i+=1)
+		binaryAsChannels[][i] = (binaryWave[p] & 2^i) && 1
+	endfor
+//	imagetransform flipCols binaryAsChannels
+	return binaryAsChannels
+end

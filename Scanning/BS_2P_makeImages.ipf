@@ -108,80 +108,129 @@ end
 
 Window kineticWindow() : Graph
 	PauseUpdate; Silent 1		// building window...
-	Display /W=(13.5,128.75,588,718.25)/K=1  as "Kinetic Window"
+	Display /W=(8.25,123.5,582.75,719)/K=1  as "Kinetic Window"
 	AppendImage :Packages:BS2P:CurrentScanVariables:kineticSeries
 	ModifyImage kineticSeries ctab= {*,*,Grays,0}
 	ModifyGraph height={Plan,1,left,bottom}
 	ModifyGraph mirror=2
 	ModifyGraph minor=1
-	Cursor/P/I A kineticSeries 105,138
-	ShowInfo
-	ControlBar 72
-	SetVariable BS_2P_pixelShifter,pos={5,47},size={103,16},proc=BS_2P_set_pixelShiftProc,title="Pixel Shift"
+	SetAxis/A/R bottom
+	ControlBar 80
+	SetVariable BS_2P_pixelShifter,pos={5.00,33.00},size={115.00,18.00},title="Pixel Shift"
 	SetVariable BS_2P_pixelShifter,frame=0,valueBackColor=(60928,60928,60928)
 	SetVariable BS_2P_pixelShifter,limits={0,0.0002,5e-07},value= root:Packages:BS2P:CalibrationVariables:pixelShift
-	SetVariable SetPixelSize,pos={4,31},size={90,16},proc=BS_2P_setPixelSizeProc,title="Binning (µm):"
-	SetVariable SetPixelSize,frame=0,valueColor=(65280,0,0)
-	SetVariable SetPixelSize,valueBackColor=(60928,60928,60928)
-	SetVariable SetPixelSize,limits={0.025,inf,0},value= root:Packages:BS2P:CurrentScanVariables:displayPixelSize
-	Slider WM3DAxis,pos={10,76},size={314,6},proc=WM3DImageSliderProc
+	Slider WM3DAxis,pos={10.00,82.00},size={314.00,10.00},proc=WM3DImageSliderProc
 	Slider WM3DAxis,limits={0,0,1},variable= root:Packages:WM3DImageSlider:kineticWindow:gLayer,side= 0,vert= 0,ticks= 0
-	Button SaveThisStack,pos={460,2},size={107,21},proc=saveStackProc_2,title="Save this movie as:"
-	Button BS_2P_kineticSeries,pos={120,2},size={71,20},proc=BS_2P_KineticSeriesButton,title="Kinetic Series"
+	Button SaveThisStack,pos={460.00,2.00},size={107.00,21.00},proc=saveStackProc_2,title="Save this movie as:"
+	Button BS_2P_kineticSeries,pos={120.00,2.00},size={76.00,20.00},proc=BS_2P_KineticSeriesButton,title="Kinetic Series"
 	Button BS_2P_kineticSeries,fSize=11,fColor=(0,13056,0)
-	Button BS_2P_AbortImaging,pos={119,23},size={71,20},proc=BS_2P_abortButtonProc_2,title="Abort"
+	Button BS_2P_AbortImaging,pos={119.00,23.00},size={76.00,20.00},proc=BS_2P_abortButtonProc_2,title="Abort"
 	Button BS_2P_AbortImaging,fSize=11,fColor=(39168,0,0)
-	Button BS_2P_videoSeries,pos={119,44},size={71,20},proc=BS_2P_VideoButton,title="Video"
+	Button BS_2P_videoSeries,pos={119.00,44.00},size={76.00,20.00},proc=BS_2P_VideoButton,title="Video"
 	Button BS_2P_videoSeries,fSize=11,fColor=(0,13056,0)
-	CheckBox AxesConstrain,pos={8,3},size={88,14},proc=BS_2P_constrainAxes,title="Constrain Axes"
+	CheckBox AxesConstrain,pos={8.00,3.00},size={94.00,15.00},proc=BS_2P_constrainAxes,title="Constrain Axes"
 	CheckBox AxesConstrain,value= 1
-	Button FocusDown,pos={381,2},size={34,20},proc=BS_2P_focusUpButtonProc,title="up"
-	Button FocusDown,fSize=8
-	Button FocusDown1,pos={382,38},size={33,18},proc=BS_2P_focusDownButtonProc,title="down"
-	Button FocusDown1,fSize=8
-	SetVariable FocusStep,pos={372,21},size={85,18},title="\\F'Symbol'D\\F'MS Sans Serif'Focus (µm)"
-	SetVariable FocusStep,frame=0
-	SetVariable FocusStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
-	SetVariable setFrames,pos={197,3},size={66,16},proc=BS_2P_SetFramesProc,title="Frames"
+	SetVariable setFrames,pos={197.00,3.00},size={66.00,18.00},proc=BS_2P_SetFramesProc,title="Frames"
 	SetVariable setFrames,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setFrames,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frames
-	CheckBox BS_2P_ExternalTrigger,pos={269,4},size={92,14},title="External Trigger"
+	SetVariable setAvg,pos={197.00,20.00},size={41.00,18.00},title="Avg",frame=0
+	SetVariable setAvg,valueBackColor=(65535,65535,65535)
+	SetVariable setAvg,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frameAvg
+	CheckBox BS_2P_ExternalTrigger,pos={269.00,4.00},size={98.00,15.00},title="External Trigger"
 	CheckBox BS_2P_ExternalTrigger,variable= root:Packages:BS2P:CurrentScanVariables:externalTrigger
-	ValDisplay FrameTime,pos={197,21},size={141,14},title="1 Frame (s):",fSize=10
-	ValDisplay FrameTime,frame=0,fColor=(65280,0,0),valueColor=(65280,0,0)
-	ValDisplay FrameTime,valueBackColor=(60928,60928,60928)
+	ValDisplay FrameTime,pos={197.00,37.00},size={117.00,14.00},title="1 Frame:"
+	ValDisplay FrameTime,fSize=10,format="%.2W1Ps",frame=0,fColor=(65280,0,0)
+	ValDisplay FrameTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay FrameTime,limits={0,0,0},barmisc={0,1000}
-	ValDisplay FrameTime,value= #"root:Packages:BS2P:CurrentScanVariables:scanFrameTime"
-	ValDisplay FrameTime1,pos={198,35},size={63,14},title="(Hz):",fSize=10
-	ValDisplay FrameTime1,format="%.1f",frame=0,fColor=(65280,0,0)
+	ValDisplay FrameTime,value= #"root:Packages:BS2P:CurrentScanVariables:scanFrameTime *root:Packages:BS2P:CurrentScanVariables:frameAvg"
+	ValDisplay FrameTime1,pos={198.00,51.00},size={90.00,14.00},title="freq:"
+	ValDisplay FrameTime1,fSize=10,format="%.1f Hz",frame=0,fColor=(65280,0,0)
 	ValDisplay FrameTime1,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay FrameTime1,limits={0,0,0},barmisc={0,1000}
 	ValDisplay FrameTime1,value= #"root:Packages:BS2P:CurrentScanVariables:displayFrameHz"
-	ValDisplay TotalTime,pos={197,48},size={145,14},title="Total scan time (s):"
-	ValDisplay TotalTime,fSize=10,format="%.1f",frame=0,fColor=(65280,0,0)
+	ValDisplay TotalTime,pos={197.00,64.00},size={106.00,14.00},title="Total time:"
+	ValDisplay TotalTime,fSize=10,format="%.1W1Ps",frame=0,fColor=(65280,0,0)
 	ValDisplay TotalTime,valueColor=(65280,0,0),valueBackColor=(60928,60928,60928)
 	ValDisplay TotalTime,limits={0,0,0},barmisc={0,1000}
-	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:displayTotalTime"
-	SetVariable SaveAs,pos={483,22},size={219,16},title=" ",frame=0
+	ValDisplay TotalTime,value= #"root:Packages:BS2P:CurrentScanVariables:displayTotalTime *root:Packages:BS2P:CurrentScanVariables:frameAvg"
+	SetVariable SaveAs,pos={538.00,22.00},size={219.00,18.00},title=" ",frame=0
 	SetVariable SaveAs,value= root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
-	PopupMenu BS_2P_SaveWhere,pos={571,2},size={43,21},bodyWidth=43,proc=BS_2P_pathSelectionPopMenuProc,title="Path"
+	PopupMenu BS_2P_SaveWhere,pos={571.00,2.00},size={46.00,19.00},bodyWidth=46,proc=BS_2P_pathSelectionPopMenuProc,title="Path"
 	PopupMenu BS_2P_SaveWhere,mode=0,value= #"root:Packages:BS2P:CurrentScanVariables:pathDetailsListing"
-	SetVariable BS_2P_SavePrefix,pos={618,7},size={87,16},bodyWidth=57,proc=BS_2P_ChangeSavePrefix,title="Prefix"
+	SetVariable BS_2P_SavePrefix,pos={620.00,4.00},size={90.00,18.00},bodyWidth=57,proc=BS_2P_ChangeSavePrefix,title="Prefix"
 	SetVariable BS_2P_SavePrefix,value= root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
-	SetVariable Increment,pos={710,7},size={46,16},bodyWidth=24,proc=SetPrefixIncrementProc,title="Inc:"
+	SetVariable Increment,pos={714.00,4.00},size={47.00,18.00},bodyWidth=24,proc=SetPrefixIncrementProc,title="Inc:"
 	SetVariable Increment,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:prefixIncrement
-	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=CheckProcSaveAll,title="Save All"
-	CheckBox BS_2P_SaveEverything,value= 0,side= 1
-	Button zoomout,pos={566,48},size={34,20},proc=ZoomOutProc_2,title="out",fSize=8
-	Button zoomIn,pos={612,48},size={34,20},proc=ZoomInProc_2,title="in",fSize=8
-	SetVariable setZoom,pos={568,33},size={82,16},proc=BS_2P_SetFramesProc,title="Zoom (µm)"
+	CheckBox BS_2P_SaveEverything,pos={644.00,41.00},size={81.00,15.00},proc=saveALLCheckProc,title="Save images"
+	CheckBox BS_2P_SaveEverything,variable= root:Packages:BS2P:CurrentScanVariables:saveEmAll
+	CheckBox BS_2P_SaveEphys,pos={644.00,57.00},size={74.00,15.00},title="Save ePhys"
+	CheckBox BS_2P_SaveEphys,variable= root:Packages:BS2P:CurrentScanVariables:saveEphys
+	SetVariable setZoom,pos={545.00,43.00},size={82.00,18.00},proc=BS_2P_SetFramesProc,title="Zoom (µm)"
 	SetVariable setZoom,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setZoom,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:zoomFactor
+	Button zoomout,pos={543.00,58.00},size={34.00,20.00},proc=ZoomOutProc_2,title="out"
+	Button zoomout,fSize=8
+	Button zoomIn,pos={589.00,58.00},size={34.00,20.00},proc=ZoomInProc_2,title="in"
+	Button zoomIn,fSize=8
+	Button moveU,pos={500.00,31.00},size={14.00,16.00},proc=MoveUProc,title="^"
+	Button moveU,fSize=8
+	Button moveR,pos={519.00,48.00},size={14.00,16.00},proc=MoveRProc,title=">"
+	Button moveR,fSize=8
+	Button moveD,pos={500.00,63.00},size={14.00,16.00},proc=MoveDProc,title="v"
+	Button moveD,fSize=8
+	Button moveL,pos={480.00,48.00},size={14.00,16.00},proc=MoveLProc,title="<"
+	Button moveL,fSize=8
+	SetVariable setMoveStep,pos={496.00,46.00},size={22.00,18.00},title=" ",frame=0
+	SetVariable setMoveStep,valueBackColor=(65535,65535,65535)
+	SetVariable setMoveStep,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:moveStep
+	ValDisplay stageX,pos={107.00,100.00},size={70.00,17.00},title="X:"
+	ValDisplay stageX,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
+	ValDisplay stageX,valueBackColor=(65280,65280,32768)
+	ValDisplay stageX,limits={0,0,0},barmisc={0,1000}
+	ValDisplay stageX,value= #"root:Packages:P_I:PI_xPos"
+	ValDisplay stageX,barBackColor= (65280,65280,32768)
+	ValDisplay stageY,pos={172.00,100.00},size={68.00,17.00},bodyWidth=54,title="Y:"
+	ValDisplay stageY,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
+	ValDisplay stageY,valueBackColor=(65280,65280,32768)
+	ValDisplay stageY,limits={0,0,0},barmisc={0,1000}
+	ValDisplay stageY,value= #"root:Packages:P_I:PI_yPos"
+	ValDisplay stageY,barBackColor= (65280,65280,32768)
+	Button FocusUP,pos={313.00,22.00},size={34.00,20.00},proc=BS_2P_focusUpButtonProc,title="up"
+	Button FocusUP,fSize=8
+	Button FocusDown,pos={314.00,57.00},size={33.00,18.00},proc=BS_2P_focusDownButtonProc,title="down"
+	Button FocusDown,fSize=8
+	SetVariable focusStep,pos={310.00,41.00},size={50.00,18.00},title="µm",frame=0
+	SetVariable focusStep,valueBackColor=(60928,60928,60928)
+	SetVariable focusStep,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
+	GroupBox stackBox,pos={370.00,24.00},size={108.00,56.00}
+	Button doStack,pos={373.00,27.00},size={34.00,20.00},proc=doStack,title="stack"
+	Button doStack,fSize=8,fColor=(61440,61440,61440)
+	SetVariable stackDepth,pos={381.00,46.00},size={86.00,18.00},title="depth (µm)"
+	SetVariable stackDepth,frame=0
+	SetVariable stackDepth,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:stackDepth
+	SetVariable stackResolution,pos={375.00,61.00},size={96.00,18.00},title="resolution (µm)"
+	SetVariable stackResolution,frame=0
+	SetVariable stackResolution,limits={0,20,0},value= root:Packages:BS2P:CurrentScanVariables:stackResolution
+	ValDisplay stageZ,pos={239.00,100.00},size={65.00,17.00},title="Z:"
+	ValDisplay stageZ,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
+	ValDisplay stageZ,valueBackColor=(65280,65280,32768)
+	ValDisplay stageZ,limits={0,0,0},barmisc={0,1000}
+	ValDisplay stageZ,value= #"root:Packages:P_I:PI_zPos"
+	ValDisplay stageZ,barBackColor= (65280,65280,32768)
+	ValDisplay pixSize,pos={5.00,18.00},size={90.00,17.00},title="Pixel Size"
+	ValDisplay pixSize,labelBack=(60928,60928,60928),format="%.W1Pm",frame=0
+	ValDisplay pixSize,valueBackColor=(60928,60928,60928)
+	ValDisplay pixSize,limits={0,0,0},barmisc={0,1000}
+	ValDisplay pixSize,value= #"root:packages:bs2p:currentScanVariables:displayPixelSize"
+	CheckBox BS_2P_TrigLoop,pos={370.00,4.00},size={81.00,15.00},title="LoopTrigger"
+	CheckBox BS_2P_TrigLoop,variable= root:Packages:BS2P:CurrentScanVariables:trigLoop
 	SetDrawLayer UserFront
 	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2
-	DrawLine -1e-05,0,1e-05,0
+	DrawLine -3.9e-05,-2.39e-05,-1.9e-05,-2.39e-05
 	SetDrawEnv xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2
-	DrawLine 0,-1e-05,0,1e-05
+	DrawLine -2.9e-05,-3.4e-05,-2.9e-05,-1.4e-05
+	ModifyGraph swapXY=1
+	SetWindow kwTopWin,hook(myHook)=kineticWIndowHook
 EndMacro
 
 Function BS_2P_Append3DImageSlider()

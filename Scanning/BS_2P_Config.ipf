@@ -64,7 +64,7 @@ function/wave bs_2P_getConfig()
 		movewave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
 		updateConfig()
 	else
-		make/o/t/n=(30,10) root:Packages:BS2P:CalibrationVariables:boardConfig
+		make/o/t/n=(50,10) root:Packages:BS2P:CalibrationVariables:boardConfig
 //		wave boardConfig root:Packages:BS2P:CalibrationVariables:boardConfig
 		updateConfig()
 		edit/k=1/n=Config boardConfig boardConfig.l
@@ -85,7 +85,7 @@ end
 
 function updateConfig()
 	wave/t boardCOnfig = root:Packages:BS2P:CalibrationVariables:boardConfig
-	redimension/n=(30,10) boardConfig
+	redimension/n=(50,10) boardConfig
 														//sets defaults unless already set
 	if(!(stringMatch(getdimlabel(boardConfig,0,0),"xGalvo")))
 		setdimlabel 0,0,xGalvo,boardConfig
@@ -247,5 +247,49 @@ function updateConfig()
 		setDimLabel 0, 25, PI_ZxisControl,boardCOnfig
 		boardConfig[25][1] = "Constant"
 		boardConfig[25][2] = "NO"
-	endif																
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,26),"ImageStartSignal")))	
+		setDimLabel 0, 26, ImageStartSignal,boardCOnfig
+		boardConfig[26][0] = "dev1"
+		boardConfig[26][1] = "0"
+		boardConfig[26][2] = "2"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,27),"LickSolenoid")))	
+		setDimLabel 0, 27, LickSolenoid,boardCOnfig
+		boardConfig[27][0] = "dev1"
+		boardConfig[27][1] = "0"
+		boardConfig[27][2] = "3"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,28),"PMTPeltierPower")))	
+		setDimLabel 0, 28, PMTPeltierPower,boardCOnfig
+		boardConfig[28][0] = "dev1"
+		boardConfig[28][1] = "1"
+		boardConfig[28][2] = "2"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,29),"PMTPower")))	
+		setDimLabel 0, 29, PMTPower,boardCOnfig
+		boardConfig[29][0] = "dev1"
+		boardConfig[29][1] = "1"
+		boardConfig[29][2] = "3"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,30),"PMTError")))	
+		setDimLabel 0, 30, PMTError,boardCOnfig
+		boardConfig[30][0] = "dev1"
+		boardConfig[30][1] = "1"
+		boardConfig[30][2] = "4"
+	endif
+	
+	if(!(stringMatch(getdimlabel(boardConfig,0,31),"PMTVoltage")))	
+		setDimLabel 0, 31, PMTVoltage,boardCOnfig
+		boardConfig[31][0] = "dev1"
+		boardConfig[31][1] = "AD"
+		boardConfig[31][2] = "3"
+	endif
+
 end
+

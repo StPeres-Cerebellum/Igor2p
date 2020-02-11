@@ -13,6 +13,7 @@
 #include "BS_Utilities"
 #include "BS_2P_multipleScans"
 #include "maiTaiControl"
+#include "BS_2P_PMTPowerControl"
 #include <all ip procedures>
 
 Menu "2P"
@@ -46,6 +47,9 @@ Menu "2P"
 		
 		"Multi Scan", /q, makeMultiPanel()
 	End
+	"-"
+	"Running Wheel", /q, wheelPanel()
+	"Calculate Wheel Speeds", /q, calculateEncodersBinary(root:encoderBinary, 0)
 	"-"
 	"Measure laser Power", /q, readLaserPower()
 	"-"
@@ -90,9 +94,12 @@ Window Control2P() : Panel
 	DrawText 308,37,"in:"
 	SetDrawEnv fsize= 10
 	DrawText 151.263356125897,38.189810026163,"Lines:"
-	Button BS_FullFrame,pos={705,10},size={49,21},proc=BS_2P_FullFieldProc,title="Full-field"
+	
+	Button BS_FullFrame,pos={705.00,10.00},size={54.00,21.00},proc=BS_2P_FullFieldProc,title="Full-field"
 	Button BS_FullFrame,help={")ne fram of the entire field of view"},fSize=11
 	Button BS_FullFrame,fColor=(0,12800,52224)
+
+	
 	SetVariable BS_2P_framerate,pos={21,156},size={167,16},bodyWidth=48,proc=SetKCTProc,title="Time between frames (s)"
 	SetVariable BS_2P_framerate,fSize=11,format="%.3f"
 	SetVariable BS_2P_framerate,limits={0,inf,0},value= root:Packages:BS2P:CurrentScanVariables:KCT,noedit= 1
@@ -144,8 +151,15 @@ Window Control2P() : Panel
 	SetVariable dwellTime,pos={297,36},size={92,16},proc=SetDwellProc,title="Dwell time"
 	SetVariable dwellTime,format="%.0W1Ps"
 	SetVariable dwellTime,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:dwellTime
+	
+	initializePMTControl()
+	Button PMTPower,pos={649.00,10.00},size={54.00,21.00},proc=ButtonProcPMTON,title="PMT (is off)"
+	Button PMTPower,help={"switch on PMT"},fSize=9
+	Button PMTPower,fColor=(65535,49151,49151)
 
-
+	
+//	updatePMTStatus()
+	setWindow Control2P hook(myHook)=ShutdownHook
 
 EndMacro
 
@@ -225,7 +239,7 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:lineSpacing = 0.6e-6	// (meters)
 		variable/g root:Packages:BS2P:CurrentScanVariables:scanFrameTime = 0	//ms
 		variable/g  root:Packages:BS2P:CalibrationVariables:spotSize = 0.6e-6	//smallest theoretical spot from Bruno (m)
-		variable/g  root:Packages:BS2P:CalibrationVariables:pixelShift = 87.5e-6	// s  ---measure this by giving voltages to scanners
+		variable/g  root:Packages:BS2P:CalibrationVariables:pixelShift = 82.0e-6	// s  ---measure this by giving voltages to scanners
 		variable/g  root:Packages:BS2P:CurrentScanVariables:focusStep = 20		// µm
 		variable/g root:Packages:BS2P:CurrentScanVariables:fullField = 250e-6	//m to scan for a full field
 		variable/g root:Packages:BS2P:CurrentScanVariables:objectiveMag = 60
@@ -251,10 +265,17 @@ Function Init2PVariables()
 		variable/g root:Packages:BS2P:CurrentScanVariables:displayPixelSize
 		make/n=0/o root:Packages:BS2P:CurrentScanVariables:multiScanOffsets
 		make/n=3/o root:Packages:BS2P:CalibrationVariables:pockelsPolynomial = {(str2num(boardConfig[17][2])),(str2num(boardConfig[17][3])),(str2num(boardConfig[17][4]))}
-		
+		variable/g root:Packages:BS2P:CurrentScanVariables:pmtStatus = 0
 	endif
 	NVAR luigsFocusDevice = root:Packages:BS2P:CalibrationVariables:luigsFocusDevice
 	SVAR luigsFocusAxis = root:Packages:BS2P:CalibrationVariables:luigsFocusAxis
+	
+	variable/g root:Packages:BS2P:CurrentScanVariables:acquireWheelData = 0
+	variable/g root:Packages:BS2P:CurrentScanVariables:saveWheelData = 0
+	variable/g root:Packages:BS2P:CurrentScanVariables:whiskerGainUp = 0	//in sec
+	variable/g root:Packages:BS2P:CurrentScanVariables:whiskerGainDown = 0	//in sec
+	variable/g root:Packages:BS2P:CurrentScanVariables:changeWhiskerGain = 0
+	
 	
 End
 
@@ -272,7 +293,7 @@ function BS_2P_makeKineticWindow()
 	SetScale y (-1 * scanLimit * scaleFactor),(scanLimit * scaleFactor),"m", kineticSeries
 	
 	PauseUpdate; Silent 1		// building window...
-	Display /W=(9,133.25,582.75,463.25)/K=1  as "Kinetic Window"
+	Display /W=(9,125,2000,715)/K=1  as "Kinetic Window"
 	DoWindow/C kineticWindow
 	setWindow kineticWindow hook(myHook)=kineticWIndowHook
 
@@ -290,11 +311,10 @@ function BS_2P_makeKineticWindow()
 
 	ControlBar 80
 
-	SetVariable BS_2P_pixelShifter,pos={5,33},size={112,16},title="Pixel Shift"
+	SetVariable BS_2P_pixelShifter,pos={5,33},size={115,16},title="Pixel Shift"
 	SetVariable BS_2P_pixelShifter,frame=0,valueBackColor=(60928,60928,60928)
 	SetVariable BS_2P_pixelShifter,limits={0,0.0002,5e-07},value= root:Packages:BS2P:CalibrationVariables:pixelShift
 
-	
 //	SetVariable SetPixelSize,pos={4,31},size={90,16},proc=BS_2P_setPixelSizeProc,title="Binning (µm):"
 //	SetVariable SetPixelSize,frame=0,valueColor=(65280,0,0)
 //	SetVariable SetPixelSize,valueBackColor=(60928,60928,60928)
@@ -308,11 +328,13 @@ function BS_2P_makeKineticWindow()
 	Slider WM3DAxis,limits={0,49,1},variable= root:Packages:WM3DImageSlider:kineticWindow:gLayer,side= 0,vert= 0,ticks= 0
 	
 	Button SaveThisStack,pos={460,2},size={107,21},proc=saveStackProc_2,title="Save this movie as:"
-	Button BS_2P_kineticSeries,pos={120,2},size={71,20},proc=BS_2P_KineticSeriesButton,title="Kinetic Series"
+	
+	Button BS_2P_kineticSeries,pos={120.00,2.00},size={76.00,20.00},proc=BS_2P_KineticSeriesButton,title="Kinetic Series"
 	Button BS_2P_kineticSeries,fSize=11,fColor=(0,13056,0)
-	Button BS_2P_AbortImaging,pos={119,23},size={71,20},proc=BS_2P_abortButtonProc_2,title="Abort"
+
+	Button BS_2P_AbortImaging,pos={119,23},size={76,20},proc=BS_2P_abortButtonProc_2,title="Abort"
 	Button BS_2P_AbortImaging,fSize=11,fColor=(39168,0,0)
-	Button BS_2P_videoSeries,pos={119,44},size={71,20},proc=BS_2P_VideoButton,title="Video"
+	Button BS_2P_videoSeries,pos={119,44},size={76,20},proc=BS_2P_VideoButton,title="Video"
 	Button BS_2P_videoSeries,fSize=11,fColor=(0,13056,0)
 
 	CheckBox AxesConstrain,pos={8,3},size={88,14},proc=BS_2P_constrainAxes,title="Constrain Axes"
@@ -322,11 +344,10 @@ function BS_2P_makeKineticWindow()
 	SetVariable setFrames,frame=0,valueBackColor=(65535,65535,65535)
 	SetVariable setFrames,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frames
 	
-	SetVariable setAvg,pos={197,20},size={66,16},title="Avg",frame=0
+	SetVariable setAvg,pos={197,20},size={41,16},title="Avg",frame=0
 	SetVariable setAvg,valueBackColor=(65535,65535,65535)
 	SetVariable setAvg,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:frameAvg
-
-	
+		
 	CheckBox BS_2P_ExternalTrigger,pos={269,4},size={92,14},title="External Trigger"
 	CheckBox BS_2P_ExternalTrigger,variable= root:Packages:BS2P:CurrentScanVariables:externalTrigger
 	
@@ -355,12 +376,15 @@ function BS_2P_makeKineticWindow()
 	SetVariable SaveAs,value= root:Packages:BS2P:CurrentScanVariables:fileName2bWritten
 
 	
-	PopupMenu BS_2P_SaveWhere,pos={571,2},size={43,21},bodyWidth=43,proc=BS_2P_pathSelectionPopMenuProc,title="Path"
+	PopupMenu BS_2P_SaveWhere,pos={571,2},size={46,21},bodyWidth=46,proc=BS_2P_pathSelectionPopMenuProc,title="Path"
 	PopupMenu BS_2P_SaveWhere,mode=0,value= #"root:Packages:BS2P:CurrentScanVariables:pathDetailsListing"
-	SetVariable BS_2P_SavePrefix,pos={618,7},size={87,16},bodyWidth=57,proc=BS_2P_ChangeSavePrefix,title="Prefix"
+	
+	SetVariable BS_2P_SavePrefix,pos={620,4},size={90,18},bodyWidth=57,proc=BS_2P_ChangeSavePrefix,title="Prefix"
 	SetVariable BS_2P_SavePrefix,value= root:Packages:BS2P:CurrentScanVariables:SaveAsPrefix
-	SetVariable Increment,pos={710,7},size={46,16},bodyWidth=24,proc=SetPrefixIncrementProc,title="Inc:"
+
+	SetVariable Increment,pos={714,4},size={47,18},bodyWidth=24,proc=SetPrefixIncrementProc,title="Inc:"
 	SetVariable Increment,limits={-inf,inf,0},value= root:Packages:BS2P:CurrentScanVariables:prefixIncrement
+
 //	CheckBox BS_2P_SaveEverything,pos={702,41},size={57,14},proc=CheckProcSaveAll,title="Save All"
 //	CheckBox BS_2P_SaveEverything,value= 0,side= 1
 	
@@ -402,14 +426,14 @@ function BS_2P_makeKineticWindow()
 		ValDisplay stageX,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
 		ValDisplay stageX,valueBackColor=(65280,65280,32768)
 		ValDisplay stageX,limits={0,0,0},barmisc={0,1000}
-		ValDisplay stageX,value= #"root:Packages:PI_xPos"
+		ValDisplay stageX,value= #"root:Packages:P_I:PI_xPos"
 		ValDisplay stageX,barBackColor= (65280,65280,32768)
 		
 		ValDisplay stageY,pos={172,100},size={68,14},bodyWidth=54,title="Y:"
 		ValDisplay stageY,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
 		ValDisplay stageY,valueBackColor=(65280,65280,32768)
 		ValDisplay stageY,limits={0,0,0},barmisc={0,1000}
-		ValDisplay stageY,value= #"root:Packages:PI_yPos"
+		ValDisplay stageY,value= #"root:Packages:P_I:PI_yPos"
 		ValDisplay stageY,barBackColor= (65280,65280,32768)
 
 		PI_tellAllPositions()
@@ -429,7 +453,7 @@ function BS_2P_makeKineticWindow()
 		SetVariable focusStep,pos={310,41},size={50,16},title="µm",frame=0
 		SetVariable focusStep,valueBackColor=(60928,60928,60928)
 		SetVariable focusStep,limits={0,2000,0},value= root:Packages:BS2P:CurrentScanVariables:focusStep
-		GroupBox stackBox,pos={370,24},size={103,53}
+		GroupBox stackBox,pos={370,24},size={108.00,56.00}
 
 		Button doStack,pos={373,27},size={34,20},proc=doStack,title="stack",fSize=8
 		Button doStack,fColor=(61440,61440,61440)
@@ -445,7 +469,7 @@ function BS_2P_makeKineticWindow()
 		ValDisplay stageZ,labelBack=(65280,65280,32768),format="%.1f µm",frame=0
 		ValDisplay stageZ,valueBackColor=(65280,65280,32768)
 		ValDisplay stageZ,limits={0,0,0},barmisc={0,1000}
-		ValDisplay stageZ,value= #"root:Packages:PI_zPos"
+		ValDisplay stageZ,value= #"root:Packages:P_I:PI_zPos"
 		ValDisplay stageZ,barBackColor= (65280,65280,32768)
 
 
@@ -461,9 +485,10 @@ function BS_2P_makeKineticWindow()
 	ValDisplay pixSize,limits={0,0,0},barmisc={0,1000}
 	ValDisplay pixSize,value= #"root:packages:bs2p:currentScanVariables:displayPixelSize"
 	
-	CheckBox BS_2P_TrigLoop,pos={364,4},size={75,14},title="LoopTrigger"
+	CheckBox BS_2P_TrigLoop,pos={370,4},size={81,15},title="LoopTrigger"
 	CheckBox BS_2P_TrigLoop,variable= root:Packages:BS2P:CurrentScanVariables:trigLoop
-	GroupBox stackBox1,pos={265,1},size={179,20}
+
+//	GroupBox stackBox1,pos={265,1},size={179,20}
 
 	
 	rotatekineticWin()
@@ -500,19 +525,19 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 				break
 				
 				 case 29:	// right arrow
-				 	PI_moveMicrons("x", -moveStep)
+				 	PI_moveMicrons("y", -moveStep)
 				 break
 				 
 				 case 28:	// left arrow
-					PI_moveMicrons("x", moveStep)
+					PI_moveMicrons("y", moveStep)
 				 break
 				 	
 				 case 30:	// up arrow
-				 	PI_moveMicrons("y", moveStep)
+				 	PI_moveMicrons("x", moveStep)
 				 break
 				 
 				 case 31:	// down arrow
-				 	PI_moveMicrons("y", -moveStep)
+				 	PI_moveMicrons("x", -moveStep)
 				 break
 				 
 				 case 115:	// s
@@ -534,6 +559,7 @@ function kineticWindowHook(s)    //This is a hook for the mousewheel movement in
 			endswitch
 		break
 	endswitch
+	dowindow kineticWindow
 end
 
 
@@ -944,10 +970,10 @@ Function ZoomOutProc_2(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			
-			X_Offset -= ((zoomFactor * 1e-6) / 2)
-			Y_Offset -= ((zoomFactor * 1e-6) / 2)
-			scaledX += (zoomFactor * 1e-6)
-			scaledY += (zoomFactor * 1e-6)
+			X_Offset += ((zoomFactor * 1e-6) / 2)
+			Y_Offset += ((zoomFactor * 1e-6) / 2)
+			scaledX -= (zoomFactor * 1e-6)
+			scaledY -= (zoomFactor * 1e-6)
 			BS_2P_updateVariables()
 			BS_2P_CreateScan()
 			BS_2P_Scan("snapshot")
@@ -970,10 +996,10 @@ Function ZoomInProc_2(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			
-			X_Offset += ((zoomFactor * 1e-6) / 2)
-			Y_Offset += ((zoomFactor * 1e-6) / 2)
-			scaledX -= (zoomFactor * 1e-6)
-			scaledY -= (zoomFactor * 1e-6)
+			X_Offset -= ((zoomFactor * 1e-6) / 2)
+			Y_Offset -= ((zoomFactor * 1e-6) / 2)
+			scaledX += (zoomFactor * 1e-6)
+			scaledY += (zoomFactor * 1e-6)
 			BS_2P_updateVariables()
 			BS_2P_CreateScan()
 			BS_2P_Scan("snapshot")
@@ -995,7 +1021,7 @@ Function MoveLProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("y", moveStep)
+				PI_moveMicrons("x", moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "x")
 			endif
@@ -1015,7 +1041,7 @@ Function MoveRProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("y", -1* moveStep)
+				PI_moveMicrons("x", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "x")
 			endif
@@ -1035,7 +1061,7 @@ Function MoveUProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", 1* moveStep)
+				PI_moveMicrons("y", 1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(-1* moveStep, "y")
 			endif
@@ -1056,7 +1082,7 @@ Function MoveDProc(ba) : ButtonControl
 		case 2: // mouse up
 			// click code here
 			if(stringMatch((boardConfig[16][2]), "YES")) //PI
-				PI_moveMicrons("x", -1* moveStep)
+				PI_moveMicrons("y", -1* moveStep)
 			elseif(stringMatch((boardConfig[24][2]), "YES"))
 				pythonMoveRelative(moveStep, "y")
 			endif
@@ -1097,20 +1123,22 @@ function BS_2P_PMTShutter(openOrClose)
 		variable/g root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber = bs_2P_initDIO(devNum, port, line)
 		NVAR/Z shutterIOtaskNumber =  root:Packages:BS2P:CurrentScanVariables:shutterIOtaskNumber
 	endif
-			
+	
 	if(stringmatch(openOrCLose, "open"))
-		fdaqmx_dio_write(devNum, shutterIOtaskNumber, 5)
+		fdaqmx_dio_write(devNum, shutterIOtaskNumber, 1)
 //		fDAQmx_WriteChan("DEV2", 1, 5, -5, 5 )	//open external shutter before PMT
 	elseif(stringmatch(openOrCLose, "close"))
 		fdaqmx_dio_write(devNum, shutterIOtaskNumber, 0)
 //		fDAQmx_WriteChan("DEV2", 1, 0, -5, 5 )	//close external shutter before PMT
 	endif
-	
+//	 print openOrClose, port, line, devNum
 end
 
 function BS_2P_StartSignal()
-	
 	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
+	NVAR lineTIme = root:Packages:BS2P:CurrentScanVariables:lineTIme
+	NVAR totalLines = root:Packages:BS2P:CurrentScanVariables:totalLines
+	NVAR Frames = root:Packages:BS2P:CurrentScanVariables:Frames
 	string openOrClose
 	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
 	string devNum = boardConfig[26][0]
@@ -1123,13 +1151,34 @@ function BS_2P_StartSignal()
 	if(NVAR_exists(startIOtaskNumber))
 		fDAQmx_DIO_Finished(devNum, startIOtaskNumber)
 	endif
-	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0;
-	wave startSig = root:Packages:BS2P:CurrentScanVariables:startSig
-	startSig = p < ((50e-3/dwellTime)/2) ? 5 : 0
-	setScale/p x, 0, (dwellTime*100), "s" startSig
+	make/n=((lineTime*totalLines*frames)/dwelltime)/o root:Packages:BS2P:CurrentScanVariables:DIOLines = 0
+//	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0
+	wave DIOlines = root:Packages:BS2P:CurrentScanVariables:DIOLines
+	DIOLines[1,((50e-3/dwellTime))] = 2^10
+//	startSig[(dimsize(startSig,0)-(50e-3/dwellTime)), dimsize(startSig,0)-2] = 5
+//	startSig = p < ((50e-3/dwellTime)) ? 5 : 0
+//	startSig = P > (dimsize(startSig,0)- ((50e-3/dwellTime))) ? 5 : 0
+	setScale/p x, 0, (dwellTime), "s" DIOLines
 	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
-	daqmx_dio_config/dir=1/dev=devNum/wave={startSig}/CLK={pixelCLock,1} pfiString ///CLK={pixelCLock,1}
+	
+	
+//	NVAR changeWhiskerGain = root:Packages:BS2P:CurrentScanVariables:changeWhiskerGain
+////	if(changeWhiskerGain)
+////		string gainPort = "0"
+////		string gainLines = "8:10"
+////		NVAR whiskerGainUp = root:Packages:BS2P:CurrentScanVariables:whiskerGainUp
+////		NVAR whiskerGainDown = root:Packages:BS2P:CurrentScanVariables:whiskerGainDown
+////		
+////		DIOLines[x2pnt(DIOLines,whiskerGainUp),x2pnt(DIOLines,(whiskerGainUp+0.01))] = (2^8)
+////		DIOLines[x2pnt(DIOLines,whiskerGainDown),x2pnt(DIOLines,(whiskerGainDown+0.01))] = (2^9)
+////		
+//////		pfiString = "/"+devNum+"/port"+gainPort+ "/line" + gainLines
+////		pfiString = "/"+devNum+"pfi6" + gainLines
+////	endif
+	
+	daqmx_dio_config/dir=1/LGRP=0/dev=devNum/wave={DIOLines}/CLK={pixelCLock,1} pfiString ///CLK={pixelCLock,1}
 	variable/g  root:Packages:BS2P:CurrentScanVariables:startIOtaskNumber = V_DAQmx_DIO_TaskNumber
+	print pfiString
 end
 
 
@@ -1138,7 +1187,7 @@ function bs_2P_initDIO(devNum, port, line)
 	string devNum, port, line
 	
 	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
-	daqmx_dio_config/dir=1/dev=devNum pfiString
+	daqmx_dio_config/dir=1/dev=devNum/LGRP=1 pfiString
 	variable DIOTaskNumber = V_DAQmx_DIO_TaskNumber
 //	fdaqmx_dio_write(devNum, DIOTaskNumber, 0)
 	return DIOTaskNumber
@@ -1164,13 +1213,13 @@ function sampleDiodeVoltage()
 	variable mWPerVolt = str2num(boardConfig[10][2])
 	variable mWPerVolt_offset = str2num(boardConfig[10][3])
 	string diodeWaves = "sampleDiode, "+ boardConfig[6][2]
-	make/d/n=10000/o sampleDiode
+	make/d/n=200/o sampleDiode
 	setscale/p x, 0, 0.0001, sampleDiode
 	
 	NVAR laserPower = root:Packages:BS2P:CurrentScanVariables:laserPower
 	variable voltage 
 	fDAQmx_ScanStop(diodeDevNum)
-	DAQmx_Scan/DEV=diodeDevNum waves=diodeWaves
+	DAQmx_Scan/DEV=diodeDevNum/bkg waves=diodeWaves
 	voltage = mean(sampleDiode)
 	laserPower = (voltage * mWPerVolt) + mWPerVolt_offset
 	
@@ -1281,7 +1330,7 @@ function calibratePower()
 	bs_2P_zeroscanners("center")
 	
 	variable minPockels = 0.15
-	variable maxPockels = 0.7
+	variable maxPockels = 1.2
 	variable meterReading
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), w_diodeReadings
 	setScale/p x, minPockels, ((maxPockels - minPockels) / numpnts(w_diodeReadings)), mW
@@ -1505,6 +1554,92 @@ Function saveALLCheckProc(cba) : CheckBoxControl
 					fileName2bWritten = currentPathDetails + SaveAsPrefix + num2str(prefixIncrement)
 				endif
 			endif
+			break
+		case -1: // control being killed
+			break
+	endswitch
+
+	return 0
+End
+
+//function BS_2P_LickSolenoid(start, width, trigger)
+//	variable start, width // in ms
+//	string trigger
+//	if(datafolderexists("root:Packages") == 0)
+//		newdatafolder/o root:Packages
+//		newdatafolder/o root:Packages:Licking
+//	endif
+//	if(datafolderexists("root:Packages:licking") == 0)
+//		newdatafolder/o root:Packages:Licking
+//	endif
+//	NVAR dwellTIme = root:Packages:BS2P:CurrentScanVariables:dwellTime
+//	start /= 1000; start /= dwellTime
+//	width /= 1000; width /= dwellTime
+//	variable ending = 0.01 / dwellTime
+//	make/n=(50e-3/dwellTime)/o root:Packages:BS2P:CurrentScanVariables:startSig = 0;
+//	make/o/n=(start+width+ending) lickSchedule = 0
+//	lickSchedule[start,start+width] =1
+//	setscale/P x, 0, dwellTime, "s", lickSchedule
+//	
+//	wave/t boardConfig = root:Packages:BS2P:CalibrationVariables:boardConfig
+//	string pmtDev = boardConfig[3][0]
+//	string devNum = boardConfig[27][0]
+//	string port = boardConfig[27][1]
+//	string line = boardConfig[27][2]
+//	string pfiString = "/"+devNum+"/port"+port+ "/line" + line
+//	NVAR/Z lickIOtaskNumber =  root:Packages:Licking:lickIOtaskNumber:shutterIOtaskNumber
+//	if(NVAR_exists(lickIOtaskNumber))
+//		fDAQmx_DIO_Finished(devNum, lickIOtaskNumber)
+//	endif
+//	
+//	string pixelCLock = "/"+pmtDev+"/Ctr2InternalOutput"
+//	
+//	strSwitch(trigger)
+//		case "none":
+//			daqmx_dio_config/dir=1/dev=devNum/lgrp=1/wave={lickSchedule} pfiString
+//			break
+//		case "scanning":
+//			
+//			daqmx_dio_config/dir=1/dev=devNum/lgrp=1/wave={lickSchedule}/CLK={pixelCLock,1} pfiString
+//			break
+//	endSwitch
+//	variable/g root:Packages:Licking:lickIOtaskNumber = V_DAQmx_DIO_TaskNumber
+end
+
+//Function shutdownHook(s)
+//	STRUCT WMWinHookStruct &s
+//	
+//	Variable hookResult = 0
+//
+//	switch(s.eventCode)
+//		case 2:				// Kill WIndow
+//			StopUpdatingMaiTaiVariables()
+//			pmtControl("off")
+//			StopUpdatingPMTStatus()
+//			
+//			break
+//
+//	endswitch
+//
+//	return hookResult
+//end
+
+Window wheelPanel() : Panel
+	PauseUpdate; Silent 1		// building window...
+	NewPanel /W=(1033,63,1269,117) as "Running Wheel"
+	CheckBox SaveWheelData,pos={34.00,27.00},size={130.00,15.00},proc=saveWheelProc,title="Auto-save wheel data"
+	CheckBox SaveWheelData,variable= root:Packages:BS2P:CurrentScanVariables:saveWheelData
+	CheckBox AcquireWheelData,pos={34.00,7.00},size={159.00,15.00},title="Acquire data from wheel(s)"
+	CheckBox AcquireWheelData,variable= root:Packages:BS2P:CurrentScanVariables:acquireWheelData
+EndMacro
+
+Function saveWheelProc(cba) : CheckBoxControl
+	STRUCT WMCheckboxAction &cba
+	NVAR saveEmAll = root:Packages:BS2P:CurrentScanVariables:saveEmAll
+	switch( cba.eventCode )
+		case 2: // mouse up
+			Variable checked = cba.checked
+			saveEmAll = checked
 			break
 		case -1: // control being killed
 			break
