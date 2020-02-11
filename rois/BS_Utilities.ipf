@@ -924,8 +924,8 @@ end
 
 
 Window findKeyboardCodes() : Panel
-	NewPanel /W=(519,137,819,337)
-	SetWindow Panel0, hook(key)=keyboardHook, hookevents=0
+	NewPanel/N=keyboardCodes /W=(519,137,819,337)
+	SetWindow keyboardCodes, hook(key)=keyboardHook, hookevents=0
 EndMacro
  
 Function keyboardHook(s)

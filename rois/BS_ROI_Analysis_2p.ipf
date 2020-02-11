@@ -43,6 +43,7 @@ Menu "GraphMarquee"
 		"Bin Pixels in Image", /q, binPixels()
 		"Make Projections", /q,  imageSubProjections()
 		"Average stack", /q, averageStack()
+		"Stabilize Image", /q, stabilizeImage()
 		"Max Stack", /q, projectStack()
 		"Print Image Notes", /q, printImageNotes()
 
@@ -57,6 +58,38 @@ Menu "GraphMarquee"
 
 	
 End
+
+function stabilizeImage()
+	getMarquee/K
+	string ImageName=ImageNameList(S_MarqueeWin, ";")
+	Imagename = Replacestring(";", Imagename,"") 
+	wave Image = ImageNameToWaveRef(S_MarqueeWin,ImageName)
+	
+	ImageReg_OnlyTrans(image)
+	
+end
+
+Function/Wave ImageReg_OnlyTrans(image, [ref_frame])
+    wave image
+    variable ref_frame		// choose which frame to use as the registration image
+    							// last frame is used if not specified
+    if(paramisdefault(ref_frame))
+    	ref_frame = dimsize(image,2)
+    endif
+    
+    duplicate/o/free image, image_s
+    redimension/s image_s
+    Duplicate/o/r=[][][round(ref_frame)]/free image_s, refwave
+    
+    imageregistration/q/refm=0/tstm=0/rot={0,0,0}/skew={0,0,0}/stck refwave=refwave, testwave=image_s
+    wave M_RegOut; Duplicate/o M_RegOut, $("RegIm_" + nameofwave(image))
+    wave OutWave = $("RegIm_" + nameofwave(image))
+    
+    newImage/K=1/F OutWave
+    
+    return OutWave
+End	
+	
 
 function printImageNotes()
 	getmarquee/K
@@ -434,12 +467,12 @@ function ClearROIsFromHere()
 	wave Image = ImageNameToWaveRef(S_MarqueeWin,ImageName)
 
 	removeall(s_marqueeWin, Image)
-	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
+	SetDrawEnv/W=$S_MarqueeWin xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
 
-	DrawLine/W=kineticWindow  (-39e-6), (-23.9e-6),  (-19e-6),  (-23.9e-6)
-	SetDrawEnv/W=kineticWindow xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
+	DrawLine/W=$S_MarqueeWin  (-39e-6), (-23.9e-6),  (-19e-6),  (-23.9e-6)
+	SetDrawEnv/W=$S_MarqueeWin xcoord= bottom,ycoord= left,linefgc= (65280,0,0),dash= 2;DelayUpdate
 
-	DrawLine/W=kineticWindow  (-29e-6), (-34e-6),  (-29e-6),  (-14e-6)
+	DrawLine/W=$S_MarqueeWin  (-29e-6), (-34e-6),  (-29e-6),  (-14e-6)
 end
 
 function ImageDFF()
@@ -1000,7 +1033,7 @@ function removeall(S_marqueeWin, Image)
 	string S_marqueeWin
 	Wave Image
 	string crntfldr = getdatafolder(1)
-	setdatafolder root:currentrois
+//	setdatafolder root:currentrois
 	
 	MakeListofROIs()
 	variable stop = numpnts(all_roi_list)

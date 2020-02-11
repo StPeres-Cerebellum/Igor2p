@@ -142,7 +142,7 @@ Function QuickLoadFITS(path, filename)
 	endif
 	//print refnum, s_filename, filename
 
-	LoadOneFITS(refnum, "root:import", 0,0,0,0,1,1e10)	// From Igor
+	LoadOneFITS(refnum, "root:import", 0,0,0,0,1,1e10,1e10)	// From Igor
 	Close/a
 	return err
 end

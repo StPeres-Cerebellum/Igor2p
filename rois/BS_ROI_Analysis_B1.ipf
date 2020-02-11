@@ -886,6 +886,7 @@ Function WMLoadFITS_JUSTONE()
 	Variable doAutoDisp= NumVarOrDefault("root:Packages:FITS:wantAutoDisplay",0)	// true to display data
 	Variable doInt2Float= NumVarOrDefault("root:Packages:FITS:promoteInts",1)		// true convert ints to floats
 	Variable bigBytes= NumVarOrDefault("root:Packages:FITS:askifSize",10e7)				// if data exceeds this size, ask permission to load  
+	Variable bigBTBytes= NumVarOrDefault("root:Packages:FITS:askifSize",10e7)				// if data exceeds this size, ask permission to load  
 	
 	Variable refnum
 	String path= StrVarOrDefault("root:Packages:FITS:thePath","")
@@ -902,7 +903,7 @@ Function WMLoadFITS_JUSTONE()
 	
 	FStatus refnum
 	print "FITS Load from",S_fileName
-	LoadOneFITS(refnum,S_fileName,doHeader,doHistory,doComment,doAutoDisp,doInt2Float,bigBytes)
+	LoadOneFITS(refnum,S_fileName,doHeader,doHistory,doComment,doAutoDisp,doInt2Float,bigBytes,bigBTBytes)
 	string newimagepath = "root:ImageImport:SingleImport:'"+s_filename+"':primary:data"
 	//string KCTpath = "root:ImageImport:SingleImport:'"+s_filename+"':primary:KCT"
 	//string Exposurepath = "root:ImageImport:SingleImport:'"+s_filename+"':primary:EXPOSURE"
@@ -1047,6 +1048,7 @@ Static Function BatchLoadFITS(file, header,show_graph, ImageFolder)
 	Variable doAutoDisp= NumVarOrDefault("root:Packages:FITS:wantAutoDisplay",show_graph)	// true to display data
 	Variable doInt2Float= NumVarOrDefault("root:Packages:FITS:promoteInts",1)		// true convert ints to floats
 	Variable bigBytes= NumVarOrDefault("root:Packages:FITS:askifSize",1e10)				// if data exceeds this size, ask permission to load  
+	Variable bigBTBytes= NumVarOrDefault("root:Packages:FITS:askifSize",1e10)				// if data exceeds this size, ask permission to load  
 	
 	Variable refnum
 	String path= StrVarOrDefault("root:Packages:FITS:thePath",file)
@@ -1063,7 +1065,7 @@ Static Function BatchLoadFITS(file, header,show_graph, ImageFolder)
 	
 	FStatus refnum
 	//print "FITS Load from",S_fileName
-	LoadOneFITS(refnum,S_fileName,doHeader,doHistory,doComment,doAutoDisp,doInt2Float,bigBytes)
+	LoadOneFITS(refnum,S_fileName,doHeader,doHistory,doComment,doAutoDisp,doInt2Float,bigBytes, bigBTBytes)
 	Close refnum
 end
 
@@ -1361,7 +1363,7 @@ function NewUpdate(Image)
 	wave Image
 
 	SETKCT(image)
-	string crntfldr = getdatafolder(Image)
+	string crntfldr = getdatafolder(1, Image)
 	setdatafolder root:currentrois
 		
 	MakeListofROIs()
